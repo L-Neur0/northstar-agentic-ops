@@ -1,0 +1,31 @@
+# Assignment brief (employer material, keep out of the public repo)
+brief/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+build/
+.next/
+
+# OS / editors
+.DS_Store
+.vscode/
+.idea/
+
+# Azure
+.azure/
