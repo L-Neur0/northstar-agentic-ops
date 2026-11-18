@@ -12,9 +12,10 @@
 |---|---|---|
 | Allowed | | |
 | Real, frequent pain (≥ 5k h/yr) | | |
-| No off-the-shelf tool | | |
+| No off-the-shelf tool (incl. general AI chat) | | |
 | Data exists today | | |
 | Measurable | | |
+| One-sentence hook, exists at most companies | | |
 
 ## 2. Score
 

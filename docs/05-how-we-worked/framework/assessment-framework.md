@@ -1,6 +1,6 @@
 # AI Use-Case Assessment Framework
 
-A simple, repeatable way to decide **which process to automate with AI, and why**. Copy [`assessment-template.md`](assessment-template.md) into `docs/ideas/<cluster>-<idea>.md` for each idea.
+A simple, repeatable way to decide **which process to automate with AI, and why**. Copy [`assessment-template.md`](assessment-template.md) for each idea you assess.
 
 **Context:** NIG is a global engineering & infrastructure consultancy (~50k staff) with a group HQ and regional companies grown through acquisitions, each with its own systems. Solutions that scale across regions beat solutions for one HQ team.
 
@@ -15,9 +15,10 @@ A simple, repeatable way to decide **which process to automate with AI, and why*
 
 1. **Allowed** — not invoice processing, CV screening, contract review, ticket routing, knowledge chatbot or lead qualification.
 2. **Real, frequent pain** — at least ~5,000 hours/yr across the company.
-3. **No off-the-shelf tool** already does it well.
+3. **No off-the-shelf tool** already does it well — including a **general AI assistant** (ChatGPT, Claude, Copilot with file upload). If a user could get 80% of the value by pasting the data into a chat, it's not an app. Real apps need at least one of: integration with live systems, scale beyond a chat session, multi-source joins, deterministic checks, evals, or an audit trail.
 4. **Data exists today** — no six-month data project before it shows value.
 5. **Measurable** — we can measure the baseline and check whether the AI output is right.
+6. **One-sentence hook** — a non-expert gets the problem and why it matters in one sentence, and the process exists at most mid-to-large companies, not just one industry.
 
 ## Step 2 — Score (1–5, one-line reason each)
 
