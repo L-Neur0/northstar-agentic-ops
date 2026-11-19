@@ -1,0 +1,1 @@
+"""The engine's vocabulary: the field registry, the taxonomy of clusters, the process-or-task rubric and node ordering. Pure code with no I/O; it knows nothing about profiles in progress or turns (spec 12). Every other layer derives its fields, weights and rules from here."""

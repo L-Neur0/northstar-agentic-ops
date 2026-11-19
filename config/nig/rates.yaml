@@ -1,0 +1,17 @@
+# Rates used by the value calculation (spec 21). Euros per hour; shares are fractions of a step's hours.
+currency: EUR
+default_hourly_rate: 90
+role_group_rates: {}
+realisation:
+  conservative: 0.5
+  expected: 0.75
+# Default share of a step's hours an opportunity of each type could free (assumption, tuned in the pilot).
+saving_share:
+  eliminate: 0.9
+  standardise: 0.2
+  workflow: 0.4
+  integration: 0.5
+  document_ai: 0.6
+  ai_assistant: 0.4
+  ai_agent: 0.7
+  rpa: 0.5

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Process Discovery</title>
+    <script>
+      /* Theme before first paint (spec 23 §3.13.5; AC-23.56): stored pd_theme, else the system setting.
+         Same rule as src/theme/theme.ts; blocked storage falls back to the system setting. */
+      (function (w, d) {
+        var stored = null;
+        try { stored = w.localStorage.getItem('pd_theme'); } catch (e) { stored = null; }
+        var system = !!(w.matchMedia && w.matchMedia('(prefers-color-scheme: dark)').matches);
+        var dark = stored === 'dark' || (stored !== 'light' && system);
+        d.documentElement.classList.toggle('dark', dark);
+      })(window, document);
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,16 @@
+# azure.yaml: azd project file for the Discovery Agent (spec 25 §3.3).
+#
+# Why it exists: lets `azd provision` deploy infra/main.bicep into the EXISTING
+#   resource group rg-northstar-discovery (azd env AZURE_RESOURCE_GROUP, D2).
+# What it creates: nothing by itself; infra/main.bicep says what is deployed.
+#   Block 1 (spec 15 §3.7) is provision-only: the Cosmos DB store.
+# What it must not do: never run `azd down` on this environment; it deletes the
+#   resource group with the hand-made AI account and its quota (D8).
+# Acceptance criteria: AC-25.21 (completed when the service and pipeline land).
+name: discovery-agent
+infra:
+  provider: bicep
+  path: infra
+  module: main
+# TODO(spec 25 §3.3): add `services.app` (containerapp, ./Dockerfile,
+# remoteBuild false, APP_VERSION build arg) and the `pipeline` section.

@@ -1,6 +1,9 @@
 # Assignment brief (employer material, keep out of the public repo)
 brief/
 
+# Private working notes: never published
+.work/
+
 # Env / secrets
 .env
 .env.*
@@ -29,3 +32,6 @@ build/
 
 # Azure
 .azure/
+
+# Local model reply cache (spec 11)
+.cache/

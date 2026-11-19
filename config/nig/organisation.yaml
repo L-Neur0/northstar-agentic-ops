@@ -1,0 +1,10 @@
+# Organisation settings for NorthStar Infrastructure Group (NIG), a fictional company.
+# Loaded and validated at start-up by app.core.config (spec 10 §3.6).
+product_name: Discovery Agent
+company_name: NorthStar Infrastructure Group
+regions: [North America, Europe, Middle East, Asia-Pacific]
+languages: [en, de]
+branding:
+  primary_colour: "#1F3A5F"
+  accent_colour: "#2E8B87"
+  logo_path: null

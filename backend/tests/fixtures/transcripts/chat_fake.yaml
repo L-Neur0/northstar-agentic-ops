@@ -1,0 +1,9 @@
+# Scripted model replies for the `make chat --fake` test (spec 14 AC-14.57). One reply per call, in order.
+EXTRACT:
+  - {department: Finance}
+  - {user_function: Cost controller}
+  - {region: Europe}
+GUIDE:
+  - What is your own role in Finance?
+  - Which region do you work in?
+  - Thinking about a normal week, what comes round again and again?

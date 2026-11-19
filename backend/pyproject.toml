@@ -1,0 +1,65 @@
+[project]
+name = "discovery-agent"
+version = "0.1.0"
+description = "Discovery Agent: guided process discovery and AI transformation assessment (NIG case)."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.138,<0.139",
+    "uvicorn[standard]>=0.32,<0.33",
+    "pydantic>=2.14,<2.15",
+    "pydantic-settings>=2.6,<3",
+    "langgraph>=1.2,<1.3",
+    "openai>=2.54,<2.55",
+    "azure-identity>=1.26,<1.27",
+    "aiohttp>=3.10,<4",
+    "azure-cosmos>=4.9,<5",
+    "httpx>=0.28,<0.29",
+    "python-multipart>=0.0.20",
+    "PyYAML>=6.0,<7",
+    "reportlab>=4.4,<4.5",
+    "openpyxl>=3.1,<3.2",
+    "pypdf>=5,<7",
+    "python-docx>=1.1,<2",
+    "defusedxml>=0.7,<0.8",
+    "slowapi==0.1.10",
+    "azure-monitor-opentelemetry>=1.8,<1.9",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.8",
+    "pyright>=1.1.390",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "--import-mode=importlib"
+markers = [
+    "live: calls real Azure services (OpenAI, Cosmos DB); skipped unless RUN_LIVE=1",
+    "slow: slower tests (fuzz, rendering)",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = [".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I", "UP"]
+ignore = ["B008", "E501"]
+
+[tool.pyright]
+include = ["app", "tests"]
+pythonVersion = "3.12"
+typeCheckingMode = "basic"
+venvPath = "."
+venv = ".venv"
+strict = ["app/services/process_discovery/domain", "app/services/process_discovery/profile"]

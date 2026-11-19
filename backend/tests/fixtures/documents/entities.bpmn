@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE definitions [
+  <!ENTITY a "aaaaaaaaaa">
+  <!ENTITY b "&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;">
+  <!ENTITY c "&b;&b;&b;&b;&b;&b;&b;&b;&b;&b;">
+  <!ENTITY d "&c;&c;&c;&c;&c;&c;&c;&c;&c;&c;">
+]>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" id="defs">
+  <process id="p1" name="&d;"><task id="t1" name="One"/><task id="t2" name="Two"/></process>
+</definitions>

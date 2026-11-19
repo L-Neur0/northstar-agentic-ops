@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" id="defs">
+  <process id="p1" name="Equipment request">
+    <laneSet><lane id="L1" name="Service desk agent"><flowNodeRef>t1</flowNodeRef><flowNodeRef>t2</flowNodeRef><flowNodeRef>t3</flowNodeRef><flowNodeRef>t4</flowNodeRef><flowNodeRef>t5</flowNodeRef><flowNodeRef>t6</flowNodeRef><flowNodeRef>t7</flowNodeRef><flowNodeRef>t8</flowNodeRef><flowNodeRef>t9</flowNodeRef></lane></laneSet>
+    <startEvent id="s" name="Request arrives"/>
+    <task id="t1" name="Receive request"/>
+    <task id="t2" name="Check identity"/>
+    <task id="t3" name="Classify request"/>
+    <task id="t4" name="Check budget"/>
+    <task id="t5" name="Get approval"/>
+    <task id="t6" name="Order item"/>
+    <task id="t7" name="Receive item"/>
+    <task id="t8" name="Hand over item"/>
+    <task id="t9" name="Close request"/>
+    <endEvent id="e" name="Request closed"/>
+    <sequenceFlow id="f0" sourceRef="s" targetRef="t1"/>
+    <sequenceFlow id="f1" sourceRef="t1" targetRef="t2"/>
+    <sequenceFlow id="f2" sourceRef="t2" targetRef="t3"/>
+    <sequenceFlow id="f3" sourceRef="t3" targetRef="t4"/>
+    <sequenceFlow id="f4" sourceRef="t4" targetRef="t5"/>
+    <sequenceFlow id="f5" sourceRef="t5" targetRef="t6"/>
+    <sequenceFlow id="f6" sourceRef="t6" targetRef="t7"/>
+    <sequenceFlow id="f7" sourceRef="t7" targetRef="t8"/>
+    <sequenceFlow id="f8" sourceRef="t8" targetRef="t9"/>
+    <sequenceFlow id="f9" sourceRef="t9" targetRef="e"/>
+  </process>
+</definitions>

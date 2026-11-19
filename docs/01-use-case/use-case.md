@@ -1,820 +1,840 @@
-# BidCheck — Use Case Specification
+# Selected process: finding, mapping and assessing processes for AI
 
-> [!NOTE]
-> ## Executive summary (5-minute read)
->
-> **In one sentence:** before NIG sends a price, **BidCheck** checks the bid against what NIG's own past projects and past tenders really show: **what the job will really cost, where the plan is too optimistic, and what price can win while still making money.** People still plan and decide; the tool reads, compares and calculates.
->
-> ### The story: one bid, two margins
->
-> The town of **Millbrook** needs a new water treatment plant. Its tender says: *"the old plant must keep supplying the town until the new one is ready"* — one sentence on page 47 of 200.
->
-> NIG's engineers plan **6,000 hours**. Competitors are expected at €550k, so the plan is squeezed to **5,000 hours** to match. The directors see a **27% margin** and approve. NIG wins.
->
-> The project really needs **6,800 hours**: three rounds of changes from the town, a slower permit, night work to keep the old plant running. The real margin is **1%**.
->
-> NIG had done **10 projects just like this one**, and they needed 6,200–7,600 hours. The answer was in NIG's own history. Nobody looked, because finding and comparing those projects takes days.
->
-> **This is not one bad bid. It is how bids are priced today:** drawings are counted carefully, but the work around them — reviews, permits, keeping things running — is guessed, then cut to hit a price. Across ~5,000 significant bids a year, we estimate this costs NIG **~€55M of margin per year**.
->
-> ### What we propose
->
-> **BidCheck**, a web tool for the bid team that plugs into the steps NIG already has:
-> 1. **Reads the tender** and lists the facts that drive the work, each with its page.
-> 2. **Checks the engineers' plan** against the ~10 truly similar past projects, phase by phase, and shows where it is too low, with evidence.
-> 3. **Shows the price view:** margin and chance of a loss at each price, who usually wins similar tenders and at what price, and the score NIG would get.
-> 4. **Builds the approval pack** for the directors.
->
-> Engineers still make the plan, the commercial manager still sets the price, directors still decide. With BidCheck, the Millbrook team would have seen: *"your plan is below every similar project"* and *"€550k → 1% margin, 4 in 10 chance of a loss; €640k → 15%, and still the best expected score."*
->
-> ### Why AI, and not a spreadsheet
->
-> The maths is easy and stays in plain, tested code. The hard part is **reading**: what makes one project twice as expensive as another, who won a past tender and why, are sentences in tenders, reports, award notices and feedback letters — not fields in a database. The AI reads and labels; **it never produces a number**.
->
-> ### Doesn't a tool already do this?
->
-> **Partly — which confirms the need.** Practice-management tools for small firms suggest budgets from past projects logged inside them; tender-reading tools extract requirements. **Nothing checks a plan and a price against a large firm's own messy, multi-system history.** So we buy what exists and build only the missing piece.
->
-> ### Business impact
->
-> | Per year | Conservative | Expected | Upside |
-> |---|---|---|---|
-> | Margin protected (fewer bids priced below real cost) | €1.7M | €4.4M | €8.3M |
-> | Skilled time freed (~25–35 h → ~10–14 h per bid) | €0.8M | €3.9M | €10.4M |
-> | **Gross value** (before solution costs) | **€2.4M** | **€8.3M** | **€18.6M** |
->
-> Plus: directors approve with evidence, price decisions become conscious, and every finished project and lost bid makes the next check better.
->
-> ### Feasibility and time
->
-> | Stage | Time | Team | Go on if… |
-> |---|---|---|---|
-> | **Prototype** (this submission) | 5 days | 1 AI engineer | It works end to end on realistic fictional data |
-> | **Backtest** on one region's real history | 2 weeks | AI engineer + finance analyst (part-time) | The plan check catches underestimates better than past human estimates |
-> | **Pilot**: one region, ~30 bids | 2 quarters | ~3 people + a bid manager as product owner | Teams use it on ≥ 50% of bids and act on its flags |
-> | **Roll-out**, region by region | ~1 year | Same team + 2–4 weeks onboarding per region | Margin on won projects improves; win rate holds |
->
-> **Costs:** AI usage is a few cents per bid. Team, hosting and support costs depend on NIG's internal rates — **to be estimated with NIG.**
->
-> **Why it's feasible:** no big data project first (clean regional databases are connected directly; messy ones are loaded with AI in weeks) · standard technology (Azure OpenAI, a small web app) · no change to the process, only better evidence at three existing steps.
->
-> ### Main risks, and how we handle them
->
-> | Risk | How we handle it |
-> |---|---|
-> | NIG's history is too messy or thin | The 2-week backtest tests this first; with too little evidence, the tool says so instead of guessing |
-> | People dismiss the flags | Every flag needs a fix or a written reason; directors see both |
-> | Higher prices lose bids | People still choose the price; the tool shows margin, chance of a loss and expected score side by side; win rate is tracked |
->
-> ### The decision we ask for
->
-> **Approve a 2-week backtest** on one region's finished projects and past tenders. If BidCheck doesn't clearly catch underestimates that people missed, we stop there. If it does, we come back for the pilot.
->
-> **What it is not:** not a planning or pricing machine (people plan and price) · not a chatbot · not a bid/no-bid tool · not contract review · not a way to rate people.
-
-> Version: draft v6 (engineers plan, BidCheck checks) · Cluster: **GWT · Sales & Marketing** (uses Finance data) · *BidCheck is a working name.*
-> All figures are **assumptions** and example numbers are illustrative.
-
-```mermaid
-flowchart LR
-    A["<b>NorthStar Infrastructure Group</b><br/>Designs and manages infrastructure<br/>(roads, rail, water, buildings, energy)<br/>~50,000 people · ~€7B net service revenue<br/>Sells its people's time on projects"]
-    B["<b>GWT · Sales & Marketing</b><br/>Wins the work: bids, proposals,<br/>plans and prices<br/>(uses Finance data on past projects)"]
-    C["<b>BidCheck</b><br/>Checks a bid's plan and price against<br/>what NIG's past projects and tenders really show:<br/>real cost, gaps in the plan, margin at each price"]
-    A --> B --> C
-
-    classDef company fill:#e8eef7,stroke:#34495e,color:#000;
-    classDef cluster fill:#fff4d6,stroke:#b7950b,color:#000;
-    classDef usecase fill:#dff5e3,stroke:#1e8449,color:#000,stroke-width:2px;
-    class A company;
-    class B cluster;
-    class C usecase;
-```
-
-## Contents
-
-1. [Context: who NIG is and how it works](#1-context-who-nig-is-and-how-it-works): [NIG in brief](#11-nig-in-brief) · [How NIG wins work and earns money](#12-how-nig-wins-work-and-earns-money) · [Who is involved in a bid](#13-who-is-involved-in-a-bid) · [Where this sits](#14-where-this-sits)
-2. [Business process candidate: planning and pricing a bid](#2-business-process-candidate-planning-and-pricing-a-bid)
-   - 2.1 [As-is process](#21-as-is-process): [The process today](#211-the-process-today) · [What really happens](#212-what-really-happens) · [Pain points and manual work](#213-pain-points-and-manual-work)
-   - 2.2 [To-be process and its motivation](#22-to-be-process-and-its-motivation): [Why AI, and why not something simpler](#221-why-ai-and-why-not-something-simpler) · [What the tool is](#222-what-the-tool-is) · [Where the data comes from](#223-where-the-data-comes-from) · [The new process](#224-the-new-process) · [What the team sees](#225-what-the-team-sees) · [Millbrook, with the tool](#226-millbrook-with-the-tool) · [Before vs after](#227-before-vs-after)
-3. [Analysis of the AI transformation](#3-analysis-of-the-ai-transformation): [Framework check](#31-framework-check) · [Value](#32-value) · [Scalability](#33-scalability) · [Risks](#34-risks) · [Assumptions and kill test](#35-assumptions-and-kill-test-task-5)
-4. [Technical: how to build it](#4-technical-how-to-build-it): [What kind of app](#41-what-kind-of-app) · [Architecture](#42-architecture) · [Components](#43-components) · [How one bid flows](#44-how-one-bid-flows) · [Inputs and outputs](#45-inputs-and-outputs-formats-and-fictional-data) · [Key choices](#46-key-technical-choices) · [Technology](#47-technology) · [Feasibility](#48-feasibility-5-day-prototype)
-5. [Appendix](#appendix): [A. Fit with the brief](#a-fit-with-the-brief) · [B. Glossary](#b-glossary) · [C. Sources](#c-sources)
-
-Related: [as-is sub-steps](../02-processes/as-is.md) · [to-be sub-steps](../02-processes/to-be.md) · [user journey](../02-processes/user-journey.md)
+> Interview deliverable. NIG is a fictional company. Every figure marked *assumption* is our estimate, to check with the NIG AI transformation team.
+> Brief: the assignment PDF in the git-ignored `brief/` folder.
+> The tool: **Discovery Agent** *(working name)*. What it does in detail: [product specification](../../specs/01-product.md). How it is built: [architecture](../../specs/02-architecture.md).
+> This document is the source of truth for **why**: the problem, the users, the value and the assumptions. The worked example is the FIN monthly cost review, an earlier candidate use case.
 
 ---
 
-## 1. Context: who NIG is and how it works
-
-### 1.1 NIG in brief
+## In short
 
 | | |
 |---|---|
-| **What NIG does** | Designs, builds and operates infrastructure: roads, rail, water, buildings, energy |
-| **Size** | ~50,000 employees · ~€7B **net service revenue** (what its own people earn) |
-| **Where** | North America, Europe, the Middle East, Asia-Pacific |
-| **Clients** | About half public authorities (towns, water utilities, transport agencies), half private companies |
-| **How it grew** | Through acquisitions and regional expansion. Regions and business units work differently, with **different systems** and local workarounds (brief) |
-
-### 1.2 How NIG wins work and earns money
-
-- **NIG sells its people's time.** A design project is a number of **hours** worked by engineers, drafters and managers.
-- **Most work is won through tenders.** A client publishes what it needs and how offers will be scored; several firms send an offer (a **bid**); the best score wins. NIG wins roughly **45%** of its bids.
-- **Engineers sell.** There is no classic sales team: the senior engineer who will run the project also plans the offer, supported by a bid team.
-- **The money in one line:**
-
-```
-Price (what the client pays)  −  Cost (hours × what each hour costs NIG)  =  Margin
-```
-
-- **The price is limited by the market** (the client's budget, the competitors). **The cost is set by the hours.** On most contracts (fixed price or capped), if the project needs more hours than planned, **NIG pays for them**.
-
-### 1.3 Who is involved in a bid
-
-| Role | Who they are | Job in the bid |
-|---|---|---|
-| **Client director** | Business development; owns the relationship with the client | Spots the tender, pushes to bid |
-| **Bid manager** | Professional organiser of offers | Runs the plan and the deadline; assembles and submits the offer |
-| **Technical lead** (+ discipline leads) | Senior engineer, usually the future project manager, with process, civil, mechanical, electrical leads | Plans the work and estimates the **hours** |
-| **Commercial manager** | Pricing specialist | Turns hours into a **price** |
-| **Approvers** | Regional director + finance director | Approve the final price and margin |
-
-### 1.4 Where this sits
-
-NIG's work runs in three stages: ① win the work, ② deliver it, ③ bill it and track the margin. BidCheck sits in **① Win the work (GWT · Sales & Marketing)**, at the *plan, price and approve* steps. It learns from the real hours that **③ Finance** records on finished projects, and from the results of past tenders.
-
-```mermaid
-flowchart LR
-    subgraph NIG["<b>NorthStar Infrastructure Group</b>"]
-        direction LR
-        subgraph GWT["① Win the work · <b>GWT · Sales & Marketing</b>"]
-            direction LR
-            W1["Spot the<br/>tender"] --> W2["Decide<br/>to bid"] --> W3["<b>Plan, price, approve</b><br/>★ BIDCHECK"] --> W4["Submit"]
-        end
-        DEL["② Deliver<br/>the project"]
-        FIN["③ Bill & track<br/>margin<br/>(FIN · Finance)"]
-        W4 -- "won" --> DEL --> FIN
-        FIN -. "real hours of<br/>finished projects" .-> W3
-        W4 -. "won or lost:<br/>tender results" .-> W3
-    end
-
-    classDef step fill:#fff4d6,stroke:#b7950b,color:#000;
-    classDef usecase fill:#dff5e3,stroke:#1e8449,color:#000,stroke-width:3px;
-    classDef stage fill:#e8eef7,stroke:#34495e,color:#000;
-    class W1,W2,W4 step;
-    class W3 usecase;
-    class DEL,FIN stage;
-```
+| **The problem** | NIG wants to become an **agentic enterprise**: work that AI agents can do should be done by them. But it doesn't know **which processes to start with**, which ones make sense to automate, and which are not ready. That knowledge sits with the 50,000 employees who do the work, not with the central team that must decide |
+| **Workflow** | Finding AI automation candidates in NIG's daily work, mapping them, and assessing their **transformation potential**. The brief names it as NIG's first need: "rapidly identify and validate high-value operational use cases". Cluster: **IT · IT and Security** |
+| **Users** | **The employee** who owns or knows a process (the process expert) is the main user: the tool helps them discover which processes in their routine are worth mapping, map one, and see its transformation potential and how to realise it. IT and transformation specialists review the reports and see all of them in one overview. AI engineers and AI DevOps receive an implementation brief for the opportunities chosen for a build |
+| **Pain today** | Discovery runs through central workshops: about **28 person-hours and 2–3 weeks per process**, booked weeks ahead, profiles that can't be compared. The programme reaches about 150–200 processes a year, chosen by who is nearest, not by value. Employees who see a good candidate in their own work have no easy way to raise it |
+| **With the tool** | A 15–20 minute guided conversation helps the employee spot candidate processes in their week, map one step by step (starting from documents they already have, if they want), and get a **discovery report**: the mapped process plus an AI transformation assessment: hours a year, where automation or AI fits and how, what to prepare first. Code checks every answer and makes every number; the tool guides, it never gives a go / no-go. About **5 person-hours per process**. IT gets one overview of every mapped process; chosen opportunities leave with an implementation brief |
+| **Value** (base case, 400 processes a year) | **€0.46M a year conservative, €0.69M expected**, for about €0.1M to build and €35k a year to run. **Payback in about 3 months.** Not counted: AI builds on unready workflows avoided, worth €150–250k each |
+| **Why not buy** | Process mining needs clean system logs that NIG's fragmented systems don't have. Task mining needs agents on every desktop. Questionnaires and chat assistants don't produce comparable, checked profiles. We buy the commodity parts and build only the interview core (section 2.1.3) |
+| **Why people would trust it** | The employee sees the profile fill up live and confirms it; anything the AI reads from a document counts only after they confirm it. Every field shows its source and the employee's own words. Code, not the model, decides what counts as answered and when the map is complete (section 2.3.6) |
 
 ---
 
-## 2. Business process candidate: planning and pricing a bid
+## Terms used in this document
 
-**The candidate:** planning and pricing a bid — the steps between *"we bid"* and *"we submit"*, where NIG decides how many hours a project needs and what price to offer. Cluster: **GWT · Sales & Marketing**.
-
-**Why this one:** it runs ~5,000 times a year, it sets the margin of most of NIG's projects, and its most important evidence — what similar past projects really took, and what won similar tenders — is locked in documents that nobody has time to read (§2.2.1).
-
-**The example used throughout:**
-
-> **Millbrook** (40,000 people) publishes a tender: *"Design a new drinking-water treatment plant, 20 million litres a day. **The old plant must keep supplying the town until the new one is ready.** Estimated value: up to €700k. Offers scored 70% on quality, 30% on price. Due in 6 weeks."*
-
-NIG's job, if it wins: design the plant (drawings, calculations, specifications), get it approved, and support the builder during construction. Fixed price.
-
-### 2.1 As-is process
-
-Full sub-step tables: [as-is.md](../02-processes/as-is.md).
-
-#### 2.1.1 The process today
-
-```mermaid
-flowchart LR
-    S1["<b>1 · Tender</b><br/>Town publishes<br/>the tender<br/><i>Client director</i>"]
-    S2["<b>2 · Go / no-go</b><br/>Do we bid?<br/><i>Client director<br/>+ bid manager</i>"]
-    S3["<b>3 · Plan</b><br/>phases × people × hours<br/><i>Technical lead<br/>+ discipline leads</i><br/>→ 6,000 h"]
-    S4["<b>4 · Price</b><br/>hours × rates + buffer<br/><i>Commercial manager</i><br/>→ cut to €550k"]
-    S5["<b>5 · Approve</b><br/>price and margin<br/><i>Directors</i>"]
-    S6["<b>6 · Submit</b><br/>if won → it becomes<br/>the project budget<br/><i>Bid manager</i>"]
-    S1 --> S2 --> S3 --> S4 --> S5 --> S6
-    S6 -. "real hours never come back" .-> S3
-
-    classDef none fill:#f2f2f2,stroke:#888,color:#000;
-    classDef some fill:#fff1d6,stroke:#d68910,color:#000;
-    classDef pain fill:#ffe0e0,stroke:#c0392b,color:#000;
-    class S2 none;
-    class S1,S6 some;
-    class S3,S4,S5 pain;
-```
-
-*Red = heavy manual work and friction · Orange = some manual work · Grey = no pain to automate here.*
-
-| # | Step | Who | What is done | Input / data | Tool | Output | Pain point / manual work | Can AI help? |
-|---|---|---|---|---|---|---|---|---|
-| 1 | **Tender** | Client director, technical lead | Finds the tender; the technical lead reads it to find what drives the work | Tender documents (~200 pages: scope, contract, scoring rules, budget) | Tender portal, PDF | Key facts, in someone's head | Hours of reading; key sentences easy to miss | ✅ Pull out the key facts, with pages |
-| 2 | **Go / no-go** | Client director + bid manager | "Can we win it? Do we have the people?" | Tender summary, client relationship, team availability | Meeting | Decision: bid | Short meeting; a business judgement | ✖ Out of scope (lead qualification is excluded by the brief) |
-| 3 | **Plan** | Technical lead + discipline leads (+ finance analyst, if asked) | Phases; counts the drawings (~120) and calculations; asks around for similar past projects — usually no time, so **guesses** the work around the drawings | Key facts · deliverable list · past projects, *if found* | Excel, email, project system | **6,000 hours** | Searching 140 past projects and comparing their hours takes days, so it's skipped | ✅ Check the plan against similar projects |
-| 4 | **Price** | Commercial manager | 6,000 h × €100/h + 10% = **€660k**. "Competitors will bid ~€550k" → hours cut to 5,000 | Hours, rate card, budget, a guess of competitors' price | Excel | Offer: **€550k** | Hours cut blindly; competitors known only by hearsay | ✅ Margin, chance of a loss, past winners and score at each price |
-| 5 | **Approve** | Directors | Pack built by hand; cost 5,000 h × €80 = €400k → margin **27%**. Approve | Approval pack | Slides | Approved | No evidence to challenge | ✅ Generate the pack with evidence |
-| 6 | **Submit** | Bid manager | Sends the offer; NIG wins; the 5,000 h become the budget | Final offer | Tender portal | Contract | Real hours and tender results never feed the next bid | ✅ Feed them back automatically |
-
-**Total effort today:** ~25–35 hours of skilled time from 6–10 people, over 1–3 weeks.
-
-#### 2.1.2 What really happens
-
-The project needs **6,800 hours**: three rounds of design changes from the town, a slower permit, and extra planning and night work to keep the old plant running.
-
-| | What the directors approved | What really happened |
-|---|---|---|
-| Price | €550k | €550k |
-| Hours | 5,000 | 6,800 |
-| Cost (× €80/h) | €400k | €544k |
-| **Margin** | **€150k (27%)** | **€6k (1%)** |
-
-**A wrong hours estimate makes a bad price look good.** NIG had done 10 similar projects — water plants where the old plant had to keep running — and they needed 6,200–7,600 hours. And the €550k "competitor price" was a rumour: on similar tenders scored 70% on quality, NIG had usually won at €610–650k.
-
-#### 2.1.3 Pain points and manual work
-
-1. **Reading the tender (step 1):** hours of reading to find the few sentences that drive the work.
-2. **Finding and comparing past projects (step 3):** the biggest manual job — days of searching, reading and regrouping — so it's skipped and the work around the drawings is **guessed**.
-3. **Pricing blind (step 4):** hours cut to hit a rumoured competitor price, with no view of which cuts are risky or what really won similar tenders.
-4. **Building the approval pack (step 5):** by hand, with no evidence behind the numbers.
-5. **No learning loop (step 6):** real hours of finished projects and results of lost bids never come back.
-
-**Why it matters:** ~25–35 skilled hours per bid, and estimates that are too low. Across NIG (~5,000 significant bids a year), underestimated hours cost an estimated **~€55M of margin per year** [assumption: ~40% of €7B is work where NIG pays for overruns × ~2% lost].
-
-### 2.2 To-be process and its motivation
-
-Full sub-step tables: [to-be.md](../02-processes/to-be.md) · the story as a journey: [user-journey.md](../02-processes/user-journey.md).
-
-#### 2.2.1 Why AI, and why not something simpler
-
-**In short:** the maths (hours × rates, cost, margin, scores) is easy and stays in plain, tested code. The hard part is the **evidence**: what similar projects really took and what won similar tenders. It sits in tenders, proposals, task lists, final reports, award notices and feedback letters that someone has to **read**. That reading is what AI is for.
-
-| Attack | Answer |
+| Term | Meaning |
 |---|---|
-| **Why not a spreadsheet or a deterministic tool** (standard ratios, rules, a database with filters)? | We do keep the maths deterministic. What a spreadsheet can't do is tell *which* past projects are similar: the facts that drive hours (*"the old plant must keep running"*) are sentences, not database fields. A ratio gives the same hours for a plant on an empty site (needed 5,400 h) and one where the old plant kept running (needed 7,100 h). Creating those fields by hand means relabelling thousands of projects across every region's system — the long data project the brief warns about. |
-| **Why not a machine-learning model** trained on past projects? | Too little data and too little trust. Per project type NIG has **tens** of truly comparable projects, not thousands; the signals are in text; and an approver won't accept a black-box number, but will accept *"these 10 real projects needed 6,200–7,600 hours"*. |
-| **Why not Copilot / ChatGPT, or an off-the-shelf product?** | A chat assistant can summarise one tender, but it doesn't know NIG's past projects or tenders, so any number it gives is invented. Off-the-shelf products each cover one piece (see the market check below). None checks a plan and a price against a large firm's own messy history. |
-| **Why build it, instead of buying?** | The closest products would require moving every region's project accounting into them first — a multi-year migration. What we build is small, made of standard parts (Azure OpenAI, a web app), and sits on top of NIG's existing systems. We still **buy** the AI model, the cloud and the accounting tools, and build only the reading-and-comparing layer. The cleaned history stays NIG's asset. *(Solution cost depends on NIG's internal team and rates — to be estimated.)* |
-| **Can we trust an AI with numbers?** | The AI never produces a number. It only reads and labels text, always quoting the source sentence, which code checks. Every hour, cost, margin and score comes from tested code on real data, and people review every flag. |
-| **Why not just ask engineers to look at past projects more carefully?** | They would if they could. Finding and comparing similar projects takes days per bid, on top of project work, so it's skipped. A new rule doesn't create time; the tool removes the work. |
-| **Won't more realistic (higher) prices make NIG lose bids?** | The tool doesn't set the price — people do. It shows margin, chance of a loss **and the expected score** at each price, so NIG can still bid low to win a client, knowingly and with a written reason. |
-| **Isn't this contract review or lead qualification?** | No. The tool is used only **after** the decision to bid, and reads the tender only for what drives hours and price (size, conditions, budget, scoring rules) — never contract clauses. It never says whether to bid. |
-| **Is NIG's data good enough?** | It's messy, but it exists: hours in the project system, documents in folders, tender results in the bid register and on public portals. Making messy text usable is exactly what the AI does. Where evidence is too thin (fewer than 5 similar projects), the tool says so instead of guessing. |
-
-**Market check: does a tool already do this?** *(public product information, November 2026; to confirm with vendor demos during the pilot)*
-
-| Kind of tool | Examples | What they do | What's missing for NIG |
-|---|---|---|---|
-| General AI chat | ChatGPT, Microsoft Copilot | Summarise a tender | No access to NIG's past projects or tenders; numbers would be invented |
-| Practice management for architecture and engineering firms | Monograph, CMap | Suggest a phase budget (Monograph) or margin (CMap) from past projects — **the closest to our idea** | Works only on time logged **inside their own tool**; similar projects matched on category or fee; doesn't read tenders or past tender results; built for small and mid-size firms |
-| Enterprise project accounting and pricing | Deltek (Vantagepoint, ProPricer), Unanet (incl. Champ AI) | Store projects and hours; build prices from cost items; AI to write proposals | Don't check a plan against what comparable projects really took |
-| Tender-analysis AI | Aitenders, Temelion, ContraVault | Read tenders: requirements, risks, go/no-go | Don't use a firm's own project or tender history |
-| Construction cost estimating | Quantity take-off and cost tools (e.g. CostX, Candy) | Price materials and works for builders | Not design hours |
-
-**Conclusion:** the pieces exist separately, and the closest products show that firms want this. **None checks a plan and a price against a large firm's existing, messy history of projects and tenders.** That gap is what we build.
-
-**The resulting split:**
-
-| Who | Does what |
-|---|---|
-| **AI (a language model)** | The reading: tender facts, labels of past projects, task-code mapping, reasons for overruns, winners and scores from award notices and feedback letters — always with the source sentence |
-| **Plain code** | The maths: similar projects, ranges per phase, gaps, cost, margin, chance of a loss, competitor statistics, scores at each price |
-| **People** | The decisions: the plan, the price, the approval — with a reason for every flag they override |
-
-#### 2.2.2 What the tool is
-
-**BidCheck** is a **web application with a guided "bid workspace"**: one bid, four tabs in order — *Tender → Plan check → Price → Approval pack*. It is **not a chatbot** (users never type a prompt; the prompts live inside the app) and **not a dashboard** (it is a working tool for one bid).
-
-| | |
-|---|---|
-| **Users** | Bid manager, technical lead and discipline leads, commercial manager, directors; finance analyst for the history |
-| **Inputs per bid** | The tender (PDF) · the team's plan (hours per phase and role, Excel or typed) · the prices to compare |
-| **Data in the background** | **Past projects** (real hours, proposals, final reports) · **past tenders** (NIG's bids and results, winners' prices, feedback letters) · the **rate card** |
-| **Outputs per bid** | ① Key facts of the tender, with pages · ② **Plan check**: where the hours are below what similar projects really took, with evidence · ③ **Price view**: margin and chance of a loss at each price, who usually wins similar tenders and at what price, NIG's score at each price · ④ **Approval pack** (PDF) and the plan in NIG's Excel template |
-| **Who does what** | **AI** reads · **code** compares and calculates · **people** plan and decide |
-| **Boundaries** | Used only after the decision to bid; no bid/no-bid advice; no contract-clause review; it shows history, never predicts a competitor's price |
-
-#### 2.2.3 Where the data comes from
-
-The history is loaded and kept up to date **in the background**, so that each bid takes seconds. It has two parts.
-
-**Past projects — two paths**, depending on what a region has. Both write the **same standard format** (e.g. a [Frictionless Data Package](https://datapackage.org/): CSV files + a JSON schema), so nothing downstream knows where the data came from.
-
-```mermaid
-flowchart LR
-    Q{"Is there a clean<br/>project database?"}
-    Q -- "yes" --> A["<b>Path A · Connect</b><br/>fixed mapping in code<br/>AI only fills missing fields<br/>(e.g. conditions, from documents)"]
-    Q -- "no" --> B["<b>Path B · Load with AI</b><br/>timesheet exports + documents →<br/>map task codes, label conditions,<br/>extract reasons for overruns"]
-    A --> S[("<b>Standard history</b><br/>projects · hours · evidence<br/>past tenders · competitors")]
-    B --> S
-    TH["<b>Past tenders</b><br/>bid register + award notices<br/>+ feedback letters → AI extracts<br/>winner, price, scores"] --> S
-    S --> T["BidCheck<br/>(each new bid)"]
-
-    classDef path fill:#e0f0ff,stroke:#2471a3,color:#000;
-    classDef data fill:#f4ecf7,stroke:#7d3c98,color:#000;
-    class A,B,TH path;
-    class S data;
-```
-
-| | **Path A · Connect** | **Path B · Load with AI** | **Past tenders** |
-|---|---|---|---|
-| **When** | A region keeps a clean project database | Only timesheet exports (each project with its own task codes) and documents | Always |
-| **Source** | Database | Exports + proposals + final reports | Bid register (CRM/spreadsheet) + public award notices + feedback letters on lost bids |
-| **AI needed?** | Only for what the database lacks — usually the conditions | Yes: map task codes, label conditions, extract overrun reasons | Yes: extract winner, price, scores and reasons |
-| **Human check** | One-off check of the mapping | Finance analyst approves uncertain items | Bid manager approves uncertain items |
-| **Onboarding a region** | Days | ~2–4 weeks, then ~1 h/month | Included |
-
-Every AI label carries a **confidence score and its source sentence**; code checks the sentence exists; uncertain items go to a person.
-
-#### 2.2.4 The new process
-
-```mermaid
-flowchart LR
-    H[("<b>History</b><br/>past projects<br/>+ past tenders")]
-    S1["<b>1 · Tender</b><br/>BidCheck → key facts<br/><i>Bid manager confirms</i>"]
-    S2["<b>2 · Go / no-go</b><br/><i>Client director<br/>+ bid manager</i><br/>(unchanged)"]
-    S3["<b>3 · Plan</b><br/><i>Engineers plan</i><br/>BidCheck → plan check"]
-    S4["<b>4 · Price</b><br/>BidCheck → price view<br/><i>Commercial manager<br/>chooses the price</i>"]
-    S5["<b>5 · Approve</b><br/>BidCheck → pack<br/><i>Directors decide</i>"]
-    S6["<b>6 · Submit</b><br/><i>Bid manager</i>"]
-    S1 --> S2 --> S3 --> S4 --> S5 --> S6
-    H --> S3
-    H --> S4
-    S6 -. "real hours and<br/>tender results flow back" .-> H
-
-    classDef tool fill:#e0f0ff,stroke:#2471a3,color:#000;
-    classDef people fill:#f2f2f2,stroke:#888,color:#000;
-    classDef data fill:#f4ecf7,stroke:#7d3c98,color:#000;
-    class S1,S3,S4,S5 tool;
-    class S2,S6 people;
-    class H data;
-```
-
-*Blue = BidCheck does the reading and the maths, people decide · Grey = people only · Purple = the history.*
-
-| # | Step | Who | Input | BidCheck does | Output | Skilled time: today → with BidCheck |
-|---|---|---|---|---|---|---|
-| 1 | **Tender** | Bid manager confirms | Tender PDF | **AI** lists the key facts (size, conditions, budget, scoring rules), each with page and quote; **code** checks the quotes | Confirmed key facts | 2–3 h → 15 min |
-| 2 | **Go / no-go** | Client director + bid manager | Key facts | — (unchanged; no advice given) | Decision: bid | unchanged |
-| 3 | **Plan** | Engineers make the plan; technical lead reviews the check | The team's plan + key facts + history | **Code** finds the ~10 similar projects and compares the plan phase by phase with what they really took; **AI** quotes why they needed more | **Plan check**: gaps with evidence; each flag fixed or explained | 15–20 h → 8–12 h (searching and guessing removed; counting stays) |
-| 4 | **Price** | Commercial manager chooses | Checked plan + prices to compare + history + rate card | **Code**: cost, margin and chance of a loss at each price; who won similar tenders and at what price; NIG's score at each price | **Price view** → chosen price + reason | 2–3 h → 1 h |
-| 5 | **Approve** | Directors decide | Everything above | **Code** builds the pack; **AI** writes a one-paragraph summary from its numbers | Approval pack (PDF) | 4–6 h → ~1 h |
-| 6 | **Submit** | Bid manager | Approved offer | Exports the plan to NIG's template; later, real hours and the tender result flow back | Offer sent; history updated | unchanged |
-| | | | | | **Estimating work per bid** | **~25–35 h → ~10–14 h** |
-
-**Rules BidCheck enforces:** the AI never produces a number · every fact and reason shows its source · too little evidence → the tool says so · every flag is fixed or explained in writing · everything is logged.
-
-#### 2.2.5 What the team sees
-
-**Tab 1 — Tender facts**
-```
-Millbrook water treatment plant — design                        [Confirm facts ✓]
-  Size        20 million litres/day                               (p. 12)
-  Conditions  ● old plant must keep supplying the town            (p. 47)
-              ● town reviews each design stage                    (p. 31)
-  Budget      up to €700k                                         (p. 5)
-  Scoring     quality 70% · price 30% (lowest price ÷ your price × 30)   (p. 9)
-```
-
-**Tab 2 — Plan check**
-```
-Similar projects: 10 of 140 water plants (old plant kept running)       [see list ▸]
-
-PHASE                       YOUR PLAN   SIMILAR PROJECTS TOOK   CHECK
-Study & concept                800 h        800 – 1,050 h       ✓
-Detailed design              3,000 h      2,950 – 3,400 h       ✓
-Town reviews & permits         400 h        650 –   850 h       ⚠ below every similar project
-Keeping the old plant running  200 h        400 –   650 h       ⚠ below every similar project
-Construction support         1,600 h      1,400 – 1,650 h       ✓
-TOTAL                        6,000 h      6,200 – 7,600 h       ⚠ (typical: 6,800 h)
-
-⚠ Town reviews — "three review rounds with the town council" (Eastbrook final report)
-   [ Fix the hours ]   or   Reason: [_____________________________]
-```
-
-**Tab 3 — Price view**
-```
-Cost if it goes like similar projects:  typical €544k (6,800 h) · high €608k (7,600 h)
-
-PRICE    MARGIN (typical)  MARGIN (high)  CHANCE OF A LOSS   EXPECTED SCORE
-€550k       €6k   1%       −€58k  −11%     4 in 10            92.0
-€600k      €56k   9%        −€8k   −1%     1 in 10            90.0
-€640k      €96k  15%        €32k    5%     0 in 10            88.3   ◄ chosen
-€700k     €156k  22%        €92k   13%     0 in 10            86.0
-
-WHO WON SIMILAR TENDERS (14, same region, last 5 years)
-  NIG                   6 wins   €610–650k   on quality (quality weighted 70%)
-  Riverton Engineering  4 wins   €560–600k   on price (price weighted 40%+)
-  BlueLine Water        3 wins   €620–660k   on quality
-⚠ Millbrook weights price at 30%: NIG won 5 of 6 tenders scored like this.
-⚠ Riverton's usual price is below NIG's cost if the project goes like the harder ones.
-Expected score assumes Riverton at €560k with 55/70 quality, BlueLine at €650k with 60/70,
-NIG at 62/70 — NIG's and competitors' typical scores from past feedback letters.
-
-Chosen price: €640k   Reason: [ we win on quality, 70% of the score ]
-```
-
-**Tab 4 — Approval pack:** key facts · the 10 similar projects · the plan and every flag with its fix or reason · the price view at the chosen price · the competitor panel. Exported as PDF; the plan as Excel in NIG's template.
-
-#### 2.2.6 Millbrook, with the tool
-
-> **Monday.** Bid manager **Priya** uploads the tender. BidCheck lists the key facts with pages: *20 million litres a day*, *the old plant must keep supplying the town* (p. 47), *the town reviews each design stage*, *budget up to €700k*, *quality 70% / price 30%*. She confirms. Clara and Priya decide to bid.
->
-> **Tuesday.** Technical lead **Tom** and the discipline leads make their plan as usual: **6,000 hours**. They load it into BidCheck. Out of 140 past water plants, it keeps the **10 where the old plant also had to keep running** and compares phase by phase. Two flags: *town reviews* (400 h; every similar project needed 650–850 h, *"three review rounds with the town council"*) and *keeping the old plant running* (200 h; similar projects 400–650 h). Tom raises them to 700 and 500 hours. **Plan: 6,600 hours.**
->
-> **Wednesday.** Commercial manager **Marco** opens the price view. At €550k, the rumoured competitor price, NIG would earn **1%** in a typical case and lose money in 4 of 10 similar cases. The competitor panel shows that the low bidder, Riverton, wins when price counts 40% or more — Millbrook counts it at 30%, and NIG won 5 of 6 tenders scored like this. Marco chooses **€640k**: 15% margin if it goes as usual, still profitable in the harder cases, and the best expected score. Reason recorded: *"we win on quality, 70% of the score."*
->
-> **Thursday.** The directors receive the generated pack and approve in 20 minutes. Priya submits. **4 days, not 2–3 weeks.**
->
-> **The outcome.** If NIG wins, it starts with a budget of 6,600 hours instead of 5,000. If it loses to a much cheaper bid, it has avoided a project that would likely have earned nothing. **Either way, the price was a decision, not a guess.** When the project ends — or the result is published — the history learns from it.
-
-#### 2.2.7 Before vs after
-
-| | Today | With BidCheck |
-|---|---|---|
-| Reading the tender | 2–3 h; key sentences easy to miss | Key facts in minutes, with pages |
-| Similar past projects used | 0–2, from memory | ~10, matched on the conditions that drive hours |
-| The plan | Guessed where it's hard, then cut | Made by engineers, checked phase by phase; every gap fixed or explained |
-| Competitors | Hearsay ("they'll bid €550k") | Who won similar tenders, at what price, and how they were scored |
-| Price decision | Hours cut blindly to hit a price | Margin, chance of a loss and expected score at every price |
-| Approval | *"Margin 27%, OK"* — no evidence | Evidence behind every number |
-| Skilled time per bid | ~25–35 h, 1–3 weeks | ~10–14 h, 3–4 days |
-| Learning | None | Every finished project and every tender result improves the next check |
+| **Programme** | NIG's multi-year Agentic Operations Programme. It decides which workflows get AI, and funds them. |
+| **AI transformation team** | The small team in IT that runs discovery for the programme: IT and transformation specialists (business process mapping) and a portfolio lead. |
+| **AI engineering team** | AI engineers and AI DevOps in IT. They build and run the AI applications. They receive the implementation brief. |
+| **Process** | Work that repeats, involves more than one person, and has a clear start and end. Example: the monthly cost review. |
+| **Task** | One person's one-off or private activity. Example: "I file one purchase request a week." Not worth a profile on its own. |
+| **Employee** | The main user. The person who does the work and knows how it really runs. In consulting language, the subject-matter expert. |
+| **Agentic enterprise** | A company where AI agents do the routine parts of processes, and people direct, check and decide. |
+| **Transformation potential** | How much a process would gain from automation and AI, and what it takes. Calculated by code: **value** (hours a year, and the hours and euros the opportunities could free) plus a **readiness checklist** (section 2.3.7). |
+| **Discovery** | Finding out how a process really runs today: steps, people, systems, time, pain. |
+| **Baseline** | The documented "how it runs today" of a workflow: steps, roles, systems, data, volume and time. It is also the "before" number against which an AI application is later measured. |
+| **Readiness checklist** | Six dimensions (defined, standard, data, systems, rules, risk and size), each rated *high*, *medium* or *low* by code from the profile, with what to prepare. A guide, not a verdict (section 2.3.7). |
+| **Implementation brief** | The hand-off for opportunities chosen for a build: scope, steps, data in and out, systems, rules and exceptions, what to prepare, the baseline, and acceptance criteria. The AI engineer's starting spec. |
+| **Discovery report** | The output of one mapped process: a summary of the process (map and steps) and the AI transformation assessment (opportunities and how to realise them, value, readiness checklist, suggested path). The same structure for every process. |
+| **Profile** | The structured description of one process that discovery produces. It has a fixed set of fields. |
+| **Field** | One slot in the profile, such as *trigger*, *volume* or *systems used in step 3*. |
+| **Sub-step** | One of the 2–6 main steps of a process. Each sub-step has its own fields. |
+| **Verdict** | Code's judgement on one field: *complete*, *partial* or *invalid*. Only *complete* counts. |
+| **Quality score** | The weighted share of profile fields that are complete. |
+| **Map complete** | The rule that must pass before the employee can finish: score ≥ 80%, all steps described, roles and systems confirmed by the employee. It is about the quality of the map, never about the worth of the process. |
+| **Proposal** | A value the AI read from an uploaded document, with the quote. It counts only after the employee confirms it. |
+| **Idea** | A candidate process the employee mentioned but did not map yet; kept for later. |
+| **Opportunity** | A concrete change to the process: which step, what kind of change (for example *workflow*, *document AI* or *AI agent*), what it would look like, what to prepare, and the employee's words that support it. |
+| **Process overview** | All mapped processes in one view, with value and readiness, across clusters and regions. NIG's process baseline. It informs the people who decide; the tool itself never ranks a process in or out. |
+| **Cluster** | One of NIG's nine operational areas: FIN, HR, LEG, IT, PRO, COM, KNW, ANL, GWT. |
+| **Conservative / expected** | Conservative: 50% of the possible saving is realised. Expected: 75%. Higher than for a tool end users adopt by choice, because the AI transformation team owns this workflow and decides how it runs (section 2.1.6). |
+| **ROI score** | The framework's 1–5 score for return on investment. |
 
 ---
 
-## 3. Analysis of the AI transformation
+## 1. Context
 
-### 3.1 Framework check
+### 1.1 What NIG is
 
-Using the selection [framework](../05-how-we-worked/framework/assessment-framework.md).
+NorthStar Infrastructure Group (NIG) is a fictional global engineering, construction and operations company. It has about **50,000 employees** in North America, Europe, the Middle East and Asia-Pacific. It designs, builds and runs infrastructure: water plants, roads, rail, buildings and energy.
 
-**Gates** (all must pass)
+NIG grew through acquisitions and regional expansion. Because of this, each part of the group works in its own way. Finance, HR, Procurement, Legal, Sales and Operations often use different systems, approval steps, reporting lines and local workarounds.
 
-| Gate | Result | Why |
-|---|---|---|
-| 1. Allowed by the brief | ✅ | Planning and pricing a bid. Used after the go/no-go decision (not lead qualification); reads tenders only for what drives hours and price (not contract review); no chat |
-| 2. Real, frequent pain | ✅ | ~5,000 significant bids a year × ~25–35 h of skilled time; ~€55M of margin lost per year |
-| 3. No off-the-shelf tool, including general AI chat | ✅ ⚠️ | Partial tools exist, but none checks a plan and a price against a large firm's own history (§2.2.1) |
-| 4. Data exists today | ✅ ⚠️ | Hours, documents and tender results exist in every region — clean in some (Path A), messy in others (Path B) |
-| 5. Measurable | ✅ | **Backtest:** run the check on finished projects; see whether it catches the underestimates that really happened |
-| 6. One-sentence hook, common across companies | ✅ | *"Before you sign the price, see what jobs like this really took — and what really won."* Every company that sells projects has this problem |
+Earlier transformation programmes struggled. The brief names five reasons: **fragmented data, inconsistent processes, regulatory requirements, local business needs, and resistance to change.**
 
-**Scores** (1 = poor, 5 = excellent)
+### 1.2 How NIG is structured, and where the programme sits
 
-| Score | 1–5 | Why |
-|---|---|---|
-| ROI (conservative) | **4** | ~€2.4M gross value per year in the conservative case (§3.2) |
-| Scalability | **5** | A new region = connect or load its history, not new code |
-| Adoption | **4** | Engineers keep their plan; the tool removes searching and spreadsheet work; directors get evidence |
-| **Value** = (2 × ROI + Scalability + Adoption) / 4 | **4.25** | |
-| Feasibility | **3** | The history exists but is messy in many regions |
-| Build & run cost | **3** | Small team; low running cost (AI cents per bid) |
-| Risk | **3** | Flags could be dismissed and thin evidence could mislead — mitigated by mandatory reasons and ranges instead of single numbers |
-| **Ease** = average | **3.0** | |
-| **Verdict** | **GO** | All gates pass · Value ≥ 3.5 · Ease ≥ 3 |
+- **Group:** sets the overall strategy. It approved the Agentic Operations Programme.
+- **IT, with its AI transformation team and AI engineering team:** IT runs the programme's platform. *Assumption:* a small **AI transformation team** of about 4–8 IT and transformation specialists and one portfolio lead maps processes and qualifies use cases, and an **AI engineering team** (AI engineers, AI DevOps) builds them. The brief does not give sizes.
+- **Four regions:** North America, Europe, the Middle East and Asia-Pacific. Each runs its own business, systems and approval steps.
+- **Nine operational clusters:** FIN (Finance), HR (People and HR), LEG (Legal), IT (IT and Security), PRO (Procurement), COM (Comms and Growth), KNW (Knowledge and Ops), ANL (Analytics and Strategy), GWT (Sales and Marketing). Each cluster exists in each region, so there are about **36 cluster-region teams** *(assumption)*.
+- **Employees:** the people who do the work. They know where the time goes, but nobody has written it down in a comparable way.
 
-### 3.2 Value
+```mermaid
+flowchart TB
+    G["<b>NIG Group</b><br/>approves the programme<br/>~50,000 people"]
+    PO["<b>IT · AI transformation team</b><br/>IT and transformation specialists<br/>portfolio lead"]
+    AE["<b>IT · AI engineering team</b><br/>AI engineers, AI DevOps"]
+    G --> PO
+    PO -- "implementation brief for<br/>chosen opportunities" --> AE
+    G --> RNA["<b>North America</b>"]
+    G --> REU["<b>Europe</b>"]
+    G --> RME["<b>Middle East</b>"]
+    G --> RAP["<b>Asia-Pacific</b>"]
 
-**Where the value comes from**
+    RNA --> CNA["9 clusters<br/>FIN · HR · LEG · IT · PRO<br/>COM · KNW · ANL · GWT"]
+    REU --> CEU["9 clusters"]
+    RME --> CME["9 clusters"]
+    RAP --> CAP["9 clusters"]
 
-1. **Margin protected** — fewer projects won at a price that doesn't cover their real cost (Millbrook: a "27%" that was really 1%).
-2. **Skilled time freed** — ~25–35 h per bid becomes ~10–14 h. *This is capacity, not cash: it becomes money only if the time goes to more bids or billable work.*
-3. *Not counted:* stronger position in US hour negotiations; better win rate where competitor evidence changes the price; a clean history reusable by other use cases.
+    CNA --> ENA["Employees (employees)<br/>know the real process"]
+    CEU --> EEU["Employees (employees)"]
+    CME --> EME["Employees (employees)"]
+    CAP --> EAP["Employees (employees)"]
 
-**Assumptions**
+    PO -. "must discover and assess<br/>processes in all of them" .-> CNA
+    PO -.-> CEU
+    PO -.-> CME
+    PO -.-> CAP
 
-| | Conservative | Expected | Upside |
-|---|---|---|---|
-| Margin lost per year to underestimated hours | €55M | €55M | €55M |
-| Share of that loss the tool avoids | 3% | 8% | 15% |
-| Significant bids per year | 3,000 | 5,000 | 7,000 |
-| Skilled hours saved per bid | 8 | 14 | 18 |
-| Cost of an hour of the bid team's time (senior roles; NIG's average across all roles is €80) | €110 | €110 | €110 |
-| Adoption (share of bids using the tool) | 30% | 50% | 75% |
+    classDef group fill:#e8eef7,stroke:#34495e,color:#000;
+    classDef po fill:#dff5e3,stroke:#1e8449,color:#000,stroke-width:2px;
+    classDef region fill:#fff4d6,stroke:#b7950b,color:#000;
+    classDef bu fill:#f2f2f2,stroke:#888,color:#000;
+    class G group;
+    class PO po;
+    class AE po;
+    class RNA,REU,RME,RAP region;
+    class CNA,CEU,CME,CAP,ENA,EEU,EME,EAP bu;
+```
 
-**Result per year**
+*Green boxes: the two IT teams. Today the transformation team maps processes by hand, and the engineering team re-discovers the details again before it builds.*
 
-| | Conservative | Expected | Upside |
-|---|---|---|---|
-| Margin protected (= €55M × share avoided) | €1.7M | €4.4M | €8.3M |
-| Capacity freed (= bids × hours saved × €110 × adoption) | €0.8M | €3.9M | €10.4M |
-| **Gross value** | **€2.4M** | **€8.3M** | **€18.6M** |
+### 1.3 What the brief asks for
 
-**Solution costs** (team, hosting, support) depend on NIG's internal rates and team set-up — **to be estimated with NIG**. AI usage itself is a few cents per bid; the history is labelled once, not per bid.
-
-**Caveat:** the margin line rests on two assumptions — ~€55M lost per year, and the share the tool avoids. Both are measured in the backtest and the pilot (§3.5) before any roll-out.
-
-### 3.3 Scalability
-
-- **Across NIG:** a new region is onboarding, not development — days with a clean database (Path A), ~2–4 weeks without (Path B). Every region adds projects and tender results for everyone.
-- **Across project types:** water plants, roads, buildings… only the size driver (litres/day, km, m²) and the phase list change — configuration, not code.
-- **Across languages and countries:** the AI reads documents in local languages; scoring formulas are read from each tender; the tool compares **hours**, so currency only matters when rates are applied.
-- **Beyond NIG:** any company that bids for projects sold by the hour — engineering, consulting, IT services — has the same problem.
-
-### 3.4 Risks
-
-| Risk | Level | What could happen | Mitigation |
-|---|---|---|---|
-| Too little usable history | **High** | Too few similar projects or tenders | Start in the region with the best data; below 5 similar projects, the tool says "not enough evidence" |
-| **Flags dismissed** | **High** | People type a quick reason and move on | Reasons are shown to directors in the pack; boilerplate reasons are tracked (K2) |
-| Wrong similar projects | Med | The check compares with projects that aren't really alike | Every label shows its source sentence; the tool says *why* each project matches; people can remove or add |
-| Wrong labels or mappings (Path B) | Med | Hours land in the wrong phase | Confidence scores; uncertain items approved by finance; accuracy measured (A1) |
-| Invented explanations | Med | The AI cites reasons that aren't in the reports | Every reason must quote a document, and code checks the quote exists |
-| Incomplete competitor data | Med | Some award prices or scores are not public | The panel shows only what is known and how many tenders it is based on; never a prediction |
-| Scope creep into excluded areas | Med | Someone uses the tool to decide whether to bid, or to review contracts | Opened only after go/no-go; no win-probability for an opportunity; no clause analysis |
-| Higher prices lose bids | Med | Win rate drops | People choose the price; expected score shown next to margin; win rate tracked (K3) |
-| Confidential data | Med | Past prices and margins are sensitive | Access by role and region; only public or NIG-owned data |
-| EU AI Act | Low | — | Minimal risk: supports a commercial decision, not decisions about people |
-
-### 3.5 Assumptions and kill test (Task 5)
-
-**Our assumptions about NIG** (stated, as the brief asks)
-
-| Assumption | Why it matters |
+| Requirement | What it means for us |
 |---|---|
-| Design work is sold as hours by role and phase | That's what the plan check compares |
-| ~40% of net service revenue is on contracts where NIG pays for extra hours | That's where better checks protect margin |
-| Some regions have a clean project database; most have exports and documents | Hence Path A and Path B |
-| Finished projects have hours, a proposal and a final report, even if inconsistent | Needed to find similar projects and explain overruns |
-| NIG keeps a bid register (price, result) and receives feedback letters; award notices of public tenders are public | Needed for the competitor panel and scores |
-| Original estimates of past projects were kept | Needed for the backtest (K1) |
+| "NIG wants to rapidly identify and validate high-value operational use cases" | This is the workflow we pick: finding candidate processes with the employees who run them, mapping them, assessing their transformation potential, and handing the best to engineering |
+| Build a working prototype | A running app with mock data, not a slide deck |
+| Pick one workflow from any cluster | We pick **IT · IT and Security**: IT's own workflow for mapping processes and feeding its AI engineers (section 2.1.4) |
+| Not invoice processing, CV screening, contract review, ticket routing, knowledge chatbots or lead qualification | The tool interviews people to fill a fixed form. It does not answer questions from documents (section 2.1.4, Q2) |
+| "Not another generic assistant" | A fixed form, a fixed interview, a completeness rule held by code, fixed outputs. The user cannot ask it anything else |
+| Mock data is fine, but it must show the hard parts | Simulated employees who are vague, describe a task instead of a process, give 13 steps, change language, or contradict themselves |
+| Show the value and a realistic path to production | Specialist time saved, more processes reached, better funding decisions. Staged rollout by cluster |
+| Deliver a technical design, an executive summary and a 5–10 minute demo | With the prototype |
+| Name three assumptions and three kill metrics | How we decide to stop the project |
 
-**The three assumptions everything depends on**
+The brief stresses budget, engineering capacity, regulatory duties, stakeholder alignment and business continuity. This tool fits those limits well: it **needs no system integration** to start, it **touches no system of record**, and it **involves employees from the first day**, which works against resistance to change.
 
-| # | Assumption | Why it matters | How to check it, fast | If it's false |
+---
+
+## 2. Selected process: finding, mapping and assessing processes for AI
+
+### 2.1 Why this process
+
+**The problem.** NIG, like most large companies, wants to become an **agentic enterprise**: AI agents doing the routine parts of its processes, people directing and deciding. The first question is not technical. It is **"which processes first?"** Which ones make sense to automate, which are worth it, and which are not ready yet. Get this wrong and the programme repeats what leadership already lived through: "AI hype" and "impressive demos that never survived contact with real operations". Most of those failures start here: a use case chosen on a hunch, described by the wrong person, never measured, or handed to engineers before the process itself was clear. AI cannot fix a process that nobody has defined.
+
+**Where the answer sits.** The people who know where the time goes, which steps are repetitive and which decisions follow fixed rules are the **employees who do the work**. There are 50,000 of them. The central team that must decide has a few specialists. Today the two meet only in workshops, so the programme sees only the processes it has time to ask about.
+
+**The idea.** Turn it around. Let **any employee** find a candidate in their own work, with a tool that asks the right questions, maps the process with them, and shows its transformation potential. The central team then reviews, compares and prioritises, instead of interviewing.
+
+**Who owns it, and why IT.** The work sits between business process mapping and IT. We place it in **IT**, because IT runs the programme's platform, owns the AI engineering team that will build the applications, and is the one team that sees every cluster's systems. The specialists who review the reports work for IT, alongside the business. The outputs serve three groups: the employee (what their process could gain, and how), IT (one overview of every mapped process) and IT's engineers (an implementation brief for the opportunities chosen for a build).
+
+Today the AI transformation team does discovery by hand. A specialist books a workshop with a team, interviews two or three people for an hour or two, writes up notes, draws the process in Visio, sends it back for corrections, estimates volume and hours in Excel, and scores the idea. That takes **about 20 specialist hours and 8 employee hours per process**, spread over **2–3 weeks** *(assumption: two workshops of about 2 hours with 2–3 employees, plus write-up, validation and the value estimate; consultancies typically quote 2–4 days per process for as-is discovery and a business case)*. With 6 specialists who spend part of their time on discovery, the programme can profile about **150–200 processes a year**. NIG has hundreds of candidates in 36 cluster-region teams. Then, for each workflow it builds, the AI engineering team spends **about 60 more hours re-discovering the details** it needs and that the workshop notes don't hold: the data in and out of each step, the systems and their access, the rules, the exceptions, what "done" means *(assumption: about 1.5 engineer-weeks of requirements work per build)*.
+
+We chose this process for six reasons:
+
+- **The brief asks for it.** "Rapidly identify and validate high-value operational use cases" is the programme's first need.
+- **It is common.** Every company with an AI or transformation programme must baseline its processes and decide what to build first. Most do it with workshops and spreadsheets.
+- **It is manual and slow.** Interviews, notes, diagrams, spreadsheets and email loops.
+- **It is easy to explain.** "Any employee can find a process in their work that AI could take over, map it in 15 minutes, and see its potential, and how to get there. IT sees all of them in one overview."
+- **It is measurable.** Hours per profile, profiles per month, share of profiles that survive specialist review, engineering hours before the first build, and later, how many funded use cases deliver against their baseline.
+- **It serves every other cluster.** One tool, used by FIN, HR, PRO, IT and the rest. The build cost is paid once.
+
+#### 2.1.1 Why it is a mess today
+
+The work has three parts, and all three are messy.
+
+- **Collecting (finding and mapping):** spotting which of the work is a real candidate, and getting a clear, complete description of it out of the people who do it.
+- **Judging (readiness and value):** deciding whether the workflow is defined well enough for AI, whether it is worth it, and comparing it with all the others.
+- **Handing over:** giving the AI engineers what they need to build.
+
+The mess has seven sources:
+
+1. **The bottleneck is specialist time.** Every profile needs a specialist in a workshop. The programme can only reach the teams it has time for, usually the loudest or the nearest, not the ones with the most value. An employee who sees a good candidate in their own work has no easy way to raise it.
+2. **Every profile looks different.** Each specialist asks different questions and writes up in a different format. A FIN profile from Europe cannot be compared with a PRO profile from Asia-Pacific. Volume is "a lot" in one and "400 a month" in another.
+3. **People describe tasks, not processes.** An employee says "I chase late timesheets". Is that a process with five people and two systems, or one person's Monday morning? A specialist must dig to find out, and often doesn't.
+4. **Key facts go missing.** Volume, time per run, who approves and what goes wrong are often skipped in a workshop. They are exactly what the value estimate needs. The specialist finds the gap only when writing up, then has to email and wait.
+5. **The judgement is not traceable.** The score sits in a spreadsheet. Six months later, nobody can say which statement from which person the "high value" came from.
+6. **Nobody checks readiness.** A workflow can be painful and high-volume but still not ready for AI: every region does it differently, nobody owns it, the inputs are paper or phone calls, or the key decision is pure judgement. Today this is found out by the engineers, weeks into a build.
+7. **The handoff loses the detail.** The engineers get a Visio and some notes. They book their own workshops with the same employees to find the data, the systems, the rules and the exceptions. The employee is asked the same questions twice.
+
+**Result:** about 20 specialist hours and 8 employee hours per profile, 2–3 weeks of calendar time, profiles that can't be compared, a portfolio built from whoever got a workshop, and about 60 more engineering hours per build to re-discover the detail. Weak use cases get funded, builds start on undefined workflows, and strong ones are never found.
+
+#### 2.1.2 Why AI could help, and where it must not be used
+
+**AI can help with conversation and text:**
+
+- reading what the employee says in their own words, and writing it into the right profile field;
+- asking the next question in plain language, and asking again in different words when the answer is half there;
+- proposing which cluster the process belongs to;
+- judging, against a fixed rubric, whether the work described is a process or only a task;
+- labelling each step's inputs (for example "scanned PDF", "SAP export", "phone call") and each decision as a fixed rule or a judgement call, which code then uses for the readiness checklist;
+- reading documents the employee already has (a procedure, a process map, an example output) and proposing profile values, each with its quote, for the employee to confirm;
+- describing, for each opportunity, what would change and what to prepare first;
+- drafting the plain-language parts of the implementation brief from the confirmed profile;
+- proposing automation opportunities, each tied to the employee's own quote.
+
+**AI must not:**
+
+- decide whether a field counts as answered. Code decides, from a rule on the field;
+- decide the interview phase, the score or whether the map is complete. Code decides;
+- rate readiness. Code rates each dimension from the confirmed fields; the model only labels words, with quotes;
+- count anything read from a document before the employee confirms it;
+- say whether a process should or should not be automated. The tool shows potential and the path to it; people decide;
+- produce any number. Hours a year, value and scores come from tested code;
+- state an opportunity that has no quote from the interview;
+- approve a use case or fund it. People decide.
+
+**Why not only a form?** A static form (Microsoft Forms, a survey) gets short, vague answers and cannot follow up. "Volume: a lot" stays "a lot". A form cannot tell a task from a process, cannot ask "and who approves that?" on step 3, and cannot help a person group 13 steps into 6.
+
+**Why not a general chat assistant?** Someone could ask a chat assistant to "interview me about my process". It would have a good conversation once. It would not produce the same fields for 400 processes, would not hold a completeness rule, would not stop asking after the third try, and would leave no overview or audit trail. The value is the fixed form and the rules around it, not the chat.
+
+**The limit:** the profile is only as good as what the employee knows and says. The tool does not observe the real work. We test this (section 2.1.8, weak points 3 and 6).
+
+#### 2.1.3 Why existing tools do not solve it
+
+NIG could buy several kinds of tool. Each solves part of the problem. None turns "what do our people actually do" into **comparable, checked baselines across 9 clusters and 4 regions, with a transformation assessment and a brief an engineer can build from, without first connecting NIG's systems**.
+
+| Kind of tool | Examples *(to verify in the buy-versus-build review)* | What it does well | Why it does not solve NIG's problem | How we use it instead |
 |---|---|---|---|---|
-| A1 | **The history is usable:** enough finished projects and tender results, and the AI labels and maps them correctly | No similar projects, no check | Load 200 finished projects and 100 past tenders from one region; a finance expert checks a sample (target ≥ 90% correct); count how many new bids find ≥ 8 similar projects | Limit the tool to project types with good data, or stop |
-| A2 | **Similar past projects predict real cost** better than today's plans | The core of the method | Backtest on 100 finished projects: compare the original plan and the similar-project range with what really happened | **Kill:** the method doesn't work for NIG |
-| A3 | **People act on the evidence:** they fix or explain flags, and price with the margin view, without wrecking the win rate | A check nobody acts on is worthless | Shadow mode on the next 30 bids: share of flags fixed vs explained; win rate vs comparable bids | Redesign the review step, or stop |
+| **Process mining** | Celonis, SAP Signavio Process Intelligence, Microsoft Power Automate Process Mining | Shows the real flow from system event logs, at large scale | Needs clean event logs from a few systems. NIG's work runs across fragmented regional systems, email and Excel. Connecting them is the "six months of data engineering" the brief rules out. It sees only what is logged: not the approval by email, not the pain | Later, for the few qualified processes that run mostly in one system (for example SAP purchasing), to confirm the volume |
+| **Task mining** | Celonis Task Mining, UiPath Task Mining, Skan | Records what people do on their desktop | An agent on every desktop. Privacy and works-council approval in Europe, months to roll out, and it sees clicks, not why or who decides | Not planned |
+| **Process modelling (BPM)** | SAP Signavio Process Manager, ARIS, Bizagi, Nintex Promapp | Store, govern and publish process maps | Someone still has to interview and draw. They are where maps are kept, not how they are found | We export BPMN, so profiles can go into NIG's BPM tool if it has one |
+| **Automation pipeline and idea intake** | UiPath Automation Hub, ServiceNow idea portals | Collect ideas, ask a fixed questionnaire, rank a pipeline | The closest alternative. But a static questionnaire takes whatever is typed ("volume: a lot"). It has no follow-up, no check that an answer is complete, and no process-or-task test. It is often tied to one vendor's automation product, so it leans towards that product | If NIG already owns one, our profiles can feed it. The guided interview is the part it lacks |
+| **Surveys** | Microsoft Forms, Qualtrics | Cheap, reach everyone | Short, vague answers, no follow-up, no detail per step | — |
+| **General AI assistants** | Microsoft 365 Copilot, ChatGPT, Claude | Good conversation, already available | Every chat is different: no fixed fields, no completeness rule, no limit on repeated questions, no overview, no audit trail. 400 chats give 400 different documents | The model inside our tool (through Azure OpenAI) |
+| **Consultants** | Process and strategy consultancies | Experienced, structured | Expensive *(assumption: €1,200–1,800 per consultant day)*, weeks per wave, and the knowledge leaves with them | Keep for the 10–20% of complex processes that cross many teams |
 
-**The three metrics that would make us stop**
+*A few start-ups now offer AI interviews for process discovery. We have not assessed them. They are the first thing to check in the buy-versus-build review (technical design).*
 
-| # | Metric | When | Stop or redesign if… |
+**Could a user get 80% of the value by pasting into a chat?** No. One person can have a good conversation with a chat assistant about their process. The programme needs **400 profiles with the same fields, the same rules for "answered", readiness and value calculated the same way, one overview, and implementation briefs in one format the engineers know**. That consistency is the product, and a chat session does not give it.
+
+**What we buy and what we build:**
+
+| Buy (commodity) | Build (what makes it work, and what is NIG-specific) |
+|---|---|
+| The language model (Azure OpenAI) | The field registry and the rule for "answered" on each field |
+| Hosting, database, monitoring (sign-in with Entra ID in production) | The interview logic: phases, limits, the completeness rule |
+| BPMN as the exchange format to BPM tools | NIG's cluster taxonomy, the selection framework, the readiness rules, the rate card |
+| PDF, Excel and document-reading libraries | The value calculator, the readiness checklist, the discovery report, the implementation brief and the overview |
+
+The build is small: about 3,000 lines for the interview core, built on plain, well-known parts (a web API, a document database, a hosted language model).
+
+#### 2.1.4 Fit with the brief
+
+**Q1. Does the workflow come from one of the operational clusters?**
+Yes. It sits in **IT · IT and Security**. It is IT's own workflow: IT's specialists map how knowledge workers in every cluster work, assess their transformation potential, and pass the chosen opportunities to IT's AI engineers. *Alternatives: KNW · Knowledge and Ops, because the method is business process mapping, or ANL · Analytics and Strategy, because the portfolio feeds strategy. We pick IT because IT owns the platform, the engineers who receive the output, and the systems the workflows run on. The choice does not change the design.*
+
+**Q2. Is it on the excluded list?**
+No. It is not a **knowledge chatbot**: it does not answer questions from a knowledge base, and the user cannot ask it anything. It asks the questions, from a fixed list, to fill a fixed form. It is not **ticket routing** or **lead qualification**: it does not route requests or score sales leads. Its users map and assess their own internal processes.
+
+**Q3. Is it a specific, painful workflow with a clear user?**
+Yes. The main user is the employee, who finds and maps a candidate in their own work. The IT and transformation specialists own the workflow and prioritise. The AI engineers use the output. The pain is about 28 person-hours and 2–3 weeks per profile, profiles that can't be compared, and about 60 engineering hours per build spent asking the same employees again.
+
+**Q4. Can we build a working prototype without a long data project?**
+Yes. The input is a conversation. No system integration and no historical data are needed. The prototype uses simulated employees.
+
+**Q5. Does the prototype show the hard parts?**
+Yes, on purpose. The simulated employees include people who are vague, describe a task instead of a process, give 13 steps, refuse to give numbers, switch language, contradict themselves, or describe a one-off project.
+
+**Q6. Do people stay in control?**
+Yes. The employee confirms every value read from a document, and the roles and systems, before the map is complete. The specialist reviews every field and every opportunity, and can correct them. The programme's steering group decides what is funded, outside the tool. The AI engineer accepts the implementation brief or sends it back. The AI never decides that a field is answered, that a profile is ready, or that a workflow is ready for AI.
+
+**Q7. Is there clear value and a realistic path to production?**
+Yes. About €0.46M a year conservative at the base case, with payback in about 3 months (section 2.1.6). A further value, builds on unready workflows avoided, is not counted. The path is one cluster in one region first, then all clusters. No integration work is needed per region.
+
+**Q8. Can we measure it, and stop it if it fails?**
+Yes. We measure the minutes per interview, the share of interviews that reach a complete map, the share of reports the specialist validates without major edits, the share of implementation briefs the engineers accept, and the field accuracy against simulated ground truth. The kill test is part of the next deliverable.
+
+#### 2.1.5 Who uses the tool, and how much
+
+The unit we count is the **profiled process**: one process, discovered, mapped and assessed once. We don't know NIG's real counts, so this section uses three scenarios: **Low**, **Mid** (the base case) and **High**. All counts are *assumptions*.
+
+**How we size the number of processes:** 36 cluster-region teams × 5–30 candidate processes each = about 180 to 1,000 candidates in the first year.
+
+**Who uses it**
+
+| Role | What they do | Login? | Low | Mid | High |
+|---|---|---|---|---|---|
+| **Employee (the main user)** | Finds candidates in their own work, maps one in the interview (optionally from documents), reads the discovery report, follows its status | No account in the prototype; single sign-on in production | 200 | 400 | 800 |
+| **Transformation specialist** | Shares the link with teams, reviews and corrects reports, creates implementation briefs | Yes (workspace) | 4 | 6 | 10 |
+| **Cluster lead** (one per cluster, group level) | Shares the link in the cluster, reads the cluster's reports, sponsors use cases | Through a specialist in the prototype (own read-only view later) | 9 | 9 | 9 |
+| **Portfolio lead** | Uses the process overview to prepare the steering group | Yes (workspace, specialist access) | 1 | 1 | 2 |
+| **Steering group** | Decides what gets funded (outside the tool), from the overview and the reports | Through the portfolio lead (own read-only view later) | 5 | 6 | 8 |
+| **AI engineering team** (AI engineers, AI DevOps) | Receives the implementation brief for chosen opportunities. Accepts it or sends it back with questions | Yes (workspace: read, accept or return) | 4 | 8 | 12 |
+| **Total named users** | | | **~223** | **~430** | **~841** |
+
+**How much each user uses it**
+
+| Role | Active use | When |
+|---|---|---|
+| Employee | 15–20 minutes, once per process; a glance at the status later | On their own initiative, or when a cluster lead runs a campaign |
+| Transformation specialist | About 4 hours per profile (review, clarification, adjusting opportunities, implementation brief) | Continuously |
+| Cluster lead | About 1 hour a month | Before each portfolio review |
+| Portfolio lead | About 1 day a month | Before each steering-group meeting |
+| Steering group | 30 minutes a month | Steering-group meeting |
+| AI engineering team | 1–2 hours to read and accept an implementation brief, then about 20 hours of requirements work instead of 60 | At project start |
+
+**Scenario results**
+
+| | Low | Mid (base case) | High |
 |---|---|---|---|
-| K1 | **Accuracy:** in the backtest, share of real overruns (> 10%) the plan check would have flagged, and how much closer the similar-project range is to reality than the original plans | Before the pilot (2 weeks), then every quarter | It flags **under 60%** of real overruns, **or** isn't **at least 20% closer** to reality than the original plans |
-| K2 | **Healthy use:** share of bids using the tool; share of flags closed with a fix or a specific reason (not boilerplate) | First 3 months | Under 50% of bids use it, **or** over 50% of flags are dismissed with boilerplate |
-| K3 | **Value:** margin on won projects and win rate, vs a comparison group | 6 months (early signal), 12 months | No margin improvement, **or** win rate down more than 5 points |
+| Processes profiled a year | 200 | 400 | 800 |
+| Person-hours a year if done by hand (28 h each; gate: 5,000) | about 5,600 | about 11,200 | about 22,400 |
+| Specialist full-time equivalents needed by hand (20 h each, 1,600 h a year) | about 2.5 | about 5 | about 10 |
+| Specialist full-time equivalents needed with the tool (4 h each) | about 0.5 | about 1 | about 2 |
+| Workflows built a year (funded by the programme) | about 15 | about 25 | about 40 |
+
+**Why 400 is the base case:** 36 cluster-region teams × about 11 candidates each. A multi-year programme across 9 clusters needs a pipeline of this size to choose its top 20–30 use cases a year. Done by hand, 400 profiles a year needs about 5 specialists doing nothing else.
+
+**What this changes:**
+
+- **The tool turns discovery from a staffing problem into a configuration problem.** Without it, the programme must hire or buy about 4 extra specialists to reach 400 profiles, or settle for the 150–200 it can reach.
+- **The employee interview has almost no marginal cost.** The tool can reach teams the programme would never send a specialist to. The limit moves from specialist time to employee willingness.
+- **One platform serves all nine clusters.** Adding a cluster or region needs no integration, only a translated interview and an invitation list.
+
+#### 2.1.6 Value and ROI
+
+The tool creates value in four ways. We count only the first two in the ROI.
+
+| # | Value | Counted? | Why |
+|---|---|---|---|
+| 1 | **Baseline capacity:** specialist and employee hours per profile fall from about 28 to about 5 | **Yes** | Measurable in the pilot |
+| 2 | **Faster handoff to engineering:** the implementation brief cuts the AI engineers' requirements work from about 60 to about 20 hours per build | **Yes** | Measurable on the first builds |
+| 3 | **Reach and speed:** profiles from teams no specialist would visit, in days instead of weeks, so the best use cases start earlier | No | Real, but hard to put a number on before the pilot |
+| 4 | **Builds that don't fail on an undefined workflow:** the readiness checklist shows what to prepare before engineers start, and the baseline gives every build a "before" number to prove its benefit | No, shown separately | Cannot be proven before the programme has a track record |
+
+**Basis** (all *assumptions*):
+
+- By hand: about **20 specialist hours + 8 employee hours = 28 hours** per profiled process (section 2.2.4).
+- With the tool: about **4 specialist hours + 1 employee hour = 5 hours**. The saving is about **23 hours per process**.
+- Handoff: about **60 engineering hours** of requirements work per build by hand, about **20** with the implementation brief. The saving is about **40 hours per build**, on about 25 builds a year at Mid (section 2.1.5).
+- **Conservative** adoption: 50% of the possible saving is realised. **Expected**: 75%. This is higher than the framework's default (30% / 50%) for one reason: the users of this workflow are IT's own teams. IT decides that discovery runs through the tool and that builds start from an implementation brief. Some processes will still need a workshop, which the 50% allows for.
+- Time is valued at **€90 an hour** (the framework default).
+
+**How hours become money.** Here the freed time has a clear destination, in both streams. The programme needs about 400 profiles a year. By hand, that needs about 5 specialists full time. With the tool, about 1. The difference is **specialists or consultants NIG does not have to hire or buy**: cost avoided, not only time freed. If NIG already pays consultants for discovery, part of it is direct cash. On the engineering side, 40 hours saved per build is about one more workflow built a year for every 6–7 builds, with the same team.
+
+**ROI by scenario:**
+
+| Scenario | Baseline: hours saved, conservative | Handoff: hours saved, conservative | Value, conservative | Value, expected | ROI score (conservative) |
+|---|---|---|---|---|---|
+| Low (200 profiles, 15 builds) | about 2,300 h (200 × 23 h × 50%) | about 300 h (15 × 40 h × 50%) | about €234k | about €351k | 2 |
+| **Mid (400 profiles, 25 builds)** | **about 4,600 h** (400 × 23 h × 50%) | **about 500 h** (25 × 40 h × 50%) | **about €459k** | **about €689k** | **2** (3 at expected) |
+| High (800 profiles, 40 builds) | about 9,200 h (800 × 23 h × 50%) | about 800 h (40 × 40 h × 50%) | about €900k | about €1.35M | **3** |
+
+The framework sets the ROI score bands as: below €100k = 1, €100k–500k = 2, €500k–2M = 3.
+
+**Costs** (all *assumptions*, to firm up in the technical design):
+
+| Cost | Amount | Basis |
+|---|---|---|
+| Prototype | About 1 engineer-week | This case |
+| Build to production | **About €100k, once** | About one quarter, 2 engineers (€3k per engineer-week × 26) + language testing and a security review |
+| Hosting | About €6k a year (production) | Two or more replicas, database, private networking, monitoring. The prototype runs for about €15–40 a month |
+| Model calls | Under €0.50 per interview with a small model (target) | About 40–60 calls per interview. Under €1k a year at Mid |
+| Support and upkeep | About €25k a year | About 0.2 of an engineer |
+| **Run cost** | **About €35k a year** | |
+
+**Net value and payback (Mid, 400 processes a year):**
+
+| | Conservative | Expected |
+|---|---|---|
+| Value a year | €459k | €689k |
+| Run cost a year | −€35k | −€35k |
+| **Net a year** | **about €424k** | **about €654k** |
+| **Payback on the €100k build** | **about 3 months** | **about 2 months** |
+
+**Break-even:** the tool pays for its run cost at about 35 profiles a year, and for its build within the first year at about 130 profiles.
+
+**Not counted: builds on unready workflows avoided.** A build that starts on a workflow nobody has defined, and stops after a quarter, costs real money *(assumption: about €150–250k: one quarter of a small team plus run cost)*. If the readiness checklist makes **one** such workflow get prepared first instead of going straight to the engineers each year, that alone is worth €150–250k a year. We show it **separately** and never add it to the ROI, because we cannot prove it before the programme has a track record. It is the first thing to track after the pilot (section 2.1.9, A8).
+
+#### 2.1.7 Framework score
+
+The selection framework (`docs/05-how-we-worked/`) has six gates and six scores. The base case is **Mid** (400 processes a year).
+
+**Gates:**
+
+| Gate | Result | Reason |
+|---|---|---|
+| 1 Allowed | Pass | Not on the excluded list (section 2.1.4, Q2) |
+| 2 Real, frequent pain (≥ 5,000 h a year) | Pass | About 11,200 hours a year by hand at Mid, plus about 1,500 hours of engineering re-discovery. Passes at Low too (about 5,600) |
+| 3 No off-the-shelf tool or general assistant does it | Pass | Process mining needs clean logs, task mining needs desktop agents, questionnaires and chat assistants don't give comparable, checked profiles, a transformation assessment or an implementation brief (section 2.1.3) |
+| 4 Data exists today | Pass | The data is in people's heads. No data project is needed |
+| 5 Measurable | Pass | Minutes per profile, share of interviews that finish, specialist edit rate, field accuracy on simulated employees |
+| 6 One-sentence hook | Pass | "Any employee can find a process in their work that AI could take over, map it in 15 minutes, and see its potential, and how to get there. IT sees all of them in one overview." Every company that wants to become an agentic enterprise has this need |
+
+**Scores** (1 = worst, 5 = best):
+
+| Score | Base case (Mid) | Reason |
+|---|---|---|
+| ROI | **3** at expected, 2 at conservative | €654k net a year expected, €424k conservative (section 2.1.6). Avoided failed builds not counted |
+| Scalability | 5 | Any cluster or region by configuration. No integration per region. The main cost per region is testing the interview in its language |
+| Adoption | 4 | IT owns the workflow at both ends: its specialists run it and its engineers use the output. Employees give 15–20 minutes instead of two workshops, and are not asked the same questions again by the engineers. Not yet tested with NIG staff |
+| Feasibility | 5 | No source system. Input is a conversation. Plain, well-known building blocks |
+| Build and run cost | 4 | About €100k and one quarter to production, about €35k a year to run |
+| Risk | 4 | A wrong profile costs specialist time and is caught in review. Nothing is written to a system of record |
+
+**Result (base case, expected adoption):**
+
+- **Value** = (2 × ROI + Scalability + Adoption) ÷ 4 = (6 + 5 + 4) ÷ 4 = **3.75**
+- **Ease** = (Feasibility + Build and run + Risk) ÷ 3 = (5 + 4 + 4) ÷ 3 = **4.3**
+- **Verdict: GO.**
+
+**Under the strictest reading** (conservative adoption, ROI 2), value is (4 + 5 + 4) ÷ 4 = 3.25, just below the GO line: MAYBE. At €459k it sits just under the €500k band line. Any one of these turns it into GO: 800 processes a year (ROI 3 even at conservative adoption), avoiding one failed build a year, or replacing paid consultant days.
+
+**Conclusion:** cheap to build, nothing to integrate, every cluster served, engineers start from a checked brief, and payback in a few months. The pilot must confirm three numbers before the executive summary claims them: the hours per profile (A3, A4), the share of employees who finish the interview (A5), and the engineering hours saved per build (A13).
+
+#### 2.1.8 Weak points found in our review
+
+| # | Attack | Our answer | Status |
+|---|---|---|---|
+| 1 | A chat assistant can interview someone. | For one person, once: yes. Not 400 people with the same fields, a completeness rule, a limit on repeated questions, a cluster taxonomy, an overview and an audit trail. The form and the rules are the product (section 2.1.3). | Holds |
+| 1b | NIG could buy an idea-intake tool (for example UiPath Automation Hub). | It is the closest alternative. Its static questionnaire has no follow-up and no check on answers, and it leans towards one vendor's automation. If NIG owns one, our profiles feed it. | Holds; check what NIG owns |
+| 2 | This is a meta-tool. It doesn't automate an operational workflow. | It automates IT's own operational workflow, process mapping and handoff, which the brief names first ("identify and validate use cases"). The demo shows it profiling a real FIN workflow end to end, through to an implementation brief. | Holds; must be shown in the demo |
+| 3 | Employees don't know their own numbers. | Often true. The tool accepts a range or "not sure", marks the field partial, and the specialist sees it. After three tries it stops asking. Documents the employee uploads can fill numbers they do not remember, once confirmed. | Holds; to test |
+| 4 | Employees won't start an interview on their own. | Possible. It takes 15–20 minutes, gives them something back at once (the discovery report) and a status they can follow. Cluster leads can also run campaigns. We measure how many start on their own and how many finish. | To test (kill metric) |
+| 5 | Process-mining tools already do discovery. | Only from clean event logs in a few systems. NIG's data is fragmented, and most of the work is in email and Excel. Process mining can come later for the processes that pass. | Holds |
+| 6 | People describe the ideal process, not the real one. | True for any interview, also for today's workshops. Uploaded documents and the specialist review reduce it. We do not claim to remove it. | Accepted |
+| 7 | The AI will invent facts in the profile. | The extractor may only write to allowed fields. Opportunities and labels need the employee's words, checked by code. Document values count only after the employee confirms them, and the employee confirms the roles and systems. | Holds; to test with the evaluation set |
+| 8 | Different languages and cultures across four regions. | The model works in many languages. The profile keeps the employee's own words in their language. Prompts must be tested per language; translated reports are a production item. | Open |
+| 9 | Interviews about "what takes your time" feel like performance monitoring. Works councils in Europe may object. | The tool profiles processes, not people. No individual's time is reported. This must be agreed with HR and works councils before rollout. | Open; a production-readiness item |
+| 10 | There is no baseline for today's discovery effort. | True. We time the next five manual profiles before the pilot. | Open |
+| 11 | The 28 hours by hand may be too high. | Possible. If it is 18 hours, the conservative value at Mid falls to about €279k a year, and payback is still about 5 months. The case holds at ROI score 2. | To measure (A3) |
+| 12 | A readiness rating from an interview can be wrong. The employee may not know what data the step really uses. | True. The checklist is a guide, not a verdict. The specialist can correct the profile and add notes, and the AI engineer can send the brief back. We track how many briefs engineers return. | To test (A14) |
+| 13 | Engineers will redo the requirements anyway. | Some will, for the parts the brief can't hold (API details, access rights). The brief is written in the format the engineering team chose, and its acceptance rate is a pilot metric. | To test (A13) |
+
+**What the review changed:** the ROI now counts the manual effort fully (employees in two workshops) and the engineering re-discovery saved by the implementation brief, sets adoption from who owns the workflow, and includes build and run cost and payback. A clear section on why existing tools fall short (section 2.1.3). Two further values, reach and decision quality, are named but not counted. The demo must show the tool working on a real operational workflow, not on an abstract example.
+
+#### 2.1.9 Assumptions to check with NIG
+
+| # | Assumption | Value used | How we check it |
+|---|---|---|---|
+| A1 | Programme specialists | 4–8 | Ask the AI transformation team |
+| A2 | Processes profiled a year (Low / Mid / High) | 200 / 400 / 800 | Count the candidate list with each cluster lead |
+| A3 | Hours per manual profile | 20 specialist + 8 employee | Time the next five manual profiles |
+| A4 | Hours per profile with the tool | 4 specialist + 1 employee | Pilot: 20 interviews in one cluster |
+| A5 | Adoption (conservative / expected) | 50% / 75% | Pilot: share of invited employees who complete the map, and share of profiles that need no workshop |
+| A6 | Value of an hour | €90 | NIG finance rate |
+| A7 | Reports the specialist validates without major edits | At least 70% | Pilot: specialist validates each report and records whether it needed major edits |
+| A8 | Failed builds avoided a year thanks to the readiness checklist | At least 1 (€150–250k each). Not in the ROI | Track funded use cases against their profiles for 2–3 quarters |
+| A9 | Interviews work in the main NIG languages | English, German, French, Spanish, Arabic | Run the simulated employees in each language |
+| A10 | HR and works councils accept process interviews | Yes, with no personal reporting | Ask HR in one European region before the pilot |
+| A11 | Build and run cost | €100k once, €35k a year | Technical design estimate; confirm with NIG's platform team |
+| A12 | NIG pays consultants for discovery today | Unknown | Ask the AI transformation team. If yes, part of the saving is cash |
+| A13 | Engineering requirements hours per build, by hand and with the brief | 60 h and 20 h; 15 / 25 / 40 builds a year | Ask the AI engineering team for its last three builds; measure the first builds from a brief |
+| A14 | Implementation briefs that engineers accept without a new workshop | At least 80% | Pilot: engineers mark each brief accepted or returned, with a reason |
 
 ---
 
-## 4. Technical: how to build it
+### 2.2 As-is process
 
-*Full design in [technical design](../03-technical-design/technical-design.md) (to write).*
+**Who does it:** an IT or transformation specialist in the AI transformation team, with two or three employees from the team that owns the process. After funding, an AI engineer from the AI engineering team.
 
-### 4.1 What kind of app
+**Goal:** for each candidate workflow, know how it really runs (the baseline), how big it is, where it hurts, whether it is ready for AI and worth automating, in a form the steering group can compare with all other candidates. For the funded ones, give the engineers what they need to build.
 
-- **A web app with a guided bid workspace** — four tabs in order: *Tender → Plan check → Price → Approval pack*.
-- **Not a chatbot:** users upload files, confirm facts, edit numbers, write reasons and choose a price. Prompts exist only **inside** the app, as versioned files, each returning a fixed structured result.
-- **Not a dashboard:** a tool for one bid. A portfolio view (accuracy over time) could come later.
-- **Two pipelines:** a **batch pipeline** loads and labels the history (offline, monthly); a **bid pipeline** runs per tender (seconds to a minute).
+#### 2.2.1 What the specialist does, in plain words
 
-### 4.2 Architecture
+1. **Collect** candidate ideas from cluster leads, emails and workshops.
+2. **Prepare** an interview: find the right employees, book a slot, send a questionnaire.
+3. **Interview** the employees in a workshop of 1–2 hours.
+4. **Write up** the notes and draw the as-is process.
+5. **Validate** the write-up with the employees, by email, and correct it.
+6. **Estimate** the volume, the hours and the value in Excel. Chase missing numbers.
+7. **Score** the idea against the selection framework.
+8. **Rank** it in the portfolio and prepare the steering-group pack.
+9. **Hand over** the funded use cases to the AI engineering team, who then hold their own workshops with the same employees to find the data, systems, rules and exceptions they need (about 60 engineering hours per build).
+
+#### 2.2.2 Inputs
+
+| Input | Format and content | Why it is needed |
+|---|---|---|
+| **Candidate list** | Excel or email: idea name, team, who suggested it. Often one line per idea | Decides who to interview |
+| **Employee knowledge** | In people's heads. Partly in local process documents, if they exist | The real process |
+| **Local process documents** | Word, Visio, PowerPoint. Often old, often the ideal process | A starting point for the interview |
+| **Sample work items** | Emails, exports, forms that show the process running | Evidence for volume and steps. Rarely collected |
+| **Selection framework** | Excel scoring sheet | Scores the idea |
+| **Rate card** | €/hour by role | Turns hours into money |
+
+#### 2.2.3 Documents the specialist produces
+
+| Document | Format | Content | Who reads it |
+|---|---|---|---|
+| **Interview notes** | Word or OneNote | Free text. Different per specialist | Specialist |
+| **As-is process map** | Visio or PowerPoint | Steps, roles, systems. Different level of detail per specialist | Specialist, employee, AI engineering team |
+| **Value estimate** | Excel | Volume, hours, value. Often with gaps | Specialist, portfolio lead |
+| **Score sheet** | Excel | Gates, scores, verdict | Portfolio lead |
+| **Portfolio list** | Excel or PowerPoint | All candidates, ranked | Steering group |
+| **Steering-group pack** | PowerPoint | Top candidates, one slide each | Steering group |
+
+#### 2.2.4 Step by step
+
+| | **Step 1** | **Step 2** | **Step 3** | **Step 4** | **Step 5** | **Step 6** | **Step 7** | **Step 8** | **Step 9** |
+|---|---|---|---|---|---|---|---|---|---|
+| **Name** | Collect candidates | Prepare | Interview | Write up | Validate | Estimate | Score | Rank | Hand over |
+| **Owner** | Specialist; cluster leads suggest | Specialist | Specialist; 2–3 employees | Specialist | Specialist; employees correct | Specialist; employees give numbers | Specialist | Portfolio lead | Portfolio lead; AI engineering team |
+| **Description** | Gather ideas from leads, emails and past workshops | Find the employees, book the slot, send questions | Ask about trigger, steps, people, systems, volume, time, pain | Turn notes into a description and a map | Send the write-up back. Merge corrections | Fill volume and hours. Chase missing numbers | Apply the gates and scores | Compare with all others. Build the pack | Brief the AI engineering team. Engineers re-interview employees for the detail |
+| **Tools** | Email, Excel | Outlook, Teams | Teams or a room, notebook | Word, Visio | Email | Excel, email | Excel | Excel, PowerPoint | Meetings, PowerPoint |
+| **Specialist time** *(assumption)* | 0.5 h | 1.5 h | 4 h (two workshops) | 5 h | 2 h | 3.5 h | 2 h | 1 h | 0.5 h (+ about 60 engineer h per build) |
+| **Employee time** *(assumption)* | — | — | 6 h (2–3 employees × two workshops) | — | 1 h | 1 h | — | — | Asked again by the engineers |
+| **Output** | Candidate list | Booked interview | Notes | Description and map | Validated description | Value estimate | Score sheet | Portfolio and pack | Brief |
+
+*Timing: about 20 specialist hours and 8 employee hours per process, over 2–3 weeks of calendar time, plus about 60 engineering hours for each workflow that is built. Most of the calendar time is waiting: booking slots and waiting for corrections and numbers (assumption).*
+
+#### 2.2.5 Example (fictional)
+
+The FIN cluster lead in Europe suggests "monthly cost review" as a candidate. A specialist books a 90-minute workshop with two cost controllers, three weeks later. In the workshop, the specialists talk mostly about the pain: "we spend days in pivot tables" and "we email site managers and wait". The specialist writes up nine steps. Volume and hours are missing, so they email the next day. The answer arrives a week later: "about 28 hours per business unit per month, 30 units". Nobody asked who approves the summary or what goes wrong when the plan version is wrong. The idea scores well in Excel. A different specialist profiled a similar review in North America, with seven steps and no hours. The two cannot be compared, so the steering group sees two separate ideas instead of one use case for 34 review units. When the European one is funded, an AI engineer books two more workshops with the same cost controllers to learn which SAP export they use, which plan version, and who signs off. Only then does it turn out that each site sends its numbers in a different spreadsheet layout: the workflow was not ready to build, and the first month goes on standardising it.
+
+---
+
+### 2.3 To-be process
+
+**The idea in one line:** any employee opens the tool from a link and, in a 15–20 minute guided conversation, discovers which processes in their routine are worth mapping, maps one step by step (starting from documents they already have, if they want), and gets a **discovery report**: the mapped process and its transformation assessment: hours a year, where automation or AI fits and how, what to prepare first. Code checks every answer and makes every number. The tool guides; it never says go or no-go. IT reviews instead of interviewing, every report lands in one overview, and the opportunities chosen for a build go to the AI engineers as an implementation brief. People decide.
+
+**How to read the tables below:**
+
+- **Tool used?** **Yes**: the work happens in the app. **Partly**: the app supports it, part happens outside. **No**: outside the app.
+- **Done by:** **Code** (rules, no AI), **AI** (the model reads or writes text, under code's rules), or a **person** (role named).
+- **Screen:** 0 My processes, 1 Interview, 2 Discovery report, 3 Review, 4 Overview, 5 Implementation brief.
+
+> **Prototype scope:** the prototype builds the MVP features of the [product specification](../../specs/01-product.md#6-features). Invitation campaigns (1.2) and a read-only view for the steering group come later.
+
+#### 2.3.1 What the tool is
+
+A **guided interview with a fixed form behind it**, which can also read the employee's documents, plus a workspace for the AI transformation team.
+
+- **For the employee:** a chat on the left, the profile filling up on the right, a progress meter, an *Add a document* button, and a *Finish* button that unlocks only when the map is complete. The employee cannot ask the tool questions; the tool asks, one at a time. Anything the AI reads from a document appears as a proposal, with its quote, until the employee confirms it. At the end the employee gets the **discovery report**, on screen and as a PDF. Candidates they mentioned but did not map stay on "My processes" as **ideas** for later.
+- **For the specialist:** a review screen per report (every field with its status, source and the employee's words), the process map, the opportunities to accept or adjust, value with its formula, the readiness checklist; and the **process overview** across clusters and regions.
+- **For the AI engineer:** implementation briefs for the opportunities chosen for a build, to accept or send back with questions.
+
+**It is not a chatbot.** It does not answer questions and does not search documents for answers. Under the chat it is a form-filling machine: each turn it reads the answer, writes it into the form, finds the most useful empty or unconfirmed field, and asks one question about it.
+
+**It does not judge.** No result says "not worth it". The report shows potential and the path to it; the programme's steering group decides what to fund, outside the tool.
+
+**Example (fictional).** A cost controller in Europe opens the tool from an intranet post. Asked where her week goes, she mentions chasing site managers, the monthly cost review and booking travel. The agent lists them back; she picks the cost review (repeats every month, five people, two systems); the other two stay as ideas. She uploads the team's procedure document: the agent proposes five steps with roles and systems, she corrects step 3 and confirms the rest, then answers what the document didn't say: volume, time, pain, exceptions. After 15 minutes her report shows about 340 hours a year for her business unit, about 10,000 across the 30 units in Europe, three opportunities (document AI to read the site spreadsheets, an AI assistant to draft the variance summary, a workflow to chase explanations) and one thing to prepare first: *Standard: low, agree one site template*. The North American controllers' version of the same process, with one template, shows the same opportunities and nothing to prepare. The steering group funds the North American one first; the specialist turns its opportunities into an implementation brief.
+
+#### 2.3.2 Sub-steps and when the tool is used
+
+**Step 1 · Start**
+
+| Sub-step | Who | Tool used? | Done by | Screen | Output |
+|---|---|---|---|---|---|
+| 1.1 Open the tool from a link (intranet, Teams, e-mail), on their own initiative | Any employee | Yes | Person | 0 | New session |
+| 1.2 Optionally, run a campaign: send the link to one cluster or region | Cluster lead, specialist | Partly. Link sent by e-mail or Teams | Person | — | Invitations sent |
+
+**Step 2 · Discover and map** (the core: 15–20 minutes)
+
+| Sub-step | Who | Tool used? | Done by | Screen | Output |
+|---|---|---|---|---|---|
+| 2.1 Context: department, role, region | Employee | Yes | AI asks; code stores | 1 | Context fields |
+| 2.2 Discover candidates: where does your time go, what repeats, what involves several people, what follows fixed rules? | Employee | Yes | AI asks and lists the candidates in the employee's words; employee picks one | 1 | Process name; other candidates kept as ideas |
+| 2.3 Check: process or task? | System | Yes | AI applies a fixed rubric; code counts the signals | 1 | Scope note, shown to the employee if it looks like a task |
+| 2.4 Place it in a cluster | System, employee | Yes | AI proposes; code confirms against the 9 clusters; employee says yes or picks | 1 | Cluster |
+| 2.5 Optionally, upload documents: a procedure, a process map, an example output | Employee | Yes | Code extracts the text (a BPMN file is read by code); AI proposes values, each with a quote; code checks the quotes | 1 | Proposals |
+| 2.6 Confirm or correct the proposals | Employee | Yes | AI asks in small groups; code reads the yes or the correction | 1 | Confirmed fields |
+| 2.7 Measure: trigger, result, who uses it, pain, volume, owner, time today, target, same way everywhere, sensitive data | Employee | Yes | AI asks what is still missing; code judges each field complete, partial or invalid | 1 | Process fields |
+| 2.8 Number of main steps (2–6) | Employee | Yes | AI asks; code checks the range and helps group if too many | 1 | Step count |
+| 2.9 Walk each step: goal, activities, roles, owner, systems, data in and out, effort, pain, approvals, exceptions | Employee | Yes | AI asks one field at a time; code chooses which | 1 | Step table |
+| 2.10 Confirm the roles and the systems | Employee | Yes | Code builds the lists; employee confirms | 1 | Confirmed roll-ups |
+| 2.11 Finish (unlocks when the map is complete: score ≥ 80%, steps complete, roles and systems confirmed) | Employee | Yes | Code holds the rule; person presses | 1 | Finished profile |
+| 2.12 Exit: "this isn't worth mapping" | Employee | Yes | AI offers; person decides | 1 | Closed session |
+
+**Step 3 · Discovery report** (seconds, at *Finish*)
+
+| Sub-step | Who | Tool used? | Done by | Screen | Output |
+|---|---|---|---|---|---|
+| 3.1 Draw the process map from the step table | System | Yes | AI proposes; code checks every step, role and type, or draws a simple map | 2 | Process map |
+| 3.2 Propose opportunities: what changes, how, what to prepare, with the employee's words | System | Yes | AI proposes; code checks each step and quote | 2 | Opportunities |
+| 3.3 Calculate hours a year, cost today, hours and value that could be freed | System | Yes | Code | 2 | Transformation potential |
+| 3.4 Rate the readiness checklist and list what to prepare | System | Yes | AI labels inputs and decisions, with quotes; code rates | 2 | Readiness checklist |
+| 3.5 Order the path: prepare first, quick wins, bigger changes | System | Yes | Code | 2 | Suggested path |
+| 3.6 Read and download the report | Employee | Yes | Person | 2 | Discovery report (screen, PDF) |
+
+**Step 4 · Specialist review**
+
+| Sub-step | Who | Tool used? | Done by | Screen | Output |
+|---|---|---|---|---|---|
+| 4.1 Review each field: value, status, source, the employee's words | Specialist | Yes | Person | 3 | Reviewed profile |
+| 4.2 Correct or fill fields | Specialist | Yes | Person; code re-checks and updates the report | 3 | Corrected profile |
+| 4.3 Clarify with the employee, if needed | Specialist, employee | Partly. In the prototype experts are anonymous: open questions go into the report's gaps and the validation note. In production (named sign-in), a short call or message | Person | — | Answer added in 4.2, or an open question in the brief |
+| 4.4 Accept, adjust or reject each opportunity and its saving share; add notes to readiness | Specialist | Yes | Person; code recalculates | 3 | Assessed opportunities |
+| 4.5 Validate the report, with a note to the employee | Specialist | Yes | Person | 3 | Validated report (a pilot metric) |
+
+**Step 5 · Overview and hand-off**
+
+| Sub-step | Who | Tool used? | Done by | Screen | Output |
+|---|---|---|---|---|---|
+| 5.1 See all mapped processes by cluster and region, with value and readiness | Specialist, portfolio lead | Yes | Code | 4 | Process overview (NIG's baseline) |
+| 5.2 Prepare the steering group and decide what to fund | Portfolio lead, steering group | No. In the meeting | Person | — | Funding decision |
+| 5.3 Create the implementation brief for the chosen opportunities | Specialist | Yes | Code assembles; AI drafts goal and acceptance criteria; specialist edits | 5 | Implementation brief (Markdown, JSON, map) |
+| 5.4 Accept the brief, or send it back with questions | AI engineer | Yes | Person | 5 | Accepted brief, or questions back (a pilot metric) |
+| 5.5 Tell the employee what happened | System | Yes | Code shows the status on "My processes" | 0 | *Mapped → validated → in an implementation brief* |
+
+#### 2.3.3 Process overview: when the tool is used
+
+```mermaid
+flowchart TD
+    S1["<b>1 · Start</b><br/>employee opens the link: <b>tool</b><br/>or a cluster campaign: <b>partly</b>"]
+    S2["<b>2 · Discover and map</b><br/>15–20 min, employee alone<br/>candidates · documents · map<br/>questions: <b>AI</b> · answered? phase? complete?: <b>code</b>"]
+    X(["Nothing worth mapping<br/>(task or one-off)"])
+    IDEA(["Ideas<br/>kept for later"])
+    S3["<b>3 · Discovery report</b><br/>map, opportunities, labels: <b>AI checked by code</b><br/>hours, value, readiness, path: <b>code</b>"]
+    S4["<b>4 · Specialist review</b><br/>every field, with source and words: <b>tool</b>"]
+    S5["<b>5 · Overview and hand-off</b><br/>overview: <b>code</b> · funding: <b>steering group</b><br/>brief: <b>code + AI</b>"]
+    OUT(["Implementation brief<br/>to the AI engineering team"])
+
+    S1 --> S2
+    S2 -- "expert closes<br/>(honest exit)" --> X
+    S2 -. "other candidates" .-> IDEA
+    S2 -- "map complete, Finish" --> S3 --> S4 --> S5
+    S5 -- "chosen opportunities" --> OUT
+    S4 -. "clarify" .-> S2
+
+    classDef tool fill:#dff5e3,stroke:#1e8449,color:#000;
+    classDef partly fill:#fff4d6,stroke:#b7950b,color:#000;
+    classDef outside fill:#f2f2f2,stroke:#888,color:#000;
+    class S2,S3,S4 tool;
+    class S1,S5 partly;
+    class OUT,X,IDEA outside;
+```
+
+*Green: in the tool. Yellow: part in the tool, part outside. Grey: endings and hand-offs.*
+
+**Time by step** (to measure in the pilot):
+
+| Step | Today | With the tool |
+|---|---|---|
+| Collect, prepare and interview | 6 specialist h + 6 employee h, booked weeks ahead | 0 specialist h + 0.5 employee h, any time |
+| Write up and map | 5 specialist h | 0 h. The map and the report are built from the step table |
+| Validate | 2 specialist h + 1 employee h + a week of waiting | 0 h. The employee confirmed in the interview |
+| Estimate | 3.5 specialist h + 1 employee h + chasing numbers | 0.5 specialist h. Numbers asked for in the interview; code calculates |
+| Assess and hand over | 3.5 specialist h | 1.5 specialist h. The report holds the assessment; the specialist adjusts and creates the brief |
+| Review and clarify (new) | — | 2 specialist h + 0.5 employee h |
+| **Total per process** | **20 specialist h + 8 employee h** | **4 specialist h + 1 employee h** |
+| Requirements before a build | About 60 engineer h, with new employee workshops | About 20 engineer h, starting from the implementation brief |
+
+#### 2.3.4 Outputs
+
+**Level 1: the discovery report**, the same structure for every process. The employee gets it at *Finish*; the specialist and the engineers use the same report.
+
+| # | Part | Content | Source |
+|---|---|---|---|
+| — | **Cover** | Process, department, cluster, region, owner role, date, status (*draft*, *validated by IT*) | Code |
+| 1 | **At a glance** | Hours a year and cost today; hours and value that could be freed (conservative, expected); top three opportunities; main things to prepare | Code |
+| 2 | **The process** | Trigger, result, who uses it, main pain, owner, cluster; a note if it looks like a single task | Interview |
+| 3 | **Volume and measures** | Volume, time today, target, same way everywhere, sensitive data; "not measured yet" where missing | Interview |
+| 4 | **Process map and steps** | The map, all systems used, the step table | Code, from the step table |
+| 5 | **Transformation assessment** | AI summary; per opportunity: what changes, how, what to prepare, impact, feasibility, the employee's words; steps that should stay with people | AI, checked by code |
+| 6 | **Transformation potential** | Hours per step, cost today, hours and value freed per opportunity and in total, with the formula | Code |
+| 7 | **Readiness checklist** | Six dimensions, level, reason, what to prepare | Code (AI labels, checked) |
+| 8 | **Suggested path** | Prepare first → quick wins → bigger changes | Code |
+| 9 | **Gaps and sources** | Missing, deferred, skipped or unconfirmed fields; documents used | Code |
+
+**Level 2: the process overview.** All mapped processes in one table and one value-versus-readiness chart, filtered by cluster and region. It is NIG's **process baseline**: how many workflows, how many hours, which systems, in which cluster and region.
+
+**Level 3: the implementation brief**, for the opportunities chosen for a build. The AI engineer's starting spec:
+
+| # | Section | Content |
+|---|---|---|
+| 1 | **Goal and scope** | What the application should do, for whom, and what is out of scope |
+| 2 | **Baseline** | Volume, time today, target, hours a year. The "before" number the build will be measured against |
+| 3 | **Steps** | The step table and the map, with the steps the opportunities cover marked |
+| 4 | **Data in and out** | Per step: what comes in, in what format, from which system; what goes out |
+| 5 | **Systems** | Each system, what the step does in it, and whether IT knows an export or API for it |
+| 6 | **Rules and decisions** | Fixed rules, judgement calls, approvals. What a person must keep deciding |
+| 7 | **Exceptions** | What goes wrong and how it is handled today |
+| 8 | **What to prepare** | From the readiness checklist |
+| 9 | **Risk** | Personal or sensitive data, regulation, the human check needed |
+| 10 | **Acceptance criteria** | Drafted from the target and the pain: what "it works" means, to agree with the business |
+| 11 | **Open questions** | Missing, deferred, skipped or unconfirmed fields, so the engineer asks only these |
+| 12 | **Sources** | The process owner role; the employee's words and document quotes behind every claim |
+
+#### 2.3.5 What changes for each role
+
+| | Today | With the tool |
+|---|---|---|
+| Employee | No easy way to raise an idea. If chosen, two workshops booked weeks ahead, then corrections by e-mail | Discovers and maps a process in 15–20 minutes, when it suits them, reusing documents they have. Gets the report at once, keeps other ideas for later, and follows what happens |
+| Specialist | Interviews, writes up, draws, chases numbers | Reviews and completes. About 4 hours per process instead of 20 |
+| Portfolio lead | Combines spreadsheets in different formats | One overview, same fields and same assessment for every process |
+| Steering group | Ideas from whoever got a workshop | All clusters and regions, comparable, each claim traceable to an employee's words |
+| AI engineer, AI DevOps | A Visio and some notes, then their own workshops with the same employees | An implementation brief in one standard format: data, systems, rules, exceptions, what to prepare, baseline and open questions. Only the open questions need a call |
+
+*Time savings are assumptions to test in the pilot (sections 2.1.6 and 2.1.9).*
+
+#### 2.3.6 Why users would trust it
+
+The brief asks "who uses it and why they would trust it". Most users did not ask for this tool, so trust has to be built into how it works.
+
+| User | What they worry about | What the tool does about it |
+|---|---|---|
+| **Employee** | "Will this be used to judge me?" | It maps processes, not people. No individual's time is reported, and no account is needed to start. Agreed with HR and works councils before rollout |
+| **Employee** | "Will it twist what I said, or what my documents say?" | The profile fills up live, next to the chat, in plain words. Anything read from a document is a proposal with its quote until they confirm it. They confirm the roles and systems before finishing. Every field keeps its source |
+| **Employee** | "Will it waste my time?" | One question at a time, never the same field more than five times, documents shorten the interview, and an honest exit: "this may not be worth mapping, and that's a fine answer" |
+| **Employee** | "Will anything happen with it?" | The report at the end, and a status they can follow, with the specialist's note. Other ideas are kept, not lost |
+| **Employee** | "Will AI take my job?" | The report shows which steps could change and which should stay with people, and why. The message from leadership matters more than the tool here (weak point 9) |
+| **Specialist** | "Can I rely on the profile?" | Every field shows its status (complete, partial, skipped, unconfirmed) and its source (employee, document, specialist). Nothing is filled silently. The specialist can correct everything |
+| **Portfolio lead** | "Are the numbers made up?" | Hours, value and readiness levels come from code, with the formula shown. Every opportunity carries the employee's words, checked by code |
+| **Steering group** | "Is this another impressive demo?" | Every claim traces back to a person's words or a document quote. The evaluation set shows how often the tool gets fields right and where it fails. The tool never recommends funding; people decide |
+| **AI engineer** | "Can I build from this, or will I start again?" | The brief separates what the employee confirmed from what is still open, and lists what to prepare. The engineer can send it back, and that rate is tracked |
+
+#### 2.3.7 How transformation potential is assessed
+
+Transformation potential has three parts. Code calculates all the numbers and levels; the AI proposes opportunities and labels words, and code checks both.
+
+- **Opportunities and how:** for each, which steps, what kind of change, what the step would look like afterwards, how it would be built, what to prepare first. Types: *eliminate*, *standardise*, *workflow*, *integration*, *document AI*, *AI assistant*, *AI agent*, *RPA*. Eliminating or standardising comes before automating a broken step.
+- **Value:** hours a year (volume × effort per step) and the share the opportunities could free, turned into € with the rate card (section 2.1.6 uses the same formula): conservative 50%, expected 75%.
+- **Readiness checklist:** six dimensions, each *high*, *medium* or *low*, with what to prepare.
+
+| Dimension | Question | From fields | Low means |
+|---|---|---|---|
+| **Defined** | Is it clear when it starts, what it produces, who owns it, and what each step is for? | P06, P07, P11, S02 | Nobody can say what "done" is. Define it first |
+| **Standard** | Do people and regions do it the same way? Are exceptions the minority? | P14, S11 | Each site does it differently. Standardise first |
+| **Data** | Are the inputs digital, structured or readable documents? | S07, with input-format labels | Paper, phone calls or memory. Digitise first |
+| **Systems** | Are the systems known to IT, with an export or an API? | S06, IT's application list | Shadow spreadsheets, or no access. Integration first |
+| **Rules** | Are decisions fixed rules, or judgement that can be explained with examples? | Decision labels on each step | Pure judgement with no examples. Keep it with people, or support them |
+| **Risk and size** | Enough hours to be worth the effort? Personal data or regulation that needs a human check? | P10, P15, hours a year | Small, or needs strong human checks |
+
+There is **no overall verdict**. Code turns the levels and the opportunities into a **suggested path**: *prepare first* (standardise, or anything that needs a low dimension fixed), *quick wins* (high feasibility), *bigger changes* (the rest), each ordered by the hours it could free. The thresholds are configuration, owned by the AI transformation team.
+
+**Worked example:** the European monthly cost review is *high* on Defined, Rules and Risk and size, but **low on Standard**: each site sends a different spreadsheet layout. Its path starts with "agree one site template", then document AI and the assistant. The North American review, with one template, starts directly with the quick wins. The steering group sees both, and why, before any engineer starts.
+
+---
+
+## 3. Technical description
+
+> Summary for readers of this document. The detail lives in the [product specification](../../specs/01-product.md) (what) and the [architecture](../../specs/02-architecture.md) (how).
+
+### 3.1 What the tool does, at a high level
+
+A web app with two sides. The **expert side** runs a guided conversation that fills a fixed process profile, reads uploaded documents into proposals the employee confirms, and produces the **discovery report**. The **workspace** lets specialists review and correct reports, see every mapped process in one overview, and create implementation briefs that AI engineers accept or send back.
+
+**Five rules shape every feature:**
+
+1. **The agent fills a form. The chat is only the way in.** The form is defined once, in a field registry.
+2. **Code owns every decision.** Whether a field is answered, which phase the interview is in, when the map is complete, whether a "yes" was a yes: all of these are Python. The model reads and writes words.
+3. **Code makes every number.** Hours, value and readiness levels come from tested code. No go / no-go verdict anywhere.
+4. **The employee has the last word.** Anything read from a document is a proposal with a quote until the employee confirms it.
+5. **Every loop has a counter, and every counter has a maximum.** An interview can never get stuck asking the same thing.
+
+### 3.2 Design choices
+
+The design is shaped by the failures a guided interview is prone to. Each one has a rule against it:
+
+| Failure to avoid | Rule |
+|---|---|
+| An answer is stored but never counted as answered, so the agent asks forever | One rule per field for "answered", used both when storing and when counting, with a Verdict (complete, partial, invalid) that names what is missing |
+| One field that never completes holds the whole interview | A counter per field and per step cell, each with a maximum; then the interview moves on |
+| A confirmation the model must recognise, and doesn't, deadlocks the interview | Code reads a plain yes or no; a picker or a button is always available as a last resort |
+| The model writes fields it should not (cluster, confirmations, completeness) | The model's changes are filtered against the fields it may write; everything else is dropped by code |
+| A document's wording becomes a fact nobody checked | Document values are proposals with a quote checked by code, counted only after the employee confirms |
+| Invented numbers or claims | Every number comes from code; every opportunity and label needs the employee's words, checked by code |
+
+What goes beyond a basic guided interview: **documents as a starting point**, **value calculated by code**, a **readiness checklist** with a **suggested path**, a **process overview** across clusters and regions, an **implementation brief** for engineers, and an **evaluation set of simulated experts** with hidden true processes.
+
+### 3.3 Inputs
+
+| Input | Format | Source | How often | Required? |
+|---|---|---|---|---|
+| Employee answers | Chat text, any main NIG language | The employee | Per interview | Yes |
+| Documents | PDF, Word, Excel or CSV, text, BPMN | The employee | Per interview | No |
+| Cluster taxonomy | Configuration: 9 clusters with descriptions and keywords | AI transformation team | When it changes | Yes (provided) |
+| Field registry | Code: every field, its weight, its question, its rule | Engineering | Per release | Yes |
+| Process-or-task rubric | Code: five signals and thresholds | Engineering | Per release | Yes |
+| Rate card | Configuration: €/hour, realisation shares, saving share per opportunity type | NIG finance, AI transformation team | Yearly | Yes (default €90) |
+| Readiness rules | Configuration: thresholds and "to prepare" wording | AI transformation team | When it changes | Yes (provided) |
+| IT application list | Configuration: NIG systems, owner, export or API available | IT | Monthly | No (a sample in the prototype) |
+| Specialist corrections and notes | Typed in the workspace | Specialist | Per report | No |
+
+### 3.4 The profile
+
+16 process fields (context, the process and its cluster, boundaries, measures, whether teams do it the same way, sensitive data, the number of main steps) and 12 fields per step (name, goal, activities, roles, owner, systems, data in and out, effort, pain points, approvals, exceptions, hand-over), for 2–6 main steps. Every value keeps its source (employee, document, specialist). Roles and systems are rolled up by code and confirmed by the employee. **Full list with questions and rules:** [product specification §5](../../specs/01-product.md#5-the-profile).
+
+**Score:** weighted share of complete, confirmed fields. **Map complete:** score ≥ 80%, all declared steps complete, roles confirmed, systems confirmed.
+
+### 3.5 Data
+
+One document per interview holds the conversation, the profile, the counters, the extracted text of uploaded documents (the files themselves are not kept), and everything computed after *Finish* (opportunities, map, value, readiness, report state, briefs). Ideas are small documents of their own. Specialist and engineer actions go to an audit log. **Details:** [architecture §5](../../specs/02-architecture.md#5-database).
+
+### 3.6 Features
+
+25 features in four groups: discover and map (F-01–F-11), assess (F-12–F-16), review and hand-off (F-17–F-20), platform (F-21–F-25). **Catalogue and behaviour:** [product specification §6](../../specs/01-product.md#6-features).
+
+### 3.7 Description
+
+- **Discover:** the employee opens the link (no account), says where their time goes, and picks one of the candidates the agent lists back; the others become ideas. A task gets an honest note and one widening question.
+- **Map:** code places the process in a cluster once the employee confirms. Uploaded documents become proposals with quotes, which the employee confirms or corrects. The agent asks only for what is still missing, one field at a time, and moves on after three tries.
+- **Finish:** when the map is complete (score, steps, roles and systems confirmed), the employee presses *Finish*. The AI proposes the map, the opportunities and the readiness labels; code checks them and calculates hours, value, readiness and the path.
+- **Report:** the employee reads and downloads the discovery report; the specialist reviews, corrects and validates it; it joins the process overview.
+- **Hand-off:** when the steering group funds a change, the specialist creates the implementation brief for the chosen opportunities, and the AI engineer accepts it or sends back questions.
+
+### 3.8 Outputs
+
+| Output | Format | Used by |
+|---|---|---|
+| Discovery report (nine parts) | Screen, PDF | Employee, specialist, steering group, AI engineering team |
+| Process map | Screen, in the report; BPMN later | Employee, specialist, AI engineering team |
+| Ideas | Screen ("My processes") | Employee |
+| Process overview (all mapped processes) | Screen | Specialist, portfolio lead, steering group |
+| Implementation brief | Screen, Markdown, JSON | AI engineer, AI DevOps |
+| Evaluation report | Markdown | Engineering, technical design |
+| Audit log | Logs | AI transformation team, audit |
+
+### 3.9 Architecture
+
+One container on Azure Container Apps serves the React frontend and the FastAPI backend; Cosmos DB (serverless) stores one document per session; Azure OpenAI runs a small model behind one client with budgets, retries, strict schemas and code checks on every output. The interview is a fixed pipeline: **read the answer → apply it in code → classify only when needed → ask one question**. **Details:** [architecture](../../specs/02-architecture.md).
 
 ```mermaid
 flowchart LR
-    subgraph SRC["NIG sources (unchanged)"]
-        DB[("Clean project<br/>database")]
-        EXP[("Timesheet<br/>exports")]
-        DOCS[("Proposals and<br/>final reports")]
-        BR[("Bid register")]
-        AW[("Award notices +<br/>feedback letters")]
-        RATES[("Rate card")]
-    end
-
-    subgraph AZ["BidCheck on Azure"]
-        subgraph HP["Batch pipeline (monthly)"]
-            PA["Path A loader<br/>fixed mapping"]
-            PB["Path B loader<br/>map task codes ·<br/>label conditions ·<br/>extract reasons"]
-            TL["Tender-history loader<br/>winner · price · scores"]
-            CHK["Validator<br/>schema · quote exists ·<br/>confidence threshold"]
-        end
-
-        STORE[("<b>Standard history</b><br/>projects · hours · evidence ·<br/>tenders · competitors")]
-
-        subgraph BP["Bid pipeline (per tender)"]
-            TR["Tender reader<br/>facts · scoring rules"]
-            SF["Similar-project<br/>finder"]
-            PC["Plan checker<br/>ranges · gaps"]
-            EX["Explainer<br/>reasons with quotes"]
-            PV["Price view<br/>margin · loss chance ·<br/>competitors · score"]
-            PK["Pack + Excel<br/>generator"]
-        end
-
-        API["API (FastAPI)"]
-        UI["Web app<br/>bid workspace"]
-        LLM["Azure OpenAI<br/>(structured outputs)"]
-        LOG[("Audit log")]
-    end
-
-    REV["Finance / bid manager<br/>review queue"]
-    USERS["Bid team<br/>+ directors"]
-    PLAN[/"Team's plan<br/>(Excel)"/]
-    TEN[/"New tender<br/>(PDF)"/]
-
-    DB --> PA --> CHK
-    EXP --> PB
-    DOCS --> PB
-    PB --> CHK
-    BR --> TL
-    AW --> TL
-    TL --> CHK
-    CHK -- "confident" --> STORE
-    CHK -- "uncertain" --> REV --> STORE
-
-    USERS --> UI --> API
-    TEN --> API
-    PLAN --> API
-    API --> TR --> SF --> PC --> EX --> PV --> PK
-    STORE --> SF
-    STORE --> PV
-    RATES --> PV
-    API --> LOG
-
-    PB -.-> LLM
-    TL -.-> LLM
-    TR -.-> LLM
-    EX -.-> LLM
-
-    classDef ai fill:#e0f0ff,stroke:#2471a3,color:#000;
-    classDef code fill:#f4ecf7,stroke:#7d3c98,color:#000;
-    classDef data fill:#fff4d6,stroke:#b7950b,color:#000;
-    classDef people fill:#e8f8e8,stroke:#1e8449,color:#000;
-    class PB,TL,TR,EX,LLM ai;
-    class PA,CHK,SF,PC,PV,PK,API,UI code;
-    class DB,EXP,DOCS,BR,AW,RATES,STORE,LOG,PLAN,TEN data;
-    class REV,USERS people;
+    IN["employee message"] --> A["<b>Extract</b> (AI)<br/>answer → changes to<br/>allowed fields only"]
+    A --> M["<b>Apply</b> (code)<br/>merge, Verdict per field,<br/>proposals, counters, phase, score"]
+    M --> Q{"Cluster or scope<br/>unknown for this name?"}
+    Q -- "yes" --> E["<b>Classify</b> (AI)<br/>cluster proposal ·<br/>process-or-task signals"]
+    Q -- "no" --> B
+    E --> B["<b>Guide</b> (AI)<br/>one question, from:<br/>phase · still missing (with why) ·<br/>proposals waiting · ask count"]
+    B --> OUT["Agent message"]
 ```
 
-*Blue = uses AI · Purple = plain code · Yellow = data · Green = people. Dotted lines = calls to the language model.*
+### 3.10 Components and tech stack
 
-### 4.3 Components
-
-| Component | What it does | AI or code | Input → output |
-|---|---|---|---|
-| **Path A loader** | Maps a clean database into the standard format | Code | Database tables → projects, hours |
-| **Path B loader** | Maps each project's task codes to standard phases; labels conditions; extracts overrun reasons | AI + code | Exports + documents → projects, hours, evidence |
-| **Tender-history loader** | Reads award notices and feedback letters: winner, price, quality/price scores, reasons | AI + code | Bid register + notices + letters → tenders, competitors |
-| **Validator** | Checks schemas and that every quote exists; sends low-confidence items to a person | Code | Candidate records → accepted / review queue |
-| **Tender reader** | Size, conditions, budget, scoring rules, deadlines | AI, checked by code | Tender PDF → key facts with pages |
-| **Similar-project finder** | Filters history on type, size band, conditions, region; ranks; explains each match; minimum 5 | Code | Key facts + history → ~10 similar projects |
-| **Plan checker** | Per phase: hours per size unit across similar projects → low / typical / high, scaled to the bid; compares with the plan; flags gaps | Code | Team's plan + similar projects → gaps |
-| **Explainer** | Why similar projects needed more, quoting final reports | AI, checked by code | Evidence → reasons with quotes |
-| **Price view** | Cost; margin (typical, high); chance of a loss; competitor statistics on similar tenders; score at each price from the tender's formula | Code | Plan + prices + history + rate card → price table, competitor panel |
-| **Pack + Excel generator** | Approval pack (PDF), plan export, short summary written from the numbers | Code (+ AI for the summary text) | Everything above → files |
-| **Web app + API** | Bid workspace; every edit and reason saved to the audit log | Code | — |
-
-### 4.4 How one bid flows
-
-```mermaid
-sequenceDiagram
-    actor BM as Bid manager
-    actor TL as Technical lead
-    actor CM as Commercial manager
-    actor D as Directors
-    participant APP as BidCheck
-    participant LLM as Azure OpenAI
-    participant H as History
-
-    BM->>APP: Upload Millbrook tender (PDF)
-    APP->>LLM: Read tender → key facts (structured)
-    LLM-->>APP: Size, conditions, budget, scoring + quotes
-    APP->>APP: Check every quote exists on its page
-    APP-->>BM: Key facts with pages
-    BM->>APP: Confirm facts
-    TL->>APP: Upload team plan (6,000 h)
-    APP->>H: Find projects with same type, size, conditions
-    H-->>APP: 10 similar projects
-    APP->>APP: Compare plan with their real hours, per phase
-    APP->>LLM: Explain gaps from final reports
-    LLM-->>APP: Reasons + quotes (checked)
-    APP-->>TL: Plan check: 2 gaps with evidence
-    TL->>APP: Fix: 6,600 h
-    CM->>APP: Prices to compare
-    APP->>H: Similar past tenders
-    APP-->>CM: Margin, chance of loss, competitors, score
-    CM->>APP: Choose €640k + reason
-    APP-->>D: Approval pack
-    D->>APP: Approve
-    APP-->>BM: Plan in NIG's Excel template
-```
-
-### 4.5 Inputs and outputs: formats and fictional data
-
-NIG's real data is not available, so the prototype runs on **fictional data from a seeded generator**, realistic enough to expose the hard parts.
-
-**Inputs**
-
-| Input | Real-world format | Prototype format | How we generate it |
-|---|---|---|---|
-| **New tender** | PDF, 100–300 pages | Text-based PDF, ~15 pages | Template + language model, key sentences buried mid-document; 5 tenders, Millbrook included |
-| **Team's plan** | Excel | `.xlsx` / `.csv` (phase, role, hours) or typed in a grid | Hand-made for Millbrook (6,000 h, low on reviews and phasing) |
-| **Prices to compare** | — | Typed in the app | — |
-| **Project history — Path A** | Database | SQLite / CSV on standard phases (~250 projects) | Generator |
-| **Project history — Path B** | Timesheet exports + documents | CSV per region (project, task code, task text, local role name, hours) + proposal and final report per project (~350 projects) | Generator, then "messed up": own task codes and role names per project; texts written once by the language model from hidden facts, cached |
-| **Tender history** | CRM, portal notices, letters | CSV bid register (~300 tenders: NIG price, result, winner, winning price, weights) + short award notices and feedback letters | Generator with 3 invented competitors; texts by the language model, cached |
-| **Rate card** | Finance system | CSV: role, region, price/h, cost/h | Hand-made |
-| **Standard phases** | Estimating standard | YAML (~5 phases, size driver per project type) | Hand-made |
-| **Ground truth** (evaluation only) | — | JSON, kept apart | The generator's hidden facts |
-
-**How the generator works:** each fictional project gets hidden true facts (type, size, conditions). Real hours per phase come from a formula — size × base rate × condition multipliers + noise. The original estimate is the same formula with built-in optimism on the work around the drawings (what the check should catch). Tender results follow simple rules (low bidders win when price weighs more). The language model writes the documents **from the hidden facts**, with varied, sometimes vague wording — so the reading is genuinely hard, and every answer is known.
-
-**Outputs**
-
-| Output | Format |
-|---|---|
-| Key facts, plan check, price view | On screen (bid workspace); JSON through the API |
-| Approval pack | PDF (or printable HTML) |
-| Plan for submission | Excel in NIG's template |
-| Decisions and reasons | Audit log in the database |
-| Quality report | Evaluation results: reading accuracy, mapping accuracy, backtest |
-
-### 4.6 Key technical choices
-
-| Choice | Why |
-|---|---|
-| **The AI never produces numbers** | It only reads and labels. Every number comes from tested code, so results are repeatable and auditable |
-| **Structured outputs** | Every AI call returns a fixed, typed format (Pydantic). Invalid output is retried once, then shown as an error — never guessed |
-| **Every claim carries its source** | Facts, labels and reasons quote a sentence; code checks it exists. No quote, no claim |
-| **One standard history format** | Path A, Path B and tender history write the same schema; adding a region is configuration |
-| **A guided workspace, not a chatbot** | Fixed steps are predictable, testable and cheap; users decide, they don't prompt |
-| **A pipeline, not an agent** | Nothing here needs an AI to plan its own actions |
-| **Evaluation built in** | The generator keeps the right answers, so reading, mapping and the backtest are measured, not eyeballed |
-| **Low AI cost** | Small model for reading; results cached; history labelled once |
-
-### 4.7 Technology
-
-| Layer | Prototype | Production |
+| Component | Role | Tech stack |
 |---|---|---|
-| Web app | React (fallback: server-rendered pages if time is short) | Same |
-| API and pipelines | Python, FastAPI, Pydantic | Same; batch pipeline as a scheduled job |
-| Language model | Azure OpenAI, small model | Same, in NIG's Azure tenant |
-| Storage | SQLite + files | Azure Database for PostgreSQL + Blob Storage |
-| Hosting | One container on Azure Container Apps | Same, per-region access rules |
-| Sign-in and secrets | Simple access token | Microsoft Entra ID (single sign-on), managed identity, Key Vault |
-| Monitoring | Logs | Application Insights: errors, latency, AI cost per bid |
-| Quality | pytest, evaluation set, GitHub Actions CI | Same, plus a quarterly backtest |
+| **Frontend** | My processes, interview with live profile and uploads, report, workspace | React, Vite, TypeScript, Tailwind |
+| **Backend API** | Routes, access checks, sessions | Python 3.12 (uv), FastAPI, Pydantic |
+| **Interview core** | Registry, Verdicts, phases, limits, completeness | Plain Python, pytest |
+| **Documents** | Text extraction, BPMN reading, proposals | pypdf, python-docx, openpyxl, defusedxml; the AI client |
+| **AI client** | Prompts, structured outputs, retries, quote checks, cache | Azure OpenAI small model, OpenAI Python SDK, Pydantic |
+| **Assessment** | Map, opportunities, value, readiness, path, report | Plain Python + the AI client; reportlab for the PDF |
+| **Evaluation runner** | Simulated experts, ground truth, scoring | Python, the same API, a second model deployment |
+| **Database** | Sessions, ideas, reports, briefs | Cosmos DB for NoSQL, serverless; in-memory store for tests |
+| **Access** | Open link for experts, access code for the workspace, rate limits, daily model budget | FastAPI, slowapi. Entra ID single sign-on in production |
+| **Hosting and delivery** | Runs the container; build, test, deploy | Azure Container Apps, Container Registry, managed identity, Bicep + azd, GitHub Actions |
+| **Monitoring** | Turn log, AI cost per session, errors | Structured JSON logs, App Insights |
 
-### 4.8 Feasibility: 5-day prototype
+### 3.11 Security and trust
 
-| Day | Build |
+| Area | Control |
 |---|---|
-| 1 | Schemas, data generator, fictional documents and tenders |
-| 2 | Batch pipeline (mapping, labels, tender history, checks) + evaluations against the ground truth |
-| 3 | Bid pipeline: tender facts, similar projects, plan check, price view; backtest |
-| 4 | Web app (4 tabs), PDF and Excel export, deploy on Azure |
-| 5 | Hardening, technical design, executive summary, video |
-
-| Priority | Scope |
-|---|---|
-| **Must** | Tender facts · plan check · margin and chance of a loss · approval pack · backtest |
-| **Should** | Competitor panel and score at each price (simple code; needs the tender-history dataset) |
-| **Could** | Both Path A and Path B (Path B alone shows the hard part) |
-| **Not in the prototype** | Scanned PDFs (OCR), single sign-on, live integrations, multiple languages — covered in the production-readiness chapter |
-
-**Real technical risks:** task-code mapping accuracy (measured; uncertain cases to people) · small samples (ranges, never single numbers) · generated documents that are too easy (varied, vague, distracting wording) · time — the UI is the biggest schedule risk.
-
----
-
-## Appendix
-
-### A. Fit with the brief
-
-| The brief asks for | BidCheck |
-|---|---|
-| A specific, painful workflow, **meaningfully automated or augmented** | Planning and pricing a bid: tender reading, plan check, price view and pack are automated; people plan and decide |
-| Who uses it and why they'd trust it | The bid team and directors; trust from source quotes, ranges from real projects, and a measured backtest |
-| No six-month data project | Path A connects what's clean; Path B and tender history are loaded with AI in weeks |
-| Mock data that exposes the hard parts | Messy task codes, conditions hidden in text, thin history, incomplete tender results |
-| Not a generic assistant; not an excluded workflow | A guided workspace, no chat; after go/no-go; no contract review |
-| Clear value, realistic path, human oversight | Margin + capacity; backtest → shadow mode → one region → all regions; people choose every price |
-
-### B. Glossary
-
-| Term | Plain meaning |
-|---|---|
-| **Tender** | A client's public request for offers: what it wants, the contract, how offers are scored and often a budget |
-| **Bid** | NIG's offer: a technical part (how, who, when) and a price |
-| **Go / no-go** | The early decision whether to bid at all |
-| **Phase** | A stage of the work, e.g. *study & concept → detailed design → reviews & permits → construction support* |
-| **Rate card** | NIG's list, per role and region, of the **price** per hour and the **cost** per hour |
-| **Cost / margin** | Cost = hours × cost per hour. Margin = price − cost |
-| **Fixed price** | The client pays an agreed amount; extra hours are paid by NIG |
-| **Task code** | The label people book their hours to; each project sets up its own list |
-| **Final (close-out) report** | Written when a project ends: what went well, what went wrong |
-| **Condition** | A fact in a tender that changes the hours without changing the size, e.g. *"the old plant must keep running"* |
-| **Similar project** | A finished project with the same type, a similar size and the same conditions |
-| **Typical / high hours** | From the similar projects: *typical* = the middle value; *high* = the top of the range |
-| **Plan check** | The comparison of the team's plan with what similar projects really took, phase by phase |
-| **Chance of a loss** | Share of similar projects whose real hours, at this price, would have lost money |
-| **Award notice** | Public notice of who won a tender and at what value |
-| **Feedback letter** | The client's letter to a losing bidder, with scores and comments |
-| **Expected score** | The tender score NIG would get at a given price, using the tender's own formula and typical quality scores from past feedback letters |
-| **Backtest** | Testing the tool on finished projects: hide what really happened, run the check, compare |
-| **Path A / Path B** | The two ways to fill the project history: connect a clean database, or load exports and documents with AI |
-
-### C. Sources
-
-Company figures, contract mix, win rates, fee-building practice and public-tender rules: see the sources in the [as-is document](../02-processes/as-is.md#sources).
-
-Market check (§2.2.1): [Monograph – budget recommendations from past projects](https://monograph.com/blog/improve-pricing-with-budget-recommendations) · [CMap – fee estimating for architects and engineers](https://www.cmap.io/features/job-costing-and-crm-for-architecture-and-engineers) · [Deltek – AI and proposal pricing](https://www.deltek.com/en/blog/how-deltek-is-driving-the-future-of-ai) · [Unanet – Champ AI](https://unanet.com/news/unanet-introduces-champ-ai-the-natural-language-copilot-for-govcon-and-aec-firms) · [Aitenders](https://datadrivenaec.com/tools/aitenders) · [Temelion](https://datadrivenaec.com/tools/temelion) · [ContraVault AI](https://listicler.com/tools/contravault-ai)
+| **Access (prototype)** | Experts need no account: a private key in the browser owns their sessions, and a private resume link moves them to another device. The workspace needs an access code. Rate limits and a daily model budget protect the open link |
+| **Access (production)** | Entra ID single sign-on; roles from app roles; see [production readiness](../03-technical-design/production-readiness.md) |
+| **Who sees what** | An employee sees only their own sessions and reports. Specialists see reports and, in the workspace, the full conversation of each session (to check profiles and improve the interview; the employee is told so at the start), never document text. Engineers see briefs |
+| **Processes, not people** | The tool reports on processes. It never reports one person's time or performance. Agreed with HR and works councils before rollout |
+| **AI data** | Calls go to Azure OpenAI in an EU Azure subscription (NIG's own tenant in production). Not used for model training. Metadata logged, not text |
+| **Prompt injection** | Employee text and document text are passed to the model as fenced data, never as instructions. The extractor can only write allowed fields; anything else is dropped by code |
+| **Integrity** | The model cannot set the cluster, the confirmations or completeness. Document values count only after the employee confirms them. Every opportunity and label needs a quote, checked by code |
+| **Personal data** | No account or e-mail needed; an optional first name stays on the session. Reports, the overview and briefs show roles, not names. Uploaded files are not kept |
+| **Data in transit and at rest** | HTTPS; encrypted database; retention rule for unfinished sessions |
+| **Secrets** | Managed identity for Azure OpenAI and the database. No keys in code or in the repository |
+| **Input safety** | File type checked by content, size and count limits, text extraction only, hardened XML parsing |

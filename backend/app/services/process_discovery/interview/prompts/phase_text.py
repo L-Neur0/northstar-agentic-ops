@@ -1,0 +1,241 @@
+"""The per-phase text the guide prompt is assembled from (spec 14 §3.9).
+
+ACCEPTED FOR NOW — wording to be refined with the product owner. Builds the phase text; clusters come
+from the company configuration, the step walk holds 2 to 6 steps, and the phases carry this
+product's names.
+
+Why: which fields a phase collects comes from the registry; what the phase is *for*, and what to
+say about a verdict, a proposal or a list, is editorial prose. Every phase the machine can emit has
+a headline, and an unknown phase gets an explicit "Unrecognised phase" line instead of a silent
+default (a silent default once served the wrong guidance for five phases unnoticed).
+What: `PHASE_HEADLINES`, `phase_headline`, and the blocks steered by state: `step_instructions`,
+`rollup_instructions`, `cluster_block` (propose or picker), `widening_block`, `wrap_up_block`.
+Must not: restate a field, a cluster or a limit by hand (they come from the registry and the
+config), or inline untrusted text without `single_line`.
+Spec 14 §3.9; AC-14.46 to AC-14.48, AC-14.50.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Mapping, Sequence
+from typing import Any
+
+from app.utils.prompt_safety import single_line
+
+from ...domain.field_spec import (
+    DERIVED_SPECS,
+    MAX_STEPS,
+    MIN_STEPS,
+    PHASE_BOUNDARIES,
+    PHASE_CONFIRM,
+    PHASE_CONTEXT,
+    PHASE_FIND,
+    PHASE_FINISHED,
+    PHASE_MEASURE,
+    PHASE_NO_CANDIDATE,
+    PHASE_REVIEW,
+    PHASE_STEP_COUNT,
+    PHASE_STEPS,
+    PROFILE_SPECS,
+    Vocabulary,
+    step_spec_by_leaf,
+)
+from ...domain.scope import SIGNAL_QUESTIONS, SIGNALS, failed_signals, proposable_code
+from ...profile.shapes import as_mapping, parse_step_key, process_of, rows_of
+from ...profile.verdicts import expected_steps
+from .common import field_brief, inline_name, text_value
+
+PHASE_HEADLINES: dict[str, str] = {
+    PHASE_CONTEXT: (
+        "Learn who you are talking to: their department, their own role and their region. Keep the opening warm "
+        "and brief. As they answer, listen for the recurring work in what they say (the things they do every "
+        "week, the hand-offs, the chasing) and remember it; you will use it to propose a candidate yourself "
+        "rather than asking them to name one."
+    ),
+    PHASE_FIND: (
+        "Settle on the one piece of recurring work most worth mapping, and get the expert to agree that is what "
+        "you are mapping.\n"
+        "Do not open by asking which process they want to map: that is the question you are helping them "
+        "answer. Instead:\n"
+        "- Ask what a normal week looks like, what they repeat most often, what they chase people for, or what "
+        "they hand over to somebody else when they are done.\n"
+        "- If they are not sure, draw on these to open the conversation up; ask one or two, in your own words, "
+        "never as a checklist:\n"
+        + "".join(f"    · {q}\n" for q in SIGNAL_QUESTIONS.values())
+        + "- When you hear a candidate, name it back in the expert's own words and ask if that is the one worth "
+        "mapping. Let them correct you; a correction is progress.\n"
+        "- When several candidates were mentioned, list them back in the expert's words, one line each on why it "
+        "could be worth mapping (it repeats, several people, several systems), and ask which to map now; the "
+        "others are kept as ideas for later.\n"
+        "- They may also add a document (a procedure, a process map, an example report) at any time.\n"
+        "Never bring up clusters, an internal process framework or a list of areas yourself (only when THIS TURN "
+        "puts a cluster to the expert), and never ask which category their work belongs to."
+    ),
+    PHASE_BOUNDARIES: (
+        "Pin down where {process_name} starts, what it produces, who uses the result, and what hurts most about it."
+    ),
+    PHASE_MEASURE: (
+        "Put numbers on {process_name}: how often it runs, who owns it, how it performs today and where it should "
+        "get to, whether others do it the same way, and whether it touches sensitive data or a regulation."
+    ),
+    PHASE_STEP_COUNT: (
+        "Agree how {process_name} breaks down before walking through it. Ask for one number from "
+        f"{MIN_STEPS} to {MAX_STEPS}: anything outside that range cannot be recorded, so if their list is longer, "
+        "help them group it first rather than accepting the larger number."
+    ),
+    PHASE_STEPS: "Walk through {process_name} one step at a time, one field at a time.",
+    PHASE_CONFIRM: (
+        "Read back the roles and the systems collected across the steps of {process_name}, each list as it "
+        "stands, and get each list confirmed. A correction belongs on the step it came from."
+    ),
+    PHASE_REVIEW: (
+        "Ask the remaining fields of {process_name} once more. When nothing is missing, summarise {process_name} "
+        "in two sentences and say what the FINISH STATE below allows."
+    ),
+    PHASE_FINISHED: "The interview for {process_name} is finished. Answer questions; do not restart the interview.",
+    PHASE_NO_CANDIDATE: (
+        "The expert closed this session without a process to map. Do not restart the interview and do not ask "
+        "for more detail."
+    ),
+}
+
+
+def phase_headline(phase: str, profile: Mapping[str, Any]) -> str:
+    """The headline with `{process_name}` substituted, or the explicit "Unrecognised phase" line."""
+    headline = PHASE_HEADLINES.get(phase)
+    if headline is None:
+        return (
+            f"Unrecognised phase '{single_line(phase, 40)}'. Ask about whatever the profile above is still missing, "
+            "and do not invent a new topic."
+        )
+    return headline.replace("{process_name}", inline_name(process_of(profile).get("name")))
+
+
+def step_instructions(profile: Mapping[str, Any], focus: str | None, *, vocab: Vocabulary) -> str:
+    """Where the walk is ("You are on step k of N — "<name>"") and the one cell to ask now."""
+    expected = expected_steps(profile, vocab=vocab)
+    if expected == 0 or focus is None or parse_step_key(focus) is None:
+        if expected == 0:
+            return (
+                "The number of steps is not known yet, so the walk cannot start. Ask how many main steps "
+                f"{inline_name(process_of(profile).get('name'))} has from start to finish, a number from {MIN_STEPS} "
+                f"to {MAX_STEPS}, and nothing else this turn."
+            )
+        return f"All {expected} steps are described."
+    parsed = parse_step_key(focus)
+    assert parsed is not None
+    index, leaf = parsed
+    rows = rows_of(profile)
+    name = single_line(rows[index - 1].get("name") or "", 120) if index <= len(rows) else ""
+    heading = f"You are on step {index} of {expected}" + (f' — "{name}".' if name else ", which has no name yet.")
+    spec = step_spec_by_leaf(leaf)
+    brief = field_brief(spec, vocab, key=focus) if spec else ""
+    tail = f"step {index + 1}" if index < expected else "the roles and systems review"
+    return (
+        f"{heading}\n"
+        f"Ask about {vocab.label(spec).lower() if spec else leaf} now; that is the only question for this turn.\n"
+        f"{brief}\n"
+        f'Once this step\'s fields all have an answer (including "there are none"), the walk moves on to {tail}.'
+    )
+
+
+def rollup_instructions(profile: Mapping[str, Any], keys: Sequence[str]) -> str:
+    """Read back the lists asked this turn; any plain agreement settles a list; never ask for a form of words."""
+    proc = process_of(profile)
+    lines = [f"- {d.label}: {text_value(proc.get(d.key.split('.', 1)[1]))}" for d in DERIVED_SPECS if d.key in keys]
+    which = "both lists" if len(keys) > 1 else "this list"
+    return (
+        "These lists were rolled up from the steps:\n"
+        + "\n".join(lines)
+        + f"\nRead {which} back as it stands and ask the expert to confirm or correct it. A correction belongs on "
+        "the step it came from, so name the step when you make one.\n"
+        'Any plain agreement settles a list: "yes", "correct", "that\'s right". The Confirm buttons beside the lists '
+        "in the panel do the same, so you may mention them, but never imply they are the only way. Never ask the "
+        "expert to repeat a particular form of words, never quote a sentence for them to type back, and never say "
+        "that a specific wording is what settles it."
+    )
+
+
+def _cluster_line(code: str, vocab: Vocabulary) -> str:
+    cluster = vocab.taxonomy.by_code(code)
+    return f"{cluster.name}: {cluster.description}" if cluster else ""
+
+
+def cluster_block(
+    placement: Mapping[str, Any], mode: str, *, vocab: Vocabulary, process_name: str, asked_before: bool
+) -> str:
+    """The cluster question: put the proposal with its meaning, or show the picker (every cluster with its description)."""
+    proposal = as_mapping(placement.get("proposal")) or {}
+    code = proposable_code(proposal)
+    if mode == "propose" and code:
+        lines = [
+            f"You have a proposed cluster for {process_name}. Put it to the expert as a confirmation, not as a "
+            "question about an internal framework.",
+            f"- Proposed cluster, word for word: {_cluster_line(code, vocab)}",
+            "- Tie that meaning to the expert's own words: say where what they described sits inside it.",
+            "- Ask whether that fits how they would file it.",
+            "- Never name a cluster without saying what it means in the same breath.",
+        ]
+        runner = vocab.taxonomy.by_code(str(proposal.get("runner_up") or ""))
+        if runner is not None and runner.code != code:
+            lines.append(
+                f"- If they say no, offer this one next, with its meaning: {_cluster_line(runner.code, vocab)}"
+            )
+        return "\n".join(lines)
+    if placement.get("rejected") is True:
+        head = "The expert said no to the proposed cluster."
+    elif code and asked_before:
+        head = "The proposed cluster has been put to the expert without landing. Stop proposing it."
+    else:
+        head = "You do not have a confident cluster for this process."
+    options = "\n".join(f"- {c.name}: {c.description}" for c in vocab.taxonomy.clusters)
+    return (
+        f"{head} Do not guess and do not ask the expert to name a cluster unaided. Show these options, each with "
+        f"its meaning, and ask which fits {process_name} best:\n{options}"
+    )
+
+
+def widening_block(scope: Mapping[str, Any]) -> str:
+    """One widening question after a `borderline` or `task` verdict: name the signals that did not hold."""
+    verdict = as_mapping(scope.get("verdict")) or {}
+    label = verdict.get("verdict")
+    head = (
+        "What the expert described may be a single task rather than a process."
+        if label == "task"
+        else "What the expert described sits on the boundary between a task and a process."
+    )
+    reasoning = single_line(verdict.get("reasoning") or "", 400)
+    prose = dict(SIGNALS)
+    failed = failed_signals(verdict)
+    named = "\n".join(f"  - {prose[k]} Plain question: {SIGNAL_QUESTIONS[k]}" for k in failed if k in prose)
+    parts = [
+        head,
+        f"Assessment: {reasoning}" if reasoning else "",
+        f"These tests did not hold:\n{named}" if named else "",
+        "Ask ONE widening question: who receives or depends on the output once they are done? Name the signals above "
+        "in plain language so the expert can see why you are asking. Do not lecture them about what counts as a "
+        "process, and do not refuse to continue: if their answer widens it into something with a real consumer, map "
+        "that instead.",
+    ]
+    return "\n".join(p for p in parts if p)
+
+
+SETTLE_HINT = (
+    'Offer an easy way to settle it: a range is fine ("between 2 and 4 days"), "not sure" is fine, and "none" is '
+    "fine where it applies."
+)
+
+
+def wrap_up_block(given_up: Sequence[str], *, vocab: Vocabulary, ready: bool) -> str:
+    """The wrap-up: given-up fields offered once more with an easy settle, and the honest exit (spec 14 Q4)."""
+    if not given_up:
+        if ready:
+            return "Nothing is missing. Summarise the process in two sentences and ask whether anything should be corrected."
+        return "Nothing more will be asked. Summarise the process in two sentences."
+    labels = ", ".join(vocab.label(s) for s in PROFILE_SPECS if s.key in given_up)
+    return (
+        f"These fields are still open after several tries: {labels}. Ask about them ONE more time, together, in one "
+        f"short question. {SETTLE_HINT} If the expert still cannot answer, tell them plainly that Finish needs more of "
+        "the map answered, and that they can close the session with the Close button instead; that is a fine answer "
+        "too. Never end the session yourself."
+    )

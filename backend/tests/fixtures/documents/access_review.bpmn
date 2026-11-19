@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" id="defs">
+  <process id="p1" name="Quarterly access review">
+    <laneSet>
+      <lane id="L1" name="IT security analyst"><flowNodeRef>t1</flowNodeRef><flowNodeRef>t4</flowNodeRef></lane>
+      <lane id="L2" name="Line manager"><flowNodeRef>t2</flowNodeRef><flowNodeRef>t3</flowNodeRef></lane>
+    </laneSet>
+    <startEvent id="s" name="Quarter starts"/>
+    <task id="t1" name="Export user access list"/>
+    <userTask id="t2" name="Review access per employee"/>
+    <exclusiveGateway id="g"/>
+    <userTask id="t3" name="Request access removal"/>
+    <task id="t4" name="Remove access and document"/>
+    <endEvent id="e" name="Access review signed off"/>
+    <sequenceFlow id="f1" sourceRef="s" targetRef="t1"/>
+    <sequenceFlow id="f2" sourceRef="t1" targetRef="t2"/>
+    <sequenceFlow id="f3" sourceRef="t2" targetRef="g"/>
+    <sequenceFlow id="f4" sourceRef="g" targetRef="t3"/>
+    <sequenceFlow id="f5" sourceRef="g" targetRef="e"/>
+    <sequenceFlow id="f6" sourceRef="t3" targetRef="t4"/>
+    <sequenceFlow id="f7" sourceRef="t4" targetRef="t2"/>
+  </process>
+</definitions>

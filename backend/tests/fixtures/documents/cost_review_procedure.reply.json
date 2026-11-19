@@ -1,0 +1,121 @@
+{
+  "document_kind": "procedure",
+  "name": {"value": "Monthly cost review", "quote": "Monthly cost review: procedure"},
+  "trigger": {
+    "value": "Month-end close is completed in the ledger",
+    "quote": "The review starts once month-end close is completed in the ledger"
+  },
+  "end_result": {"value": "The monthly cost report", "quote": "The process ends with the monthly cost report"},
+  "value_at_end": {
+    "value": "The CFO uses it to decide on budget corrections",
+    "quote": "which the CFO uses to decide on budget corrections"
+  },
+  "business_pain": null,
+  "volume": {
+    "count": 1,
+    "period": "month",
+    "raw": "every month for 14 cost centres",
+    "quote": "It runs every month for 14 cost centres"
+  },
+  "process_owner": {"role": "Head of Controlling", "quote": "Owner: Head of Controlling"},
+  "baseline_metric": {
+    "value": "4",
+    "unit": "days",
+    "qualitative": null,
+    "quote": "The review takes about four days"
+  },
+  "target_metric": null,
+  "variation": null,
+  "sensitive_data": [],
+  "steps": [
+    {
+      "name": {"value": "Export actuals", "quote": "Export actuals"},
+      "goal": null,
+      "activities": [
+        {"value": "Export actual costs per cost centre", "quote": "exports actual costs per cost centre from SAP S/4HANA"}
+      ],
+      "roles": [{"role": "Cost controller", "contribution": null, "quote": "The cost controller exports actual costs"}],
+      "owner": {"value": "Cost controller", "quote": "The cost controller exports actual costs"},
+      "systems": [{"value": "SAP S/4HANA", "quote": "from SAP S/4HANA"}],
+      "data": {
+        "inputs": [{"value": "Actual costs per cost centre", "quote": "exports actual costs per cost centre"}],
+        "outputs": [{"value": "Review workbook", "quote": "into the review workbook"}]
+      },
+      "effort": null,
+      "pain_points": [],
+      "approvals": [],
+      "exceptions": [],
+      "handover": null
+    },
+    {
+      "name": {"value": "Compare with budget", "quote": "Compare with budget"},
+      "goal": null,
+      "activities": [
+        {"value": "Compare actuals with the budget", "quote": "compares actuals with the budget in Excel"},
+        {"value": "Flag every variance above 5%", "quote": "flags every variance above 5%"}
+      ],
+      "roles": [{"role": "Cost controller", "contribution": null, "quote": "The cost controller compares actuals with the budget"}],
+      "owner": null,
+      "systems": [
+        {"value": "Excel", "quote": "the budget in Excel"},
+        {"value": "Planning tool", "quote": "in the planning tool"}
+      ],
+      "data": null,
+      "effort": null,
+      "pain_points": [],
+      "approvals": [],
+      "exceptions": [],
+      "handover": null
+    },
+    {
+      "name": {"value": "Collect explanations", "quote": "Collect explanations"},
+      "goal": null,
+      "activities": [],
+      "roles": [
+        {"role": "Cost centre manager", "contribution": "Explains flagged variances", "quote": "Cost centre managers explain flagged variances"}
+      ],
+      "owner": null,
+      "systems": [{"value": "E-mail", "quote": "by e-mail"}],
+      "data": {"inputs": [{"value": "Flagged variances", "quote": "explain flagged variances"}], "outputs": []},
+      "effort": {"duration": "Three working days", "frequency": null, "quote": "within three working days"},
+      "pain_points": [],
+      "approvals": [],
+      "exceptions": [
+        {
+          "description": "Explanation missing after three working days: escalate to the department head",
+          "loops_back_to": 3,
+          "quote": "If an explanation is missing after three working days"
+        }
+      ],
+      "handover": null
+    },
+    {
+      "name": {"value": "Review", "quote": "Step 4 | Review"},
+      "goal": null,
+      "activities": [],
+      "roles": [{"role": "Head of Controlling", "contribution": null, "quote": "The Head of Controlling reviews variances and explanations"}],
+      "owner": {"value": "Head of Controlling", "quote": "The Head of Controlling reviews variances"},
+      "systems": [],
+      "data": null,
+      "effort": null,
+      "pain_points": [],
+      "approvals": [{"approver_role": "Head of Controlling", "waiting_time": null, "quote": "approves the commentary"}],
+      "exceptions": [],
+      "handover": null
+    },
+    {
+      "name": {"value": "Send the cost report", "quote": "Send the cost report"},
+      "goal": null,
+      "activities": [],
+      "roles": [{"role": "Cost controller", "contribution": null, "quote": "The cost controller publishes the cost report"}],
+      "owner": null,
+      "systems": [{"value": "Power BI", "quote": "in Power BI"}],
+      "data": {"inputs": [], "outputs": [{"value": "Monthly cost report", "quote": "publishes the cost report for the CFO"}]},
+      "effort": null,
+      "pain_points": [],
+      "approvals": [],
+      "exceptions": [],
+      "handover": null
+    }
+  ]
+}

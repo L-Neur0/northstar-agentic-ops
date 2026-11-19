@@ -1,0 +1,3 @@
+# Optional overrides of field labels and default questions, by field ID (spec 12 §3.10).
+# Shape: fields: {P06: {label: "Starting point", question: "..."}}. Unknown IDs stop the app. Empty for NIG.
+fields: {}

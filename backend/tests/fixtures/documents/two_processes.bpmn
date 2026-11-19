@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" id="defs">
+  <collaboration id="c1">
+    <participant id="pa" name="Requester" processRef="pA"/>
+    <participant id="pb" name="Supplier onboarding" processRef="pB"/>
+  </collaboration>
+  <process id="pA">
+    <task id="a1" name="Fill in form"/><task id="a2" name="Send form"/><task id="a3" name="Wait for answer"/>
+    <sequenceFlow id="fa1" sourceRef="a1" targetRef="a2"/><sequenceFlow id="fa2" sourceRef="a2" targetRef="a3"/>
+  </process>
+  <process id="pB">
+    <startEvent id="s" name="Form received"/>
+    <task id="b1" name="Check supplier data"/><task id="b2" name="Screen sanctions list"/>
+    <task id="b3" name="Create supplier record"/><task id="b4" name="Set payment terms"/>
+    <task id="b5" name="Inform requester"/>
+    <endEvent id="e" name="Supplier active"/>
+    <sequenceFlow id="f0" sourceRef="s" targetRef="b1"/>
+    <sequenceFlow id="f1" sourceRef="b1" targetRef="b2"/><sequenceFlow id="f2" sourceRef="b2" targetRef="b3"/>
+    <sequenceFlow id="f3" sourceRef="b3" targetRef="b4"/><sequenceFlow id="f4" sourceRef="b4" targetRef="b5"/>
+    <sequenceFlow id="f5" sourceRef="b5" targetRef="e"/>
+  </process>
+</definitions>

@@ -1,0 +1,5 @@
+# Upload limits for "start from your documents" (spec 17).
+allowed_types: [pdf, docx, xlsx, csv, txt, md, bpmn, xml]
+max_files_per_session: 5
+max_file_mb: 10
+text_budget_chars: 60000

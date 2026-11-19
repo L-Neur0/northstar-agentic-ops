@@ -1,0 +1,1 @@
+"""The only writer of the profile: applying changes, Verdicts, proposals, completeness, roll-ups and the raw snapshot. Pure code with no I/O and no model calls (spec 13). Storing a value and counting it are decided in one place, on the field."""

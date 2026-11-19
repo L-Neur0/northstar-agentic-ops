@@ -1,0 +1,1 @@
+"""The conversation: phases and limits, reading yes/no replies in code, the prompts, the model calls (nodes) and the LangGraph graph that runs one turn (spec 14). Python decides every observable outcome; the model only reads answers and phrases questions. Every loop has a counter, and every counter has a maximum."""

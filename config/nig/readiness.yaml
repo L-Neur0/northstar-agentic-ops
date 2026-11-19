@@ -1,0 +1,33 @@
+# Readiness checklist settings (spec 21). Levels are high / medium / low; wording is what the report says.
+dimensions:
+  defined:
+    to_prepare: {low: "Agree what starts the process, what it produces, who owns it and what each step is for.", medium: "Write down the goal of every step."}
+  standard:
+    to_prepare: {low: "Agree one way of working (one template) across teams and regions.", medium: "Reduce the differences between teams before automating."}
+  data:
+    to_prepare: {low: "Digitise the inputs that arrive on paper, by phone or from memory.", medium: "Move documents into a structured, readable format."}
+  systems:
+    to_prepare: {low: "Ask IT for an export or API for the systems used; replace shadow spreadsheets.", medium: "Confirm with IT how each system can be reached."}
+  rules:
+    to_prepare: {low: "Keep the judgement with people; collect examples to support them.", medium: "Write down the decision rules with examples."}
+  risk_size:
+    to_prepare: {low: "Check the hours are worth the effort and plan the human checks for sensitive data.", medium: "Plan a human check for sensitive data or regulated steps."}
+thresholds:
+  min_hours_per_year_medium: 100
+  min_hours_per_year_high: 500
+  digital_share_high: 0.8
+  digital_share_medium: 0.5
+  rule_share_high: 0.7
+  rule_share_medium: 0.4
+  known_system_share_high: 0.8
+  known_system_share_medium: 0.5
+# Sample IT application list (fictional). export_or_api = IT knows an export or API.
+applications:
+  - {name: SAP S/4HANA, aliases: [sap, s4, s/4hana], export_or_api: true}
+  - {name: Microsoft Excel, aliases: [excel, spreadsheet], export_or_api: false}
+  - {name: Outlook, aliases: [e-mail, email, outlook], export_or_api: true}
+  - {name: SharePoint, aliases: [sharepoint], export_or_api: true}
+  - {name: Microsoft Teams, aliases: [teams], export_or_api: true}
+  - {name: Workday, aliases: [workday], export_or_api: true}
+  - {name: ServiceNow, aliases: [servicenow, snow], export_or_api: true}
+  - {name: Coupa, aliases: [coupa], export_or_api: true}

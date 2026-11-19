@@ -1,0 +1,216 @@
+# ============================================================================
+# SOLUTION CATALOGUE FOR NIG: ASSUMED TOOL SET (spec 26 §3.1).
+# NIG is fictional: this is the setup we assume, agreed with the product owner on 2026-11-19.
+# Microsoft 365 Copilot + the AI tools NIG has already built and runs internally + generic routes.
+# The step assessment may only pick an `id` from this list; code drops any other.
+# Rule given to the model: reuse an existing internal tool when its `choose_when` matches,
+# before proposing a licensed assistant, a low-code build or a custom build.
+#
+# Schema (validated at start-up, spec 26 §4.3):
+#   placeholder   bool   true only while the list is not the company's
+#   assumed       bool   true when the list is an assumed setup (shown as "assumed tool set" in the report)
+#   version       str    free text; changes the catalogue fingerprint (re-runs the step assessment)
+#   solutions     list, 2-30 entries, each:
+#     id             slug ^[a-z][a-z0-9-]{1,39}$, unique
+#     category       existing_internal | off_the_shelf | low_code | custom_build | integration | fix_first | none
+#     name           plain name shown in the report
+#     good_for       one or two sentences: what it does well
+#     choose_when    1-5 short conditions
+#     avoid_when     0-5 short conditions
+#     prerequisites  0-5 things that must be in place first
+#     fits           which AI fits it can serve: any of automate, assist, human
+#   At least one entry must fit `human` (the "stays with people" route).
+# ============================================================================
+
+placeholder: false
+assumed: true
+version: "nig-assumed-2026-11-19"
+
+solutions:
+  # --- AI tools NIG has already built and runs internally (reuse before build) ---
+  - id: invoice-processing
+    category: existing_internal
+    name: "NIG invoice processing"
+    good_for: "Reads supplier invoices, extracts header and line data, matches them to purchase orders and routes exceptions to a person."
+    choose_when:
+      - "The step reads or checks invoices or similar financial documents"
+      - "Data must be matched against purchase orders or the ledger"
+    avoid_when:
+      - "The documents are not invoices or close variants of them"
+    prerequisites:
+      - "Access to the invoice inbox or scan feed"
+      - "A contact in the team that runs the tool"
+    fits: [automate, assist]
+
+  - id: cv-screening
+    category: existing_internal
+    name: "NIG CV screening"
+    good_for: "Reads CVs and applications, extracts skills and experience, and shortlists against a role profile for a recruiter to review."
+    choose_when:
+      - "The step reads CVs, applications or similar profiles of people"
+      - "Candidates are compared against a written role profile"
+    avoid_when:
+      - "The final hiring decision would be taken without a person"
+    prerequisites:
+      - "A written role profile"
+      - "HR approval for the data used"
+    fits: [assist]
+
+  - id: contract-review
+    category: existing_internal
+    name: "NIG contract review"
+    good_for: "Reads contracts, finds key clauses, dates and obligations, and flags deviations from the standard terms for a lawyer."
+    choose_when:
+      - "The step reads contracts, agreements or terms and conditions"
+      - "Clauses or deviations from a standard must be found"
+    avoid_when:
+      - "The step needs a legal decision rather than finding clauses"
+    prerequisites:
+      - "The company's standard clauses or playbook"
+    fits: [assist]
+
+  - id: ticket-routing
+    category: existing_internal
+    name: "NIG ticket routing"
+    good_for: "Classifies incoming requests or tickets by topic and urgency and sends each to the right team or queue."
+    choose_when:
+      - "Requests arrive by e-mail, form or ticket and must reach the right person"
+      - "The routing follows categories that can be written down"
+    avoid_when:
+      - "Every request needs a judgement call before routing"
+    prerequisites:
+      - "A list of categories and the team for each"
+    fits: [automate, assist]
+
+  - id: knowledge-assistant
+    category: existing_internal
+    name: "NIG knowledge chatbot"
+    good_for: "Answers questions from the company's procedures, policies and manuals, with links to the source."
+    choose_when:
+      - "People look up procedures, policies or past answers to do the step"
+      - "The same questions are asked again and again"
+    avoid_when:
+      - "The answer is not written down anywhere"
+    prerequisites:
+      - "The procedures and manuals in a readable, current form"
+    fits: [assist]
+
+  - id: lead-qualification
+    category: existing_internal
+    name: "NIG lead qualification"
+    good_for: "Scores incoming sales leads and opportunities against qualification criteria and suggests the next action for sales."
+    choose_when:
+      - "The step judges whether a lead, request or opportunity is worth pursuing"
+      - "Qualification criteria can be written down"
+    avoid_when:
+      - "The step is not about sales or customer opportunities"
+    prerequisites:
+      - "Written qualification criteria"
+      - "Access to the CRM"
+    fits: [assist]
+
+  # --- Licensed assistant ---
+  - id: m365-copilot
+    category: off_the_shelf
+    name: "Microsoft 365 Copilot"
+    good_for: "Drafting, summarising and analysing in Word, Excel, Outlook and Teams, with the person keeping the decision."
+    choose_when:
+      - "A person writes, reads or summarises text in office documents, e-mail or chat"
+      - "Spreadsheets need a quick analysis or summary"
+      - "Each case is a little different and volume is moderate"
+    avoid_when:
+      - "The step must run without a person"
+      - "Data must be written into a system of record"
+    prerequisites:
+      - "The staff involved have a Copilot licence and short training"
+      - "The data may be used with Copilot under company policy"
+    fits: [assist]
+
+  # --- Generic routes ---
+  - id: low-code-flow
+    category: low_code
+    name: "Low-code workflow automation"
+    good_for: "Routing, reminders, approvals and moving data between connected business apps, built by a trained business user."
+    choose_when:
+      - "The step follows fixed rules"
+      - "The systems involved have standard connectors"
+      - "Reminders, chasing or approvals take the time"
+    avoid_when:
+      - "Inputs are paper or verbal"
+      - "Many exceptions need judgement"
+    prerequisites:
+      - "A written rule for each decision"
+      - "Connector access to the systems involved"
+    fits: [automate, assist]
+
+  - id: low-code-agent
+    category: low_code
+    name: "Low-code AI agent builder"
+    good_for: "A configured AI agent that reads requests or documents and acts in connected tools, with a person checking the result."
+    choose_when:
+      - "Inputs are digital documents or messages in a varying layout"
+      - "The steps can be described with examples"
+      - "A person can check the result before it counts"
+    avoid_when:
+      - "The step needs deep integration with a core system"
+      - "Errors would have a high legal or financial impact"
+    prerequisites:
+      - "Example inputs and expected outputs"
+      - "A named person who checks the agent's work"
+    fits: [automate, assist]
+
+  - id: custom-ai-app
+    category: custom_build
+    name: "Custom AI app or agent built by the AI engineering team"
+    good_for: "Document extraction, multi-step agents and AI features integrated with core systems, with evaluation and monitoring."
+    choose_when:
+      - "Volume or hours are high enough to justify a build"
+      - "No existing tool or assistant can reach the systems or meet the quality needed"
+      - "The step needs reliable extraction from many document layouts"
+    avoid_when:
+      - "An existing internal tool, Copilot or a low-code entry already fits"
+      - "The way of working is not agreed yet"
+    prerequisites:
+      - "A sponsor and an implementation brief"
+      - "Access to the systems and example data"
+      - "A stable, agreed way of working"
+    fits: [automate, assist]
+
+  - id: it-integration-rpa
+    category: integration
+    name: "IT integration or screen automation"
+    good_for: "Systems exchange data through an interface, or a robot re-types data where no interface exists."
+    choose_when:
+      - "People copy data between systems by hand"
+      - "The data is structured and the rules are fixed"
+    avoid_when:
+      - "Inputs are free text or documents that need reading"
+      - "The screens change often"
+    prerequisites:
+      - "An export, API or stable screens for each system"
+      - "IT capacity to build and run it"
+    fits: [automate]
+
+  - id: fix-first
+    category: fix_first
+    name: "Fix first: standardise and digitise"
+    good_for: "Agree one template or rule, digitise paper and verbal inputs, clean the data, before any AI or automation."
+    choose_when:
+      - "Teams or sites do the step differently"
+      - "Inputs arrive on paper, by phone or from memory"
+      - "Data is incomplete or inconsistent"
+    avoid_when:
+      - "The step is already standard and digital"
+    prerequisites: []
+    fits: [automate, assist]
+
+  - id: stays-with-people
+    category: none
+    name: "No tool: stays with people"
+    good_for: "Judgement, relationships, accountability and sign-offs that people should keep."
+    choose_when:
+      - "The step is pure judgement or a relationship"
+      - "A person must stay accountable for the decision"
+    avoid_when: []
+    prerequisites: []
+    fits: [human]

@@ -1,0 +1,1 @@
+"""The assessment after Finish: opportunities, the process map with grounding, labels, value, readiness, the suggested path, the report model and the implementation brief (specs 20 to 23). Every model output here is checked against the profile by code before it is stored. Each part fails on its own, so one failed call never blocks the rest of the report."""

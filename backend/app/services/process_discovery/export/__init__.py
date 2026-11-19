@@ -1,0 +1,1 @@
+"""Files built from a session: the PDF report, the BPMN drawing and XML, and the Excel step grid (specs 22 and 24). Exports read the session and the assessment; they never call the model themselves. A failed drawing or layout degrades to a note, never to an error page."""

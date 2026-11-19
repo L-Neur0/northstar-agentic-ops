@@ -1,0 +1,1 @@
+"""The shell's foundations: settings, company configuration, access, rate limits, logging and telemetry. Nothing here knows about interviews; it is built once in the app lifespan (spec 10). Each module is small and has no knowledge of the others' internals."""

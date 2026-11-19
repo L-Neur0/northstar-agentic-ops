@@ -1,0 +1,1 @@
+"""HTTP routes. Each module is a thin router that checks access, calls the engine facade and maps errors to the API error codes. Routes never import deeper than `app.services.process_discovery` (spec 10 §3.9, spec 15)."""

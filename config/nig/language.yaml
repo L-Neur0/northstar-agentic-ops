@@ -1,0 +1,69 @@
+# Words code reads as a plain yes or no to a proposal, and cue words for the roll-up review (spec 14).
+# "ok", "okay", "sure" and "fine" are deliberately not yes words: they are often just acknowledgements.
+# Every word is quoted: plain YAML would read yes, no, true and false as booleans.
+"languages":
+  "en":
+    "yes":
+    - "yes"
+    - "yep"
+    - "yeah"
+    - "yup"
+    - "y"
+    - "correct"
+    - "right"
+    - "that's right"
+    - "that is right"
+    - "that's correct"
+    - "confirm"
+    - "confirmed"
+    - "i confirm"
+    - "agreed"
+    - "sounds right"
+    - "sounds good"
+    - "exactly"
+    - "true"
+    - "indeed"
+    "no":
+    - "no"
+    - "nope"
+    - "nah"
+    - "n"
+    - "not really"
+    - "not quite"
+    - "incorrect"
+    - "wrong"
+    - "that's wrong"
+    - "that's not right"
+    - "no thanks"
+    - "false"
+    - "disagree"
+    "roles_cues":
+    - "role"
+    - "roles"
+    "systems_cues":
+    - "system"
+    - "systems"
+    - "tool"
+    - "tools"
+  "de":
+    "yes":
+    - "ja"
+    - "ja genau"
+    - "genau"
+    - "stimmt"
+    - "korrekt"
+    - "passt"
+    - "richtig"
+    "no":
+    - "nein"
+    - "falsch"
+    - "nicht richtig"
+    - "eher nicht"
+    "roles_cues":
+    - "rolle"
+    - "rollen"
+    "systems_cues":
+    - "system"
+    - "systeme"
+    - "werkzeug"
+    - "werkzeuge"

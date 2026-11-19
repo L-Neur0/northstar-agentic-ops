@@ -1,0 +1,1 @@
+"""The process overview on the admin side: rows, totals and chart data across all mapped processes (spec 23). It never returns transcripts or document text. It informs the people who decide; it never ranks a process in or out."""

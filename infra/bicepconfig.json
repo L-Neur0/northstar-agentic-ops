@@ -1,0 +1,17 @@
+// Bicep linter settings for infra/ (spec 25 §3.4, AC-25.8).
+// Why: turn the security and API-version rules into hard errors, so
+// `az bicep build --file infra/main.bicep` fails instead of only warning.
+// Creates nothing in Azure. Must not relax any rule below.
+{
+  "analyzers": {
+    "core": {
+      "enabled": true,
+      "rules": {
+        "secure-secrets-in-params": { "level": "error" },
+        "outputs-should-not-contain-secrets": { "level": "error" },
+        "no-hardcoded-env-urls": { "level": "error" },
+        "use-recent-api-versions": { "level": "error" }
+      }
+    }
+  }
+}

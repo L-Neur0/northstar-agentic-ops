@@ -1,0 +1,1 @@
+"""Small shared helpers outside the engine: prompt safety, the audit line and security headers. They import only the standard library and the shell's core modules (specs 10 and 11). None of them holds state."""
