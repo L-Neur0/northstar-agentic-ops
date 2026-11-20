@@ -155,6 +155,9 @@ def _turn_log(
         "ideas": log.get("ideas", 0),
         "steer": _steer_log(new.steering, ctx),
         "extract": log.get("extract", "skipped"),
+        "conflicts": log.get("conflicts", 0),
+        "choice": log.get("choice"),
+        "left": log.get("left", 0),
         "duration_ms": ms,
     }
 

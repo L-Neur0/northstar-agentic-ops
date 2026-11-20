@@ -17,7 +17,7 @@ from pydantic import BaseModel
 from app.models.process_discovery_schemas import NoneRow, Process, Profile, Step
 from app.services.process_discovery.domain import field_spec as fs
 
-SIDECARS = {"meta", "skipped"}
+SIDECARS = {"meta", "skipped", "conflicts"}
 
 SCALAR = {"text": str, "list": list[str], "bool": bool}
 

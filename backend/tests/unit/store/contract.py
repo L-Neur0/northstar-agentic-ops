@@ -7,7 +7,8 @@ What: `RepositoryContract`, a test class with no fixtures of its own. A subclass
 `test_memory.py` or `test_cosmos.py` provides the `harness` fixture: the repository plus two hooks
 to read and plant a stored document as the backend holds it.
 Must not: depend on one implementation's internals; anything implementation-specific (the query
-text, SDK error mapping, logging) is tested in that implementation's own file.
+text, SDK error mapping, logging) is tested in that implementation's own file. Also covers the
+conditional delete the workspace uses (spec 21 §3.6, AC-21.16).
 """
 
 from __future__ import annotations
@@ -247,6 +248,19 @@ class RepositoryContract:
         session = await harness.repo.create_session(new_session())
         assert await harness.repo.delete_session(OTHER, session.id) is False
         assert await harness.repo.get_session(OWNER, session.id) is not None
+
+    async def test_ac_21_16_delete_with_current_etag_deletes(self, harness: Harness):
+        created = await harness.repo.create_session(new_session())
+        assert created.etag
+        assert await harness.repo.delete_session(OWNER, created.id, etag=created.etag) is True
+        assert await harness.repo.get_session(OWNER, created.id) is None
+
+    async def test_ac_21_16_delete_with_stale_etag_conflicts_and_keeps_the_session(self, harness: Harness):
+        created = await harness.repo.create_session(new_session())
+        await harness.repo.replace_session(created.model_copy(update={"phase": Phase.BOUNDARIES}))
+        with pytest.raises(ConflictError):
+            await harness.repo.delete_session(OWNER, created.id, etag=created.etag)
+        assert await harness.repo.get_session(OWNER, created.id) is not None
 
     async def test_delete_session_never_deletes_an_idea(self, harness: Harness):
         idea = await harness.repo.create_idea(new_idea())

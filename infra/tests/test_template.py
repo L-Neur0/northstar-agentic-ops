@@ -5,7 +5,8 @@ would only show up in Azure, after the damage. These tests catch them on every p
 ARM JSON that `az bicep build` produces, with no Azure login.
 What: one test (or more) per acceptance criterion; each cites its ID.
 Must not: deploy or call Azure. The live halves (what-if, smoke) are run by the user (§3.10).
-Spec: 25. Acceptance criteria: AC-25.8 to AC-25.20, AC-25.29 (static half).
+Spec: 25. Acceptance criteria: AC-25.8 to AC-25.20, AC-25.29 (static half), AC-25.30 (amended
+2026-11-20, open workspace: `WORKSPACE_OPEN` and optional codes).
 """
 
 from __future__ import annotations
@@ -30,7 +31,15 @@ def _container(resources: list[Resource]) -> dict[str, Any]:
 
 
 def _env(resources: list[Resource]) -> dict[str, dict[str, Any]]:
-    return {e["name"]: e for e in _container(resources)["env"]}
+    """The variables always set (`baseEnv`); the optional workspace codes are checked by AC-25.30."""
+    assert _container(resources)["env"] == "[concat(variables('baseEnv'), variables('codeEnv'))]"
+    return {e["name"]: e for e in _app(resources).template["variables"]["baseEnv"]}
+
+
+def _code_vars(resources: list[Resource]) -> tuple[str, str]:
+    """The compiled `codeSecrets` and `codeEnv` expressions (one optional entry per workspace code)."""
+    variables = _app(resources).template["variables"]
+    return variables["codeSecrets"], variables["codeEnv"]
 
 
 # --- AC-25.8 -------------------------------------------------------------------------------------------
@@ -161,8 +170,8 @@ def test_ac_25_15_registry_basic_no_admin_identity_pull(resources: list[Resource
     assert len(pulls) == 1
     assert pulls[0]["identity"] == "[parameters('identityId')]"
     assert "passwordSecretRef" not in pulls[0]
-    secret_names = [s["name"] for s in _app(resources).props["configuration"]["secrets"]]
-    assert not any("password" in n or "registry" in n for n in secret_names)
+    secrets = _app(resources).props["configuration"]["secrets"] + "".join(_code_vars(resources))
+    assert "password" not in secrets.lower() and "registry" not in secrets.lower()
 
 
 def test_ac_25_16_log_cap_and_workspace_based_insights(resources: list[Resource]) -> None:
@@ -235,8 +244,8 @@ def test_ac_25_19_environment_variables(resources: list[Resource]) -> None:
     expected = {
         "COSMOS_ENDPOINT", "COSMOS_DATABASE", "COSMOS_CONTAINER", "AZURE_OPENAI_ENDPOINT",
         "AZURE_OPENAI_DEPLOYMENT", "AZURE_OPENAI_EVAL_DEPLOYMENT", "AZURE_OPENAI_API_VERSION",
-        "DAILY_TOKEN_BUDGET", "APPLICATIONINSIGHTS_CONNECTION_STRING", "WORKSPACE_CODE_SPECIALIST",
-        "WORKSPACE_CODE_ENGINEER", "WORKSPACE_TOKEN_SECRET",
+        "DAILY_TOKEN_BUDGET", "APPLICATIONINSIGHTS_CONNECTION_STRING", "WORKSPACE_TOKEN_SECRET",
+        "WORKSPACE_OPEN",
     }  # fmt: skip
     assert expected <= set(env)
     for absent in ("AZURE_OPENAI_API_KEY", "APP_VERSION", "LLM_CACHE_ENABLED"):
@@ -248,15 +257,19 @@ def test_ac_25_19_environment_variables(resources: list[Resource]) -> None:
 def test_ac_25_20_secrets_are_secret_refs_and_params_secure(resources: list[Resource]) -> None:
     env = _env(resources)
     refs = {
-        "WORKSPACE_CODE_SPECIALIST": "workspace-code-specialist",
-        "WORKSPACE_CODE_ENGINEER": "workspace-code-engineer",
         "WORKSPACE_TOKEN_SECRET": "workspace-token-secret",
         "APPLICATIONINSIGHTS_CONNECTION_STRING": "appinsights-connection-string",
     }
     for var, secret in refs.items():
         assert env[var] == {"name": var, "secretRef": secret}
-    secrets = {s["name"] for s in _app(resources).props["configuration"]["secrets"]}
-    assert secrets == set(refs.values())
+    secrets = _app(resources).props["configuration"]["secrets"]
+    assert secrets.startswith("[concat(createArray(") and secrets.endswith(", variables('codeSecrets'))]")
+    assert set(re.findall(r"createObject\('name', '([a-z-]+)', 'value'", secrets)) == set(refs.values())
+    code_secrets, code_env = _code_vars(resources)
+    for var, secret in (("WORKSPACE_CODE_SPECIALIST", "workspace-code-specialist"),
+                        ("WORKSPACE_CODE_ENGINEER", "workspace-code-engineer")):  # fmt: skip
+        assert f"createObject('name', '{var}', 'secretRef', '{secret}')" in code_env
+        assert f"createObject('name', '{secret}', 'value', parameters(" in code_secrets
     main = _main(resources)
     for name in ("workspaceCodeSpecialist", "workspaceCodeEngineer", "workspaceTokenSecret"):
         assert main["parameters"][name]["type"] == "securestring"
@@ -285,3 +298,27 @@ def test_tags_on_every_new_resource(resources: list[Resource]) -> None:
         if r.type.startswith("Microsoft.Authorization/") or r.body.get("existing"):
             continue
         assert "tags" in r.body, r.type
+
+
+# --- AC-25.30 (amended 2026-11-20, open workspace) ---------------------------------------------------------
+
+
+def test_ac_25_30_workspace_open_parameter_defaults_to_true_and_reaches_the_app(resources: list[Resource]) -> None:
+    main = _main(resources)
+    workspace_open = main["parameters"]["workspaceOpen"]
+    assert (workspace_open["type"], workspace_open["defaultValue"]) == ("bool", True)
+    params = module(main, "containerapp")["properties"]["parameters"]
+    assert params["workspaceOpen"]["value"] == "[parameters('workspaceOpen')]"
+    assert _env(resources)["WORKSPACE_OPEN"]["value"] == "[if(parameters('workspaceOpen'), 'true', 'false')]"
+
+
+def test_ac_25_30_codes_are_optional_and_set_only_when_given(resources: list[Resource]) -> None:
+    main = _main(resources)
+    for name in ("workspaceCodeSpecialist", "workspaceCodeEngineer"):
+        assert main["parameters"][name]["type"] == "securestring"
+        assert main["parameters"][name]["defaultValue"] == ""
+    assert "defaultValue" not in main["parameters"]["workspaceTokenSecret"]  # the secret stays required
+    code_secrets, code_env = _code_vars(resources)
+    for param in ("workspaceCodeSpecialist", "workspaceCodeEngineer"):
+        guard = f"if(empty(parameters('{param}')), createArray(), createArray("
+        assert guard in code_secrets and guard in code_env

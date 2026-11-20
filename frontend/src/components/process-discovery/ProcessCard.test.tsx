@@ -125,10 +125,25 @@ describe('proposals with ✓ / ✎ (AC-23.31, AC-23.75, AC-23.76; replaces the p
     expect(screen.getByRole('button', { name: /^The process/ })).toHaveTextContent('0/2')
   })
 
-  it('marks a proposal read from an image "(from an image)" (spec 17 §3.19 I5)', () => {
-    renderCard(views(), { proposals: controls({ imageDocuments: new Set(['notes.docx']) }) })
+  it('marks a proposal read from an image "(from an image)" from its meta (spec 17 §3.19 I5, §3.21 P4)', () => {
+    const marked = views().map((v) => (v.key === 'process.trigger' ? { ...v, fromImage: true } : v))
+    renderCard(marked, { proposals: controls() })
     expect(within(field('Trigger')).getByText('Proposed · from notes.docx (from an image)')).toBeInTheDocument()
     expect(within(field('End result')).getByText('Proposed · from a removed document')).toBeInTheDocument()
+  })
+
+  it('names the file of each item and marks only the image item (spec 17 §3.21 P4; AC-17.76)', () => {
+    const items = [
+      { sub: null, item: 'Ledger system', source: 'document' as const, documentName: 'procedure.docx', fromImage: false },
+      { sub: null, item: 'Planning tool', source: 'document' as const, documentName: 'planning_tool.png', fromImage: true },
+    ]
+    const merged = views().map((v) => (v.key === 'process.trigger' ? { ...v, items } : v))
+    renderCard(merged, { proposals: controls() })
+    expect(
+      within(field('Trigger')).getByText(
+        'Proposed · Ledger system from procedure.docx; Planning tool from planning_tool.png (from an image)',
+      ),
+    ).toBeInTheDocument()
   })
 
   it('Show quote reveals the quote in a blockquote (local state without controls)', async () => {

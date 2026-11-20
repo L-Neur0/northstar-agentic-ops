@@ -277,6 +277,7 @@ export const FAKE_CONFIG = {
   regions: ['North America', 'Europe', 'Middle East', 'Asia-Pacific'],
   languages: ['en', 'de'],
   documents: { allowedTypes: ['pdf', 'docx', 'xlsx', 'csv', 'txt', 'md', 'bpmn', 'xml'], maxFiles: 5, maxFileMb: 10, maxImageMb: 5 },
+  workspaceOpen: false,
 }
 
 /** Process fields a procedure proposes, with the value and the quote it was read from. */
@@ -316,3 +317,114 @@ export const DOCUMENT_SENTENCES = {
 
 /** A tiny valid PDF for the fake download. */
 export const FAKE_PDF = '%PDF-1.4\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n2 0 obj << /Type /Pages /Kids [] /Count 0 >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n'
+
+/* ---- Workspace seed (spec 23 §19.10.3; AC-23.139): five sessions for the specialist's list ---- */
+
+export interface WorkspaceSeedSession {
+  id: string
+  status: 'active' | 'finished' | 'no_candidate'
+  /** How the profile is filled: the whole cost review, two of its steps, the context only, or nothing. */
+  fill: 'complete' | 'steps' | 'context' | 'empty'
+  updatedHoursAgo: number
+  createdDaysAgo: number
+  processName?: string
+  department?: string
+  clusterCode?: string
+  /** Keep a first version of the steps that differs from the current one (step 2 name and one cell). */
+  rawSteps?: boolean
+  documents?: Array<{ name: string; kind: string; bytes: number; outcome: 'read' | 'failed' }>
+  /** Expert answers after the welcome, each with the agent's next line ('' = no reply yet). Empty: the script. */
+  conversation: Array<[expert: string, agent: string]>
+}
+
+/** The expert's side of the scripted cost review, one answer per script turn (first 14 turns). */
+export const COST_REVIEW_ANSWERS = [
+  'Finance control',
+  'Cost controller',
+  'Europe',
+  'Mostly the monthly cost review, chasing site managers for their numbers, and booking travel for the team.',
+  'Yes, Finance.',
+  'The ledger closes on the third working day.',
+  'A signed-off cost report per cluster.',
+  'The management team.',
+  'Three days of copying numbers by hand.',
+  'Once a month.',
+  'The head of controlling.',
+  'About three days.',
+  'One day would be good.',
+  'Partly. Two regions use their own template.',
+]
+
+export const WORKSPACE_SEED: WorkspaceSeedSession[] = [
+  {
+    id: 'seed-cost-review',
+    status: 'finished',
+    fill: 'complete',
+    updatedHoursAgo: 2,
+    createdDaysAgo: 3,
+    rawSteps: true,
+    documents: [
+      { name: 'cost-review-procedure.pdf', kind: 'pdf', bytes: 18_432, outcome: 'read' },
+      { name: 'old-template.xlsx', kind: 'xlsx', bytes: 9_216, outcome: 'failed' },
+    ],
+    conversation: [],
+  },
+  {
+    id: 'seed-invoice-check',
+    status: 'finished',
+    fill: 'complete',
+    updatedHoursAgo: 26,
+    createdDaysAgo: 4,
+    processName: 'Supplier invoice check',
+    department: 'Procurement',
+    clusterCode: 'PRO',
+    conversation: [
+      ['Procurement', 'Thanks. **What is your role** in Procurement?'],
+      ['Buyer', "Let's find a process worth mapping. **Which task takes most of your time?**"],
+      ['Checking supplier invoices against the orders.', '**What starts the check?**'],
+      ['An invoice arrives in the shared mailbox.', 'Good. **What is the end result?**'],
+    ],
+  },
+  {
+    id: 'seed-onboarding',
+    status: 'active',
+    fill: 'steps',
+    updatedHoursAgo: 5,
+    createdDaysAgo: 1,
+    processName: 'Laptop onboarding',
+    department: 'IT operations',
+    clusterCode: 'IT',
+    conversation: [
+      ['IT operations', 'Thanks. **What is your role** in IT operations?'],
+      ['Service desk lead', "Let's find a process worth mapping. **Which task takes most of your time?**"],
+      ['Preparing laptops for new joiners.', '**How many main steps** does it have?'],
+      ['Four.', "Four steps. **Step 1: what is it called?**"],
+      ['Order the laptop.', '**Step 2?**'],
+    ],
+  },
+  {
+    id: 'seed-unnamed',
+    status: 'active',
+    fill: 'context',
+    updatedHoursAgo: 0.2,
+    createdDaysAgo: 0,
+    department: 'Legal',
+    conversation: [
+      ['Legal', 'Thanks. **What is your role** in Legal?'],
+      ['Contract lawyer', ''],
+    ],
+  },
+  {
+    id: 'seed-ended',
+    status: 'no_candidate',
+    fill: 'context',
+    updatedHoursAgo: 72,
+    createdDaysAgo: 5,
+    department: 'Communications',
+    conversation: [
+      ['Communications', 'Thanks. **What is your role** in Communications?'],
+      ['Editor', "Let's find a process worth mapping. **Which task takes most of your time?**"],
+      ['Nothing repeats, every article is different.', 'Understood. There is no process to map today, so I have closed this session.'],
+    ],
+  },
+]

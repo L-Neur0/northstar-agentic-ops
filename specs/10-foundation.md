@@ -1,6 +1,6 @@
 # 10 · Foundation: repo, tooling, settings, company config, app shell
 
-> **Status:** built (CI run pending a GitHub repository) · **Implements:** F-22 (product), architecture §2, §3.1, §3.6–3.9, §4.3 · **Depends on:** — (first spec) · **Used by:** every other spec
+> **Status:** amended 2026-11-20 (open workspace: `WORKSPACE_OPEN`, product owner decision) · built (CI run pending a GitHub repository) · **Implements:** F-22 (product), architecture §2, §3.1, §3.6–3.9, §4.3 · **Depends on:** — (first spec) · **Used by:** every other spec
 > **Code:** `backend/pyproject.toml`, `backend/app/main.py`, `backend/app/core/*`, `config/nig/*`, `frontend/` (scaffold), `Makefile`, `.github/workflows/ci.yml` · **Tests:** `backend/tests/unit/core/`, `backend/tests/unit/process_discovery/test_architecture.py`, `backend/tests/test_smoke.py`
 
 ## 1. Purpose
@@ -70,7 +70,8 @@ One `Settings` class (pydantic-settings), read from the environment (and `backen
 | `COMPANY_CONFIG_DIR` | `../config/nig` | Must exist and load (§3.6) |
 | `STORE` | `memory` | `memory` or `cosmos`; `demo` requires `cosmos` |
 | `COSMOS_ENDPOINT`, `COSMOS_DATABASE`, `COSMOS_CONTAINER` | —, `discovery`, `sessions` | Required when `STORE=cosmos` |
-| `WORKSPACE_CODE_SPECIALIST`, `WORKSPACE_CODE_ENGINEER`, `WORKSPACE_TOKEN_SECRET` | dev values in `local`/`test` only | Required and non-default in `demo` |
+| `WORKSPACE_CODE_SPECIALIST`, `WORKSPACE_CODE_ENGINEER`, `WORKSPACE_TOKEN_SECRET` | dev values in `local`/`test` only | Required and non-default in `demo`; *(amended 2026-11-20 (open workspace))* with `WORKSPACE_OPEN=true` the two codes are not required (they are not used), the token secret still is |
+| `WORKSPACE_OPEN` *(amended 2026-11-20 (open workspace))* | `false` | `true` opens the workspace with a name only and switches delete off (spec 16 §3.2 item 5, spec 21 §3.6 item 4) |
 | `RATE_LIMIT_PER_VISITOR`, `RATE_LIMIT_PER_IP` | `30/minute`, `120/minute` | slowapi syntax |
 | `DAILY_TOKEN_BUDGET` | `2000000` | Whole app, per UTC day |
 | `LOG_LEVEL` | `INFO` | |
@@ -194,12 +195,13 @@ app = create_app  # factory for `uvicorn app.main:app --factory`
 | AC-10.18 | `npm run build` produces `frontend/dist`; `npm test` passes the scaffold test (the page renders the health result from a mocked fetch) |
 | AC-10.19 | CI runs lint and tests on push and fails on a ruff, pyright, eslint or test error |
 | AC-10.20 | Every Python module under `app/` and `tests/` starts with a docstring of at least three sentences (why it exists, what it does, which spec it implements); a test fails on a file without one |
+| AC-10.21 | *(amended 2026-11-20 (open workspace))* `WORKSPACE_OPEN` defaults to `false`; `DEPLOYMENT_STAGE=demo` with `WORKSPACE_OPEN=true` and the default codes starts, but with the default or a short token secret it still stops start-up |
 
 ## 7. Test plan
 
 | Test file | Covers |
 |---|---|
-| `tests/unit/core/test_settings.py` | AC-10.4–10.6 |
+| `tests/unit/core/test_settings.py` | AC-10.4–10.6, 10.21 |
 | `tests/unit/core/test_config.py` | AC-10.7–10.10 |
 | `tests/unit/core/test_logging.py` | AC-10.11, 10.12 |
 | `tests/unit/test_import_side_effects.py` | AC-10.3 |

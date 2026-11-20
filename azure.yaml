@@ -9,7 +9,9 @@
 #   variables and secrets (spec 25 §3.12).
 # What it must not do: never run `azd down` on this environment; it deletes the
 #   resource group with the hand-made AI account and its quota (D8).
-# Acceptance criteria: AC-25.21.
+# WORKSPACE_OPEN (amended 2026-11-20, open workspace) is a pipeline variable;
+#   unset means the open demo workspace.
+# Acceptance criteria: AC-25.21, AC-25.30.
 name: discovery-agent
 infra:
   provider: bicep
@@ -28,5 +30,5 @@ services:
         - APP_VERSION=${APP_VERSION}
 pipeline:
   provider: github
-  variables: [AZURE_RESOURCE_GROUP, MIN_REPLICAS, DEVELOPER_PRINCIPAL_ID]
+  variables: [AZURE_RESOURCE_GROUP, MIN_REPLICAS, DEVELOPER_PRINCIPAL_ID, WORKSPACE_OPEN]
   secrets: [WORKSPACE_CODE_SPECIALIST, WORKSPACE_CODE_ENGINEER, WORKSPACE_TOKEN_SECRET]

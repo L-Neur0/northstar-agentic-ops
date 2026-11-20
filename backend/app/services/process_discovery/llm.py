@@ -57,6 +57,7 @@ class CallType(StrEnum):
     ASSESS_STEPS = "ASSESS_STEPS"
     BRIEF = "BRIEF"
     EXPERT = "EXPERT"
+    JUDGE = "JUDGE"  # evaluation only (spec 24 §3.8); on failure the field is `judge_error`
 
 
 class ImageUrl(TypedDict):
@@ -193,9 +194,12 @@ def token_budget(settings: Settings | None, call_type: CallType, requested: int 
     return limit if requested is None else min(requested, limit)
 
 
+_DEPLOYMENT_SETTING = {CallType.EXPERT: "azure_openai_eval_deployment", CallType.JUDGE: "azure_openai_judge_deployment"}
+
+
 def deployment_for(settings: Settings | None, call_type: CallType) -> str:
-    """`EXPERT` uses the evaluation deployment; every other call type the app deployment."""
-    name = "azure_openai_eval_deployment" if call_type is CallType.EXPERT else "azure_openai_deployment"
+    """`EXPERT` uses the evaluation deployment, `JUDGE` the judge deployment (spec 24 §5), the rest the app's."""
+    name = _DEPLOYMENT_SETTING.get(call_type, "azure_openai_deployment")
     value = getattr(settings, name) if settings is not None else _setting_default(name)
     if not value:
         raise LLMConfigError(f"{name.upper()} is not set; needed for {call_type.value} calls")

@@ -4,7 +4,8 @@ Why: the stage, the store, the model deployments and the secrets decide how the 
 must be typed, checked once at start-up, and never guessed from the environment: a stage inferred
 from hosting variables is how a test-only shortcut ends up accepted in production.
 What: one `Settings` class read from environment variables (and `backend/.env` in local runs).
-It is built in the app lifespan and passed by dependency injection; it is never created at import
+`WORKSPACE_OPEN` (spec 10 AC-10.21, amended 2026-11-20) opens the workspace with a name only, so
+the demo stage then needs no workspace codes, only the token secret. It is built in the app lifespan and passed by dependency injection; it is never created at import
 time (spec 10 AC-10.3). Invalid values stop start-up with one message per problem.
 Must not: hold company content (that is `config/<company>/*.yaml`, see `app.core.config`).
 """
@@ -49,6 +50,7 @@ class Settings(BaseSettings):
     workspace_code_specialist: str = DEV_WORKSPACE_CODE_SPECIALIST
     workspace_code_engineer: str = DEV_WORKSPACE_CODE_ENGINEER
     workspace_token_secret: str = DEV_WORKSPACE_TOKEN_SECRET
+    workspace_open: bool = False  # spec 16 §3.2 item 5: name-only login, delete switched off
     rate_limit_per_visitor: str = "30/minute"
     rate_limit_per_ip: str = "120/minute"
     daily_token_budget: int = Field(default=2_000_000, ge=0)
@@ -64,6 +66,7 @@ class Settings(BaseSettings):
     azure_openai_endpoint: str | None = None
     azure_openai_deployment: str = "app-chat"
     azure_openai_eval_deployment: str = "eval-expert"
+    azure_openai_judge_deployment: str = "app-chat"  # spec 24 §3.8 J3: the evaluation judge
     azure_openai_api_version: str = "2025-04-01-preview"
     azure_openai_api_key: str | None = None
     azure_client_id: str | None = None
@@ -80,6 +83,7 @@ class Settings(BaseSettings):
     llm_max_tokens_assess_steps: Tokens = 32_000
     llm_max_tokens_brief: Tokens = 32_000
     llm_max_tokens_expert: Tokens = 32_000
+    llm_max_tokens_judge: Tokens = 2_000  # spec 24 §5
     llm_cache_enabled: bool | None = None  # None = on in local, off elsewhere
 
     # Interview (spec 14 §4)
@@ -101,9 +105,10 @@ class Settings(BaseSettings):
         if self.deployment_stage == "demo":
             if self.store != "cosmos":
                 problems.append("STORE must be cosmos in the demo stage")
-            if self.workspace_code_specialist == DEV_WORKSPACE_CODE_SPECIALIST:
+            codes_needed = not self.workspace_open  # an open workspace uses no code (AC-10.21)
+            if codes_needed and self.workspace_code_specialist == DEV_WORKSPACE_CODE_SPECIALIST:
                 problems.append("WORKSPACE_CODE_SPECIALIST must be set (not the development value) in the demo stage")
-            if self.workspace_code_engineer == DEV_WORKSPACE_CODE_ENGINEER:
+            if codes_needed and self.workspace_code_engineer == DEV_WORKSPACE_CODE_ENGINEER:
                 problems.append("WORKSPACE_CODE_ENGINEER must be set (not the development value) in the demo stage")
             if self.workspace_token_secret == DEV_WORKSPACE_TOKEN_SECRET or len(self.workspace_token_secret) < 32:
                 problems.append("WORKSPACE_TOKEN_SECRET must be set to at least 32 characters in the demo stage")

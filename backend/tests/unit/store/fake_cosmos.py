@@ -3,14 +3,15 @@
 Why: the Cosmos repository must pass the same contract as the memory one (AC-15.25), but unit tests
 cannot reach Azure. A fake is only useful if it behaves like the real `ContainerProxy` where the
 repository depends on it, so this one raises the SDK's own exception classes, honours `etag` with
-`MatchConditions.IfNotModified`, adds the system fields (`_rid`, `_self`, `_etag`, `_attachments`,
+`MatchConditions.IfNotModified` (on replace and delete), adds the system fields (`_rid`, `_self`, `_etag`, `_attachments`,
 `_ts`) and scopes queries to one partition.
 What: `FakeContainer` with `read`, `read_item`, `create_item`, `replace_item`, `delete_item` and
 `query_items` (a small subset of Cosmos SQL: projections with `AS`, `ARRAY_LENGTH`, `["key"]`
-paths, `SELECT *`, `WHERE path = @param AND ...`, one `ORDER BY`). It records every query and can
+paths, `SELECT *`, `TOP @param`, `WHERE path = @param AND ...`, one `ORDER BY`); a query without
+`partition_key` runs across partitions, as the async SDK does (the workspace reads, spec 21). It records every query and can
 be told to fail the next call or to look like a missing container or one with TTL off.
-Must not: be imported by app code, or accept calls the real async SDK would reject (a query without
-`partition_key`, or `enable_cross_partition_query`, which breaks the async client). Covers the fake
+Must not: be imported by app code, or accept calls the real async SDK would reject
+(`enable_cross_partition_query`, which breaks the async client). Covers the fake
 side of AC-15.11, AC-15.14, AC-15.19 and AC-15.25.
 """
 
@@ -31,7 +32,7 @@ _UNDEFINED = object()
 _PATH = re.compile(r'^c((?:\.\w+|\["\w+"\])*)$')
 _SEGMENT = re.compile(r'\.(\w+)|\["(\w+)"\]')
 _QUERY = re.compile(
-    r"^SELECT (?P<proj>.+?) FROM c(?: WHERE (?P<where>.+?))?(?: ORDER BY (?P<order>c\S+) (?P<dir>ASC|DESC))?$",
+    r"^SELECT (?:TOP (?P<top>\S+) )?(?P<proj>.+?) FROM c(?: WHERE (?P<where>.+?))?(?: ORDER BY (?P<order>c\S+) (?P<dir>ASC|DESC))?$",
     re.IGNORECASE,
 )
 
@@ -75,6 +76,7 @@ class FakeContainer:
         self.missing = missing
         self.items: dict[tuple[str, str], dict[str, Any]] = {}
         self.queries: list[str] = []
+        self.partitions: list[str | None] = []  # the `partition_key` of each query (None = cross-partition)
         self.fail_next: BaseException | None = None
 
     # --- helpers for tests ---------------------------------------------------------------------
@@ -173,12 +175,27 @@ class FakeContainer:
         self.items[key] = doc
         return copy.deepcopy(doc)
 
-    async def delete_item(self, item: str, partition_key: str, **kwargs: Any) -> None:
+    async def delete_item(
+        self,
+        item: str,
+        partition_key: str,
+        *,
+        etag: str | None = None,
+        match_condition: MatchConditions | None = None,
+        **kwargs: Any,
+    ) -> None:
         self._guard()
-        if self.items.pop((partition_key, item), None) is None:
+        current = self.items.get((partition_key, item))
+        if current is None:
             raise exceptions.CosmosResourceNotFoundError(
                 status_code=404, message="Entity with the specified id does not exist"
             )
+        if match_condition == MatchConditions.IfNotModified and etag != current["_etag"]:
+            raise exceptions.CosmosAccessConditionFailedError(
+                status_code=412,
+                message="Operation cannot be performed because one of the specified precondition is not met",
+            )
+        del self.items[(partition_key, item)]
 
     def query_items(
         self,
@@ -190,15 +207,15 @@ class FakeContainer:
     ) -> _AsyncItems:
         if "enable_cross_partition_query" in kwargs:
             raise TypeError("enable_cross_partition_query is not accepted by the async client")
-        if partition_key is None:
-            raise AssertionError("the store queries one partition only: pass partition_key=")
         self._guard()
         self.queries.append(query)
+        self.partitions.append(partition_key)
         params = {p["name"]: p["value"] for p in parameters or []}
         match = _QUERY.match(" ".join(query.split()))
         if not match:
             raise exceptions.CosmosHttpResponseError(status_code=400, message="Syntax error")
-        docs = [copy.deepcopy(d) for (pk, _), d in self.items.items() if pk == partition_key]
+        # No `partition_key` is a cross-partition query (the async SDK's default; the workspace reads only).
+        docs = [copy.deepcopy(d) for (pk, _), d in self.items.items() if partition_key is None or pk == partition_key]
         if match.group("where"):
             for clause in re.split(r"\s+AND\s+", match.group("where"), flags=re.IGNORECASE):
                 left, right = (part.strip() for part in clause.split("="))
@@ -208,6 +225,8 @@ class FakeContainer:
         if match.group("order"):
             order = _segments(match.group("order"))
             docs.sort(key=lambda d: str(_resolve(d, order)), reverse=match.group("dir").upper() == "DESC")
+        if match.group("top"):
+            docs = docs[: int(params[match.group("top")])]
         return _AsyncItems([self._project(d, match.group("proj")) for d in docs])
 
     @staticmethod

@@ -6,7 +6,8 @@
  * trigger on close.
  * Rules: with two dialogs mounted only the top one reacts to Escape (a module-level stack);
  * `dismissible={false}` ignores Escape and backdrop and shows no close button (welcome mode, a
- * save in flight). Must not hold any business state.
+ * save in flight). Size `xl` (part 3, the workspace popup) is 96 % wide up to `max-w-6xl` and 90 %
+ * high. Must not hold any business state.
  * Colours are theme tokens only, never raw palette classes (spec 23 §3.13.2; AC-23.57).
  */
 import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from 'react'
@@ -29,10 +30,15 @@ interface ModalProps {
   icon?: ReactNode
   description?: ReactNode
   footer?: ReactNode
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg' | 'xl'
 }
 
-const WIDTH = { sm: 'max-w-md', md: 'max-w-lg', lg: 'max-w-2xl' }
+const WIDTH = {
+  sm: 'max-h-[85vh] w-full max-w-md',
+  md: 'max-h-[85vh] w-full max-w-lg',
+  lg: 'max-h-[85vh] w-full max-w-2xl',
+  xl: 'max-h-[90vh] w-[96vw] max-w-6xl',
+}
 
 export function Modal({
   title,
@@ -118,7 +124,7 @@ export function Modal({
         aria-labelledby={titleId}
         aria-describedby={description ? descId : undefined}
         tabIndex={-1}
-        className={`relative flex max-h-[85vh] w-full ${WIDTH[size]} flex-col rounded-lg border border-line bg-surface p-6 shadow-xl focus:outline-none`}
+        className={`relative flex ${WIDTH[size]} flex-col rounded-lg border border-line bg-surface p-6 shadow-xl focus:outline-none`}
       >
         <div className="mb-3 flex items-center gap-2">
           {icon}

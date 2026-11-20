@@ -30,3 +30,16 @@ describe('routes (AC-23.6)', () => {
     expect(document.querySelector('img')).toBeNull()
   })
 })
+
+describe('workspace route (spec 23 §19.1)', () => {
+  it('/workspace renders the workspace page with its login', () => {
+    renderWithProviders(<App />, { route: '/workspace' })
+    expect(screen.getByRole('heading', { level: 1, name: 'Process Discovery · Workspace' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Open workspace' })).toBeInTheDocument()
+  })
+
+  it('no expert screen links to /workspace', () => {
+    renderWithProviders(<App />, { route: '/' })
+    expect(document.querySelector('a[href*="workspace"]')).toBeNull()
+  })
+})

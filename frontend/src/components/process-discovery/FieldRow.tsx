@@ -9,30 +9,10 @@
  * Colours are theme tokens only, never raw palette classes (spec 23 §3.13.2; AC-23.57).
  */
 import type { ReactNode } from 'react'
-import {
-  AlertTriangle,
-  CheckCircle2,
-  Circle,
-  CircleDashed,
-  CircleSlash,
-  Clock,
-  FileText,
-  MinusCircle,
-  type LucideIcon,
-} from 'lucide-react'
-import type { FieldStatus, FieldView } from '../../types/process-discovery'
+import type { FieldView } from '../../types/process-discovery'
+import { STATUS } from './fieldStatus'
 import { ProposalActions, type ProposalControls } from './ProposalActions'
 
-const STATUS: Record<FieldStatus, { Icon: LucideIcon; label: string; colour: string }> = {
-  complete: { Icon: CheckCircle2, label: 'Complete', colour: 'text-success' },
-  partial: { Icon: CircleDashed, label: 'Partly answered', colour: 'text-warning' },
-  invalid: { Icon: AlertTriangle, label: 'Needs a fix', colour: 'text-danger' },
-  proposed: { Icon: FileText, label: 'Proposed', colour: 'text-link' },
-  skipped: { Icon: MinusCircle, label: 'Skipped', colour: 'text-subtle' },
-  deferred: { Icon: Clock, label: 'Asked again later', colour: 'text-warning' },
-  given_up: { Icon: CircleSlash, label: 'Left open', colour: 'text-subtle' },
-  empty: { Icon: Circle, label: 'Not answered yet', colour: 'text-line-strong' },
-}
 
 function Chip({ children, tone = 'neutral' }: { children: ReactNode; tone?: 'neutral' | 'info' | 'warning' }) {
   const cls =

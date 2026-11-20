@@ -41,6 +41,7 @@ def test_ac_15_46_config_returns_the_public_runtime_values_without_a_key(api: Ap
             "maxFileMb": company.documents.max_file_mb,
             "maxImageMb": company.documents.max_image_mb,  # spec 17 §3.19 item 10
         },
+        "workspaceOpen": False,  # spec 16 AC-16.19 (amended 2026-11-20, open workspace)
     }
 
 

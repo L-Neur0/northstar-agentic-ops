@@ -54,7 +54,7 @@ def test_ac_17_25_exactly_the_unquoted_values_are_dropped(vocab):
     reply["steps"][4]["name"] = {"value": "Publish", "quote": "Publish the dashboard"}
     out = build_diff(raw(**reply), document_id="d1", text=procedure_text(), profile=procedure_profile(vocab))
     assert keys(out.skipped) == [
-        ("process.name", "confirmed"),
+        ("process.name", "same_value"),  # §3.21 C2: the same as the expert's
         ("process.baseline_metric", "quote_not_found"),
         ("steps[5]", "quote_not_found"),
         ("process.substeps[1].roles", "quote_not_found"),
@@ -91,12 +91,14 @@ def test_ac_17_26_only_empty_and_proposed_fields_are_kept(vocab):
         "sensitive_data": [{"item": "Cost data", "detail": None, "quote": "actual costs per cost centre"}],
     }
     out = build_diff(raw(**reply), document_id="d1", text=procedure_text(), profile=profile)
-    assert [f.key for f in out.diff.fields] == ["process.trigger", "process.end_result"]
-    assert keys(out.skipped) == [
-        ("process.name", "confirmed"),
-        ("process.value_at_end", "specialist_owned"),
-        ("process.business_pain", "confirmed"),
-        ("process.sensitive_data", "confirmed"),
+    # Amended by §3.21 (AC-17.70–17.75): differing stored values are conflicts, never proposals.
+    assert [f.key for f in out.diff.fields] == ["process.trigger"]
+    assert keys(out.skipped) == [("process.value_at_end", "specialist_owned")]
+    assert [(c.key, c.sub) for c in out.diff.conflicts] == [
+        ("process.name", None),
+        ("process.end_result", None),
+        ("process.business_pain", None),
+        ("process.sensitive_data", None),
     ]
 
 

@@ -210,3 +210,101 @@ describe('getReportPdf (AC-23.59, AC-23.60)', () => {
     await expect(api.getReportPdf('s1')).rejects.toMatchObject({ status: 409, code: 'report_not_ready' })
   })
 })
+
+describe('workspace calls (spec 23 part 3; AC-23.111, AC-23.112)', () => {
+  const ws = createHttpApi(() => 'Visitorkeyvisitorkey12', () => 'tok.en')
+  const headersOf = (fn: ReturnType<typeof stubFetch>) => (fn.mock.calls[0] as Call)[1].headers as Record<string, string>
+
+  it.each<[string, () => Promise<unknown>, string, string]>([
+    ['reviewList (no filters)', () => ws.reviewList({ status: null, cluster: null, q: '  ' }), 'GET', '/api/review/sessions'],
+    [
+      'reviewList (all filters)',
+      () => ws.reviewList({ status: 'finished', cluster: 'FIN', q: ' cost ' }),
+      'GET',
+      '/api/review/sessions?status=finished&cluster=FIN&q=cost',
+    ],
+    ['reviewSession', () => ws.reviewSession('s 1'), 'GET', '/api/review/sessions/s%201'],
+    ['reviewConversation', () => ws.reviewConversation('s1'), 'GET', '/api/review/sessions/s1/conversation'],
+    ['deleteReviewSession', () => ws.deleteReviewSession('s1', '"e7"'), 'DELETE', '/api/review/sessions/s1'],
+  ])('%s: path, bearer token, no visitor key', async (_name, call, method, path) => {
+    const fetchFn = stubFetch()
+    await call()
+    const [url, init] = fetchFn.mock.calls[0] as Call
+    expect(url).toBe(path)
+    expect(init.method).toBe(method)
+    expect(headersOf(fetchFn).Authorization).toBe('Bearer tok.en')
+    expect(headersOf(fetchFn)['X-Visitor-Key']).toBeUndefined()
+  })
+
+  it('delete sends If-Match with the etag', async () => {
+    const fetchFn = stubFetch(204, '', false)
+    await ws.deleteReviewSession('s1', '"e7"')
+    expect(headersOf(fetchFn)['If-Match']).toBe('"e7"')
+  })
+
+  it('login posts code and name, without token or visitor key', async () => {
+    const fetchFn = stubFetch(200, { token: 't', role: 'specialist', name: 'Maria', expiresAt: 'x' })
+    await ws.workspaceLogin('demo-specialist', 'Maria')
+    const [url, init] = fetchFn.mock.calls[0] as Call
+    expect(url).toBe('/api/workspace/login')
+    expect(init.method).toBe('POST')
+    expect(JSON.parse(init.body as string)).toEqual({ code: 'demo-specialist', name: 'Maria' })
+    expect(headersOf(fetchFn).Authorization).toBeUndefined()
+    expect(headersOf(fetchFn)['X-Visitor-Key']).toBeUndefined()
+  })
+
+  it('expert calls never send the token', async () => {
+    const fetchFn = stubFetch()
+    await ws.listSessions()
+    expect(headersOf(fetchFn).Authorization).toBeUndefined()
+    expect(headersOf(fetchFn)['X-Visitor-Key']).toBe('Visitorkeyvisitorkey12')
+  })
+
+  it('a workspace call without a token fails with 401 workspace_code_required and sends nothing', async () => {
+    const fetchFn = stubFetch()
+    const none = createHttpApi(() => 'Visitorkeyvisitorkey12', () => null)
+    for (const call of [
+      () => none.reviewList({ status: null, cluster: null, q: '' }),
+      () => none.reviewSession('s1'),
+      () => none.reviewConversation('s1'),
+      () => none.getReviewReportPdf('s1'),
+      () => none.deleteReviewSession('s1', 'e'),
+    ]) {
+      await expect(call()).rejects.toMatchObject({ status: 401, code: 'workspace_code_required' })
+    }
+    expect(fetchFn).not.toHaveBeenCalled()
+  })
+
+  it('getReviewReportPdf returns the blob and the Content-Disposition name, with the bearer token', async () => {
+    const blob = new Blob(['%PDF'])
+    const fetchFn = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      blob: async () => blob,
+      headers: new Headers({ 'Content-Disposition': 'attachment; filename="discovery-report-cost.pdf"' }),
+    })
+    vi.stubGlobal('fetch', fetchFn)
+    const out = await ws.getReviewReportPdf('s1')
+    expect(out).toEqual({ blob, filename: 'discovery-report-cost.pdf' })
+    const [url, init] = fetchFn.mock.calls[0] as Call
+    expect(url).toBe('/api/review/sessions/s1/report.pdf')
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer tok.en')
+    expect((init.headers as Record<string, string>)['X-Visitor-Key']).toBeUndefined()
+  })
+
+  it('getReviewReportPdf falls back to discovery-report.pdf without the header', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, status: 200, blob: async () => new Blob(['x']), headers: new Headers() }),
+    )
+    expect((await ws.getReviewReportPdf('s1')).filename).toBe('discovery-report.pdf')
+  })
+
+  it('a 409 report_not_ready becomes an ApiError', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 409, text: async () => JSON.stringify({ code: 'report_not_ready', message: 'm' }) }),
+    )
+    await expect(ws.getReviewReportPdf('s1')).rejects.toBeInstanceOf(ApiError)
+  })
+})

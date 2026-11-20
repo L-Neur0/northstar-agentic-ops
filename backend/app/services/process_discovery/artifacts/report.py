@@ -56,9 +56,11 @@ from app.models.process_discovery_wire import (
     TopOpportunity,
     TotalsRow,
 )
+from app.utils.prompt_safety import single_line
 
 from ..domain.field_spec import PROFILE_SPECS, STEP_SPECS, Vocabulary, is_none_row, resolve_address, step_cell_key
 from ..domain.scope import is_one_off
+from ..profile.conflicts import open_conflicts
 from ..profile.shapes import as_list, as_mapping, meta_for, normalized_profile, process_of, rows_of
 from ..profile.views import field_views
 from .path import GRADE_ORDER
@@ -629,6 +631,11 @@ def _path(c: _Ctx) -> PathPart:
     return PathPart(number=NUMBERS["path"], title=TITLES["path"], groups=groups)
 
 
+def _conflict_text(value: Any) -> str:
+    items = as_list(value)
+    return single_line("; ".join(str(v) for v in items) if items is not None else str(value or ""), 200)
+
+
 def _gaps(c: _Ctx) -> GapsPart:
     fields = []
     for key, view in c.views.items():
@@ -640,6 +647,17 @@ def _gaps(c: _Ctx) -> GapsPart:
         label = c.key_label(key)
         fields.append(ReportField(key=key, label=label, value=f"{word}: {reason}" if reason else word, status=_status(status),
                                   source=view.get("source"), quote=view.get("quote")))  # fmt: skip
+    names = {d.id: d.name for d in c.session.documents}
+    for conflict in open_conflicts(c.profile):  # spec 14 §3.17 item 5: open and left conflicts are gaps
+        label = c.key_label(conflict.key) + (f", {conflict.sub.replace('_', ' ')}" if conflict.sub else "")
+        holder = f'"{names[conflict.holder_document_id]}"' if conflict.holder_document_id in names else "the expert"
+        offering = f'"{names.get(conflict.document_id, "a removed document")}"'
+        value = (
+            f'Not settled: {holder} says "{_conflict_text(conflict.current)}"; '
+            f'{offering} says "{_conflict_text(conflict.offered)}"'
+        )
+        fields.append(ReportField(key=conflict.conflict_key, label=label, value=value, source="document",
+                                  quote=conflict.quote))  # fmt: skip
     documents = [DocumentRow(name=d.name, outcome=d.outcome) for d in c.session.documents]
     n = len(documents)
     with_docs = f", with {n} document{'s' if n != 1 else ''}" if n else ""

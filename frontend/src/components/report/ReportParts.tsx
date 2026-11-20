@@ -8,9 +8,12 @@
  * focusable, labelled region; levels and AI fit carry an icon and a word, never colour alone;
  * hours only (no euro field exists). Must not: format, compute or reorder any value, or invent an
  * empty group the server did not send.
+ * Part 3 (spec 23 §19.4 rule 3): `RecommendedRoute` and `OpportunityList` take `headingLevel`
+ * (the level of the part heading around them; default 2), so the workspace popup can nest them
+ * under its own `<h3>` part headings.
  * Colours are theme tokens only, never raw palette classes (spec 23 §3.13.2; AC-23.57, AC-23.102).
  */
-import type { ReactNode } from 'react'
+import { createElement, type ReactNode } from 'react'
 import { Bot, Handshake, HelpCircle, SignalHigh, SignalLow, SignalMedium, User, type LucideIcon } from 'lucide-react'
 import { Pill } from '../ui/Pill'
 import { ReportNoteBox } from './ReportNote'
@@ -34,6 +37,11 @@ const TABLE = 'w-full border-collapse text-left text-sm'
 const TH = 'border-b border-line-strong bg-surface-muted px-2 py-1.5 align-bottom font-semibold text-fg'
 const TD = 'border-b border-line px-2 py-1.5 align-top text-fg'
 const H3 = 'mt-4 mb-1 text-base font-semibold text-fg break-after-avoid'
+
+/** A heading one level below the part heading (`headingLevel` 2 → `<h3>`, 3 → `<h4>`). */
+function SubHeading({ level, className = H3, children }: { level: 2 | 3; className?: string; children: ReactNode }) {
+  return createElement(`h${level + 1}`, { className }, children)
+}
 
 function ScrollRegion({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -250,14 +258,14 @@ export function StepAssessmentTable({ part }: { part: StepsPart }) {
   )
 }
 
-export function RecommendedRoute({ part }: { part: RoutePart }) {
+export function RecommendedRoute({ part, headingLevel = 2 }: { part: RoutePart; headingLevel?: 2 | 3 }) {
   return (
     <div>
       {part.catalogueNote && <ReportNoteBox kind="missing" text={part.catalogueNote} />}
       {part.headline && <p className="text-base font-medium text-fg">{part.headline}</p>}
       {part.groups.map((g) => (
         <div key={g.key}>
-          <h3 className={H3}>{g.title}</h3>
+          <SubHeading level={headingLevel}>{g.title}</SubHeading>
           <List
             items={g.items.map((item) =>
               [`Step ${item.number} · ${item.name}`, item.hours, item.routeName || item.reason].filter(Boolean).join(' · '),
@@ -267,7 +275,7 @@ export function RecommendedRoute({ part }: { part: RoutePart }) {
       ))}
       {part.prepare.length > 0 && (
         <>
-          <h3 className={H3}>What to have in place</h3>
+          <SubHeading level={headingLevel}>What to have in place</SubHeading>
           <List items={part.prepare} />
         </>
       )}
@@ -275,13 +283,15 @@ export function RecommendedRoute({ part }: { part: RoutePart }) {
   )
 }
 
-export function OpportunityList({ part }: { part: AssessmentPart }) {
+export function OpportunityList({ part, headingLevel = 2 }: { part: AssessmentPart; headingLevel?: 2 | 3 }) {
   return (
     <div>
       {part.summary && <p className="text-sm text-fg">{part.summary}</p>}
       {part.opportunities.map((o) => (
         <article key={o.id} className="mt-4 rounded-md border border-line p-3 break-inside-avoid">
-          <h3 className="text-base font-semibold text-fg">{o.title}</h3>
+          <SubHeading level={headingLevel} className="text-base font-semibold text-fg">
+            {o.title}
+          </SubHeading>
           <p className="text-xs text-muted">
             {o.stepsLabel} · {o.typeLabel} · Impact {o.impact} · Feasibility {o.feasibility}
           </p>
@@ -321,7 +331,7 @@ export function OpportunityList({ part }: { part: AssessmentPart }) {
       ))}
       {part.stayHuman.length > 0 && (
         <>
-          <h3 className={H3}>Steps that stay with people</h3>
+          <SubHeading level={headingLevel}>Steps that stay with people</SubHeading>
           <ul className="ml-5 list-disc text-sm text-fg">
             {part.stayHuman.map((s, i) => (
               <li key={i}>

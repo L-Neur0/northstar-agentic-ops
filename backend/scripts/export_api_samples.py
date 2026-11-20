@@ -10,7 +10,9 @@ ideas, taxonomy, config, and the 401 / 404 / 422 error bodies) into `frontend/sr
 Spec 23 part 2 adds the document samples (upload of the procedure .docx with its scripted reply,
 the document list, confirm, reject, remove, the 415 refusal) and the report samples (the report of
 the finished EU profile, built with the scripted assessment of the report route tests, and the 409
-`report_not_ready` body).
+`report_not_ready` body). Spec 21 adds the workspace samples (`review-list`, `review-session`
+(finished, with the "as first told" grid and a document), `review-session-active`,
+`review-conversation`, and the `error-workspace-token` 401 and `error-etag-required` 428 bodies).
 Must not: call Azure, read `.env`, or write anywhere else. Rerun with
 `cd backend && uv run python scripts/export_api_samples.py`. Spec 15 part 2 §3.3–3.4; AC-23.5.
 """
@@ -76,6 +78,7 @@ def main() -> None:
     )
     document_samples(save)
     report_samples(save)
+    workspace_samples(save)
     print(f"wrote {len(written)} samples to {OUT.relative_to(BACKEND.parent)}: {', '.join(written)}")
 
 
@@ -140,6 +143,65 @@ def report_samples(save: Any) -> None:
     finished = client.post(f"/api/sessions/{sid}/finish", headers=visitor())
     assert finished.status_code == 200, finished.text
     save("report", client.get(f"/api/sessions/{sid}/report", headers=visitor()), 200)
+
+
+def workspace_samples(save: Any) -> None:
+    """Spec 21: the workspace list, the session view (finished and active), the conversation, 401 and 428."""
+    import asyncio
+    from datetime import UTC, datetime
+
+    from app.api.process_discovery_routes import get_service
+    from app.core.access import issue_token, owner_from_key
+    from app.models.process_discovery_schemas import DocumentRecord, Message, Session, Step
+    from app.services.process_discovery.service import DiscoveryService
+    from tests.api.conftest import TickingClock
+    from tests.fixtures.assessment.profiles import load_profile
+    from tests.fixtures.assessment_19.cases import example_catalogue
+    from tests.unit.process_discovery.export.cases import eu_session
+
+    company = load_company_config(NIG)
+    api = build_harness(company)
+    service = DiscoveryService(
+        api.repo, None, api.service.ctx, None, clock=TickingClock(),
+        company=company.model_copy(update={"solutions": example_catalogue()}), config_dir=NIG,
+    )  # fmt: skip
+    api.client.app.dependency_overrides[get_service] = lambda: service  # pyright: ignore[reportAttributeAccessIssue]
+    at = "2026-11-19T10:00:00+00:00"
+    profile = load_profile("eu")
+    raw = [Step.model_validate(r) for r in profile["process"]["substeps"]]
+    profile["process"]["substeps"][0]["activities"] = ["Export the cost report", "Check it against the budget"]
+    document = DocumentRecord(
+        id="d1a2b3c4", name="Monthly cost review procedure.docx", kind="docx", bytes=48213, chars=5120,
+        uploaded_at=at, outcome="read", proposals=3,
+    )  # fmt: skip
+    messages = [
+        Message.model_validate({"role": "agent", "text": "Hello Anna, I am here to help you map one process.", "at": at}),
+        Message.model_validate({"role": "expert", "text": "Every month I review our cost centres.", "at": at}),
+    ]  # fmt: skip
+    from app.models.process_discovery_schemas import Score
+    from app.services.process_discovery.profile.scoring import score
+
+    points = score(profile, vocab=service.ctx.vocab)
+    finished = eu_session(
+        profile, score=Score(value=points.value, filled_points=points.filled_points, total_points=points.total_points), owner_id=owner_from_key(KEY_A), display_name="Anna", raw_substeps=raw, documents=[document],
+        messages=messages,
+    )  # fmt: skip
+    active = Session(
+        owner_id=owner_from_key(KEY_B), created_at=at, updated_at="2026-11-19T11:00:00+00:00", messages=messages[:1]
+    )
+    finished = asyncio.run(api.repo.create_session(finished))
+    active = asyncio.run(api.repo.create_session(active))
+    secret = api.settings.workspace_token_secret
+    headers = {
+        "Authorization": f"Bearer {issue_token('specialist', 'Maria (IT)', secret=secret, now=datetime.now(UTC))[0]}"
+    }
+    client = api.client
+    save("review-list", client.get("/api/review/sessions", headers=headers), 200)
+    save("review-session", client.get(f"/api/review/sessions/{finished.id}", headers=headers), 200)
+    save("review-session-active", client.get(f"/api/review/sessions/{active.id}", headers=headers), 200)
+    save("review-conversation", client.get(f"/api/review/sessions/{finished.id}/conversation", headers=headers), 200)
+    save("error-workspace-token", client.get("/api/review/sessions"), 401)
+    save("error-etag-required", client.delete(f"/api/review/sessions/{finished.id}", headers=headers), 428)
 
 
 if __name__ == "__main__":

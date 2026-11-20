@@ -6,7 +6,9 @@ counters; so the status, reason, source, quote and ask count of every field are 
 What: `field_views` returns one plain dict per process field and per cell of every step row, with
 the keys of the `FieldView` wire model (spec 12), so the service can validate it directly.
 Must not: import the API models (the layer rule), write anything, or expose `__meta` internals
-beyond source, quote and document name. Spec 13 §3.11; AC-13.50.
+beyond source, quote and document name. Spec 13 §3.11; AC-13.50. Amendment §3.13 item 5: a view
+also says whether the field came from an image, whether it has an open or left conflict, and, for a
+value that mixes sources, the source and file of each item (AC-17.76).
 """
 
 from __future__ import annotations
@@ -26,6 +28,7 @@ from ..domain.field_spec import (
     step_cell_key,
 )
 from .coercion import coerce_count
+from .conflicts import ConflictView, item_sources, open_conflicts
 from .shapes import as_mapping, meta_for, normalized_profile, rows_of, stored_value
 from .verdicts import cell_skipped, grade
 
@@ -44,6 +47,7 @@ def _view(
     skipped: bool,
     documents: Mapping[str, str],
     is_process: bool,
+    conflicts: Sequence[ConflictView] = (),
 ) -> dict[str, Any]:
     verdict = grade(profile, key, vocab=vocab)
     meta = meta_for(profile, key)
@@ -57,6 +61,17 @@ def _view(
             status = "deferred"
     meta = meta or {}
     document_id = meta.get("documentId")
+    items = [
+        {
+            "sub": part["sub"],
+            "item": part["item"],
+            "source": part.get("source"),
+            "document_name": documents.get(str(part.get("documentId"))) if part.get("documentId") else None,
+            "from_image": bool(part.get("fromImage")),
+        }
+        for part in (item_sources(spec, stored_value(profile, key), meta) if meta.get("parts") else [])
+    ]
+    states = {c.status for c in conflicts if c.key == key}
     return {
         "key": key,
         "id": spec.id,
@@ -69,6 +84,9 @@ def _view(
         "quote": meta.get("quote") if meta.get("source") is not None else None,
         "document_name": documents.get(document_id) if isinstance(document_id, str) else None,
         "asks": asks,
+        "from_image": bool(meta.get("fromImage")),
+        "conflict": "open" if "open" in states else "left" if "left" in states else None,
+        "items": items,
     }
 
 
@@ -82,6 +100,7 @@ def field_views(
     """One view per process field (ask order), then per cell of every step row (S01–S12)."""
     p = normalized_profile(profile)
     names = {d.get("id", ""): d.get("name", "") for d in documents}
+    conflicts = open_conflicts(p)
     views = [
         _view(
             p,
@@ -92,6 +111,7 @@ def field_views(
             skipped=False,
             documents=names,
             is_process=True,
+            conflicts=conflicts,
         )
         for spec in PROFILE_SPECS
     ]
@@ -108,6 +128,7 @@ def field_views(
                     skipped=cell_skipped(row, spec.key),
                     documents=names,
                     is_process=False,
+                    conflicts=conflicts,
                 )
             )
     return views

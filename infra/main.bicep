@@ -11,7 +11,7 @@
 // What it must not do: create or change the hand-made AI account
 //   northstar-discovery-ai or its deployments app-chat / eval-expert (D1);
 //   output a secret. Never run `azd down` on this environment (D8).
-// Acceptance criteria: AC-25.8 to AC-25.20, AC-25.29 (static half).
+// Acceptance criteria: AC-25.8 to AC-25.20, AC-25.29 (static half), AC-25.30.
 
 targetScope = 'resourceGroup'
 
@@ -53,12 +53,15 @@ param dailyTokenBudget int = 2000000
 param appExists bool = false
 
 @secure()
-@description('Workspace access code for specialists (WORKSPACE_CODE_SPECIALIST).')
-param workspaceCodeSpecialist string
+@description('Workspace access code for specialists (WORKSPACE_CODE_SPECIALIST); optional when the workspace is open.')
+param workspaceCodeSpecialist string = ''
 
 @secure()
-@description('Workspace access code for AI engineers (WORKSPACE_CODE_ENGINEER).')
-param workspaceCodeEngineer string
+@description('Workspace access code for AI engineers (WORKSPACE_CODE_ENGINEER); optional when the workspace is open.')
+param workspaceCodeEngineer string = ''
+
+@description('Open demo workspace (WORKSPACE_OPEN): name-only login, delete switched off (spec 25 AC-25.30).')
+param workspaceOpen bool = true
 
 @secure()
 @minLength(32)
@@ -158,6 +161,7 @@ module containerApp 'modules/containerapp.bicep' = {
     workspaceCodeSpecialist: workspaceCodeSpecialist
     workspaceCodeEngineer: workspaceCodeEngineer
     workspaceTokenSecret: workspaceTokenSecret
+    workspaceOpen: workspaceOpen
   }
   // Reading registry.outputs makes the app wait for the registry module, so the
   // AcrPull assignment exists before the app references the registry.

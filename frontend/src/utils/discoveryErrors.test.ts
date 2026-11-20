@@ -5,7 +5,7 @@
  * Rules: error texts never contain the expert's message; 409 `map_incomplete` is not an error.
  */
 import { ApiError } from '../services/api'
-import { errorEffect } from './discoveryErrors'
+import { errorEffect, isSessionEnded, sessionEndedText, workspaceErrorText, WORKSPACE_TEXT } from './discoveryErrors'
 
 const err = (status: number, code: string, message = 'Server sentence.', reason?: string) =>
   new ApiError(status, code, message, reason)
@@ -114,5 +114,24 @@ describe('document calls (spec 23 §11.5; AC-23.68, AC-23.69, AC-23.72)', () => 
 
   it('a 404 on remove reloads the session with its sentence (AC-23.72)', () => {
     expect(errorEffect(err(404, 'not_found'), 'removeDocument')).toEqual({ kind: 'reload', message: 'That document was already removed.' })
+  })
+})
+
+describe('workspace errors (spec 23 §19.9; AC-23.113)', () => {
+  it('isSessionEnded: 401 workspace_code_required and 403 only', () => {
+    expect(isSessionEnded(new ApiError(401, 'workspace_code_required', ''))).toBe(true)
+    expect(isSessionEnded(new ApiError(403, 'forbidden', ''))).toBe(true)
+    expect(isSessionEnded(new ApiError(401, 'workspace_code_invalid', ''))).toBe(false)
+    expect(isSessionEnded(new ApiError(404, 'not_found', ''))).toBe(false)
+    expect(sessionEndedText(new ApiError(403, 'forbidden', ''))).toBe(WORKSPACE_TEXT.forbidden)
+    expect(sessionEndedText(new ApiError(401, 'workspace_code_required', ''))).toBe(WORKSPACE_TEXT.ended)
+  })
+
+  it.each([
+    ['report_not_ready', 409, 'The report is ready once the interview is finished.'],
+    ['invalid_value', 422, 'That filter could not be used. Clear the filters and try again.'],
+    ['etag_required', 428, 'Something went wrong. Please try again.'],
+  ])('%s gives its sentence', (code, status, text) => {
+    expect(workspaceErrorText(new ApiError(status, code, 'server words'))).toBe(text)
   })
 })

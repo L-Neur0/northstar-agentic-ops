@@ -21,6 +21,7 @@ import logging
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -37,11 +38,19 @@ from app.services import process_discovery as engine
 from app.services.store import create_repository
 from app.utils.security_headers import CorrelationIdMiddleware, SecurityHeadersMiddleware
 
+if TYPE_CHECKING:
+    from app.services.process_discovery.llm import LLM
+
 logger = logging.getLogger(__name__)
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
-    """Build the app. Raises on invalid settings or company configuration."""
+def create_app(settings: Settings | None = None, *, llm: LLM | None = None) -> FastAPI:
+    """Build the app. Raises on invalid settings or company configuration.
+
+    `llm` replaces the client the lifespan would build (the evaluation's scripted end-to-end run,
+    spec 24 AC-24.28); production passes nothing.
+    """
+    injected = llm
     settings = settings or Settings()
     company = load_company_config(settings.company_config_dir)
     configure_logging(settings.log_level)
@@ -63,7 +72,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.store = store
         app.state.store_health = health
         try:
-            llm = engine.create_llm(settings, budget_guard=budget.guard, usage_hook=budget.record)
+            llm = injected or engine.create_llm(settings, budget_guard=budget.guard, usage_hook=budget.record)
         except engine.LLMConfigError as exc:
             logger.error("llm_unavailable", extra={"detail": str(exc)})
             llm = None
@@ -106,6 +115,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(report_routes.router)
     app.include_router(document_routes.router)
     app.include_router(workspace_routes.router)
+    app.include_router(workspace_routes.review)
     _serve_frontend(app, settings.frontend_dist)
     return app
 

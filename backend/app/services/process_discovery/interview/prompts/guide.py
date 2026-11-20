@@ -115,8 +115,15 @@ def image_documents(state: Mapping[str, Any]) -> frozenset[str]:
 
 
 def from_image(profile: Mapping[str, Any], key: str, images: frozenset[str]) -> bool:
-    """The key's proposal came from an image document."""
-    return str((meta_for(profile, key) or {}).get("documentId") or "") in images
+    """Every item of the key's value came from an image (spec 17 §3.21 P4: meta `fromImage`, or every part's).
+
+    `images` (the session's image document ids) is the fallback for a value stored before `fromImage` existed.
+    """
+    meta = meta_for(profile, key) or {}
+    parts = [p for p in (as_list(meta.get("parts")) or []) if as_mapping(p) is not None]
+    if parts:
+        return all(p.get("fromImage") is True for p in parts)
+    return meta.get("fromImage") is True or str(meta.get("documentId") or "") in images
 
 
 def missing_line(

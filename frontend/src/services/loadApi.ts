@@ -10,7 +10,7 @@ import { getVisitorKey } from '../access/visitorKey'
 export async function loadApi(): Promise<DiscoveryApi> {
   if (import.meta.env.VITE_API_MODE === 'fake') {
     const { createFakeApi } = await import('./fakeApi')
-    return createFakeApi()
+    return createFakeApi({ workspaceSeed: true })
   }
   return createHttpApi(getVisitorKey)
 }

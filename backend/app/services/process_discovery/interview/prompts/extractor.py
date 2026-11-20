@@ -26,7 +26,15 @@ from typing import Any
 
 from app.utils.prompt_safety import fence_instruction, fence_untrusted
 
-from ...domain.field_spec import MAX_STEPS, META_KEY, SKIPPED_KEY, Vocabulary, extract_keys, object_list_shape_hints
+from ...domain.field_spec import (
+    CONFLICTS_KEY,
+    MAX_STEPS,
+    META_KEY,
+    SKIPPED_KEY,
+    Vocabulary,
+    extract_keys,
+    object_list_shape_hints,
+)
 from ...profile.constants import CONFIRMATION_FLAGS, FLAG_SUBSTEP_COUNT_REJECTED
 from ...profile.shapes import as_list, as_mapping, normalized_profile, process_of
 from ...profile.verdicts import current_step_index, expected_steps
@@ -42,11 +50,12 @@ def extract_view(profile: Mapping[str, Any]) -> dict[str, Any]:
     """The profile as the extractor sees it: registry keys and values only."""
     p = normalized_profile(profile)
     p.pop(META_KEY, None)
+    p.pop(CONFLICTS_KEY, None)
     proc = process_of(p)
     for key in (*CONFIRMATION_FLAGS, FLAG_SUBSTEP_COUNT_REJECTED, "all_roles", "all_tools"):
         proc.pop(key, None)
     proc["substeps"] = [
-        {k: v for k, v in dict(as_mapping(r) or {}).items() if k not in (META_KEY, SKIPPED_KEY)}
+        {k: v for k, v in dict(as_mapping(r) or {}).items() if k not in (META_KEY, SKIPPED_KEY, CONFLICTS_KEY)}
         for r in as_list(proc.get("substeps")) or []
     ]
     return p

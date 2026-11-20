@@ -5,12 +5,14 @@ partitioned by `/ownerId`, written whole with `If-Match` so two writers never si
 each other. Auth is Entra only (the account has local auth disabled), so there is no key to leak.
 What: `CosmosRepository`, the storage primitives of `DocumentRepository` over an
 `azure.cosmos.aio` container client: point reads and deletes within the owner's partition,
-create, replace with `etag` + `MatchConditions.IfNotModified`, and partition-scoped queries (the
-summary query projects only summary fields). SDK errors map to store errors (AC-15.19).
+create, replace (and the workspace's conditional delete) with `etag` + `MatchConditions.IfNotModified`, partition-scoped queries (the
+summary query projects only summary fields), and the workspace's two cross-partition reads (find
+a session by id, scan the newest sessions; spec 21 §4.3). SDK errors map to store errors (AC-15.19).
 `open_cosmos(settings)` builds the client with `DefaultAzureCredential`; it is called from the
 app lifespan, never at import time (AC-15.20, AC-15.21).
 Must not: create the database or container (Bicep does; `check()` only reports), use a key,
-pass `enable_cross_partition_query` (the async client rejects it; scope with `partition_key=`),
+pass `enable_cross_partition_query` (the async client rejects it; scope with `partition_key=`, or
+omit it only in the workspace reads),
 or select `c.messages` or `c.profile` whole in a list query (AC-15.14).
 """
 
@@ -50,6 +52,9 @@ SUMMARY_QUERY = (
 )
 IDEAS_QUERY = "SELECT * FROM c WHERE c.ownerId = @ownerId AND c.type = @type ORDER BY c.createdAt DESC"
 IDS_QUERY = "SELECT c.id, c.type FROM c WHERE c.ownerId = @ownerId"
+# The workspace reads (spec 21 §4.3): the only cross-partition queries, sent without `partition_key`.
+FIND_QUERY = "SELECT * FROM c WHERE c.id = @id AND c.type = @type"
+SCAN_QUERY = "SELECT TOP @limit * FROM c WHERE c.type = @type ORDER BY c.updatedAt DESC"
 
 # What counts as "unavailable": every SDK error (HTTP, auth, connection) plus socket errors.
 _TRANSIENT = (AzureError, OSError, TimeoutError)
@@ -114,10 +119,15 @@ class CosmosRepository(DocumentRepository):
         except _TRANSIENT as error:
             _unavailable(error, "replace", doc["ownerId"])
 
-    async def _delete(self, owner_id: str, doc_id: str) -> bool:
+    async def _delete(self, owner_id: str, doc_id: str, etag: str | None = None) -> bool:
+        condition: dict[str, Any] = (
+            {} if etag is None else {"etag": etag, "match_condition": MatchConditions.IfNotModified}
+        )
         try:
-            await self._container.delete_item(item=doc_id, partition_key=owner_id)
+            await self._container.delete_item(item=doc_id, partition_key=owner_id, **condition)
             return True
+        except exceptions.CosmosAccessConditionFailedError:
+            raise ConflictError(f"document {doc_id} changed since it was read") from None
         except exceptions.CosmosResourceNotFoundError:
             return False
         except _TRANSIENT as error:
@@ -145,6 +155,21 @@ class CosmosRepository(DocumentRepository):
 
     async def _ids(self, owner_id: str) -> list[tuple[str, str]]:
         return [(row["id"], str(row.get("type"))) for row in await self._query(IDS_QUERY, owner_id)]
+
+    async def _query_all(self, query: str, **params: Any) -> list[dict[str, Any]]:
+        """Every partition: no `partition_key` makes the async SDK run a cross-partition query."""
+        parameters: list[dict[str, Any]] = [{"name": f"@{name}", "value": value} for name, value in params.items()]
+        try:
+            return [dict(item) async for item in self._container.query_items(query=query, parameters=parameters)]
+        except _TRANSIENT as error:
+            _unavailable(error, "query", "*")
+
+    async def _find(self, doc_id: str) -> dict[str, Any] | None:
+        found = await self._query_all(FIND_QUERY, id=doc_id, type="session")
+        return found[0] if found else None
+
+    async def _scan(self, limit: int) -> list[dict[str, Any]]:
+        return await self._query_all(SCAN_QUERY, limit=limit, type="session")
 
     async def check(self) -> StoreHealth:
         """Reachable, and TTL on (`defaultTtl` set) so item ttl is honoured. Never raises."""

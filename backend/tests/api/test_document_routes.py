@@ -81,7 +81,8 @@ def test_ac_17_32_upload_worked_example_1_returns_the_session_the_document_and_t
     assert report["outcome"] == "read" and report["message"] == MESSAGE
     assert report["kept"] == {"fields": 5, "steps": 5, "cells": 24}
     assert report["dropped"] == 3
-    assert {s["reason"] for s in report["skipped"]} == {"confirmed", "quote_not_found"}
+    assert {s["reason"] for s in report["skipped"]} == {"same_value", "quote_not_found"}  # spec 17 §3.21 C2
+    assert report["conflicts"] == 0
     document = body["document"]
     assert document["name"] == NAME and document["outcome"] == "read"
     assert document["proposals"] > 0 and document["pending"] == document["proposals"]

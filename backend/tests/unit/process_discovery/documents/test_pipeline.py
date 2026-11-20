@@ -123,11 +123,12 @@ async def test_ac_17_32_worked_example_1(vocab, docs_config, fixture_bytes):
         "offered": {"fields": 7, "steps": 5, "cells": 24},
         "kept": {"fields": 5, "steps": 5, "cells": 24},
         "skipped": [
-            {"key": "process.name", "reason": "confirmed"},
+            {"key": "process.name", "reason": "same_value"},  # §3.21 C2
             {"key": "process.baseline_metric", "reason": "quote_not_found"},
             {"key": "process.substeps[2].systems", "reason": "quote_not_found", "items": 1},
         ],
         "stepList": 0,
+        "conflicts": 0,
         "message": message,
     }
     assert result.record.outcome == "read"

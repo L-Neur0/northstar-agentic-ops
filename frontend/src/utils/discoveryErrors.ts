@@ -7,6 +7,8 @@
  * text or the visitor key. Must not dispatch or render anything itself.
  * Part 2: the call decides the effect. An upload refusal goes to the Documents panel (`documents`),
  * never the banner, and 409 `document_limit` is not the `conflict` reload; a 404 on remove reloads.
+ * Part 3 (spec 23 §19.9; AC-23.109, AC-23.113): the workspace sentences, and `isSessionEnded`, the
+ * one check every workspace query and mutation runs first (401 `workspace_code_required` or 403).
  */
 import { ApiError } from '../services/api'
 import { documentSentence, type DocumentLimits } from './documentLimits'
@@ -95,4 +97,48 @@ export function errorEffect(error: unknown, context: ErrorContext, limits: Docum
   }
   const message = errorText(error)
   return context === 'boot' ? { kind: 'init_failed', message } : { kind: 'banner', message }
+}
+
+/** The workspace sentences (spec 23 §19.2, §19.4, §19.7, §19.9). */
+export const WORKSPACE_TEXT = {
+  codeInvalid: 'The access code is not valid.',
+  ended: 'Your workspace session has ended. Enter the access code again.',
+  forbidden: 'This access code does not open the workspace.',
+  engineer: 'This code is for engineers. Their screens are not available yet.',
+  reportNotReady: 'The report is ready once the interview is finished.',
+  sessionGone: 'This session no longer exists.',
+  alreadyDeleted: 'This session was already deleted.',
+  conflict: 'This session changed while you were looking. It has been reloaded; check it and try again.',
+  badFilter: 'That filter could not be used. Clear the filters and try again.',
+  deleted: 'Session deleted.',
+} as const
+
+/** True for the errors that end the workspace session: 401 `workspace_code_required` or any 403. */
+export function isSessionEnded(error: unknown): boolean {
+  return error instanceof ApiError && ((error.status === 401 && error.code === 'workspace_code_required') || error.status === 403)
+}
+
+/** The login sentence for an ended session: forbidden or ended. */
+export function sessionEndedText(error: unknown): string {
+  return error instanceof ApiError && error.status === 403 ? WORKSPACE_TEXT.forbidden : WORKSPACE_TEXT.ended
+}
+
+/** The sentence for a failed workspace call (list, view, conversation, PDF). */
+export function workspaceErrorText(error: unknown): string {
+  if (error instanceof ApiError) {
+    if (error.code === 'report_not_ready') return WORKSPACE_TEXT.reportNotReady
+    if (error.code === 'invalid_value') return WORKSPACE_TEXT.badFilter
+    if (error.code === 'etag_required') return ERROR_TEXT.fallback
+  }
+  return errorText(error)
+}
+
+/** Runs a workspace call and reports a session-ending error to `onEnded` before re-throwing it. */
+export async function watchSession<T>(call: () => Promise<T>, onEnded: (error: unknown) => void): Promise<T> {
+  try {
+    return await call()
+  } catch (error) {
+    if (isSessionEnded(error)) onEnded(error)
+    throw error
+  }
 }

@@ -3,7 +3,7 @@
 Why: settings decide the stage, the store and the secrets. A wrong value must stop the app at
 start-up with a clear message, never surface later as a strange runtime error.
 What: builds `Settings` from explicit values (never from the real environment) and checks the
-start-up rules. Implements spec 10, AC-10.4 to AC-10.6.
+start-up rules. Implements spec 10, AC-10.4 to AC-10.6, and AC-10.21 (amended 2026-11-20, open workspace).
 """
 
 import pytest
@@ -85,3 +85,16 @@ def test_interview_settings_have_defaults_and_ranges():
     for bad in ({"turn_timeout_seconds": 300}, {"guide_history_turns": 1}, {"placement_min_confidence": 1.5}):
         with pytest.raises(ValidationError):
             make(**bad)
+
+
+def test_ac_10_21_open_workspace_needs_no_codes_but_still_a_secret():
+    """AC-10.21 (amended 2026-11-20, open workspace): codes are not required when open; the secret is."""
+    assert make().workspace_open is False
+    demo = {"deployment_stage": "demo", "store": "cosmos", "cosmos_endpoint": "https://x", "workspace_open": True}
+    assert make(**demo, workspace_token_secret="x" * 32).workspace_open is True
+    for secret in (None, "short"):
+        values = demo if secret is None else {**demo, "workspace_token_secret": secret}
+        with pytest.raises(ValidationError) as err:
+            make(**values)
+        text = str(err.value)
+        assert "WORKSPACE_TOKEN_SECRET" in text and "WORKSPACE_CODE" not in text

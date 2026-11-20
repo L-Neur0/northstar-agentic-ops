@@ -219,7 +219,8 @@ def test_ac_17_52_merge_into_a_proposed_cell_and_refuse_an_expert_cell(vocab):
     expert = write(vocab, steps_profile(vocab), {"process.substeps[3].data": {"inputs": ["A"], "outputs": ["B"]}})
     out = diff(vocab, {**EVERYTHING, "document_role": "step_output_example", "target_cells": None}, profile=expert)
     assert out.diff.step_cells == ()
-    assert ("process.substeps[3].data", "confirmed") in {(s.key, s.reason) for s in out.skipped}
+    # §3.21 C3 (replaces AC-17.65): the expert's differing outputs are a conflict, never a proposal.
+    assert [(c.key, c.sub) for c in out.diff.conflicts] == [("process.substeps[3].data", "outputs")]
 
 
 def test_ac_17_53_a_step_scoped_reading_never_changes_the_rows(vocab):

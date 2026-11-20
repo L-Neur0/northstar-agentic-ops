@@ -1,6 +1,6 @@
 # 14 · Interview: the turn, phases, limits, replies, prompts
 
-> **Status:** approved (built) · **§3.15 amendment: draft, 2026-11-19** · **§3.16 amendment (document proposals in the chat): built 2026-11-20** (deviations at the end of §3.16) · **Implements:** F-02, F-03, F-06, F-07, F-08, F-09, F-10, F-24 (product); the chat side of F-04.5 (confirming proposals) and F-11 (*Finish* state in the conversation); architecture §3.3 (one turn), §6.2 (EXTRACT, CLASSIFY, GUIDE), §6.3 (prompt conventions), AD-1 · **Depends on:** specs 10, 11, 12, 13
+> **Status:** approved (built) · **§3.15 amendment: draft, 2026-11-19** · **§3.16 amendment (document proposals in the chat): built 2026-11-20** (deviations at the end of §3.16) · **§3.17 amendment (conflict questions in the chat): approved and built 2026-11-20** (deviations at the end of §3.17) · **Implements:** F-02, F-03, F-06, F-07, F-08, F-09, F-10, F-24 (product); the chat side of F-04.5 (confirming proposals) and F-11 (*Finish* state in the conversation); architecture §3.3 (one turn), §6.2 (EXTRACT, CLASSIFY, GUIDE), §6.3 (prompt conventions), AD-1 · **Depends on:** specs 10, 11, 12, 13
 > **Code:** `backend/app/services/process_discovery/interview/{types,phases,gates,replies,nodes,graph,turn}.py`, `interview/prompts/{common,extractor,classifier,guide,phase_text,posture}.py`, `backend/scripts/chat.py`
 > **Tests:** `backend/tests/unit/process_discovery/interview/`
 
@@ -634,6 +634,151 @@ Illustrative: labels and the volume wording come from the registry and `render_p
 
 **Contract changes this amendment needs** (lead to apply): spec 15 `DocumentUploadOut.reply: MessageOut` (always present on 201) and the upload composition of item 1; spec 23 shows the reply as a normal agent message (note at the end of spec 23 §11.4); `hydrate` passes the document `kind`.
 
+### 3.17 Amendment: conflict questions in the chat
+
+> **Status:** approved 2026-11-20 (product owner). Product owner decision of 2026-11-20 (product F-04 item 4). Depends on spec 17 §3.21 (what a conflict is), spec 13 §3.13 (what a choice writes), spec 12 (`__conflicts`, `Counters.conflict_asks`, `LastQuestion.conflicts`). Where it differs from §3.4, §3.8 or §3.16, this section wins.
+
+**Why.** A document that says something different from the expert, or from another document, is not thrown away: the agent shows both and lets the expert decide (product rule 4). Code builds the question and reads the clear answers; the model is not called for it (product rule 2).
+
+**1. When it is asked.**
+
+| # | Rule |
+|---|---|
+| Q1 | **New ask kind `conflict`**, priority 1b in §3.8: after `widening`, before `proposals`. When: phase is not `context` and `open_conflicts(profile)` (spec 13) holds at least one `open` conflict. `last_question = {focus: [], proposals: [], conflicts: [conflict keys of the group]}` |
+| Q2 | **After an upload** (§3.16): the reading kept proposals → the §3.16 question, plus the sentence `It also differs from what you told me in <c> place(s); I'll ask about that next.` before the closing question. No proposals but conflicts → the upload question **is** the conflict question for this document's first group. Neither → as §3.16 item 5 |
+| Q3 | A unit with an open conflict is **left out of proposal groups** (§3.8, §3.16 item 3) until the conflict is closed: otherwise a "yes" would confirm a value under dispute |
+| Q4 | A conflict turn **does not call GUIDE**: the agent's message is the code-built text of item 3. EXTRACT still runs on the reply (item 5) |
+
+**2. The group.** One conflict question per turn. The group is the first open conflict in ask order (process fields, then step 1 S02…S12, step 2, …) plus the following open conflicts with: the same step (or all process fields), the same offering document, the same `kind`, the same holder document (kind `document`). At most `CONFLICT_GROUP_MAX` = 3.
+
+**3. The message** (`interview/conflict_question.py`, pure, no clock, no model). Values render as `render_profile` renders them (a list as `a; b`), `single_line`, at most 200 characters (cut with `…`); names `single_line(name, 120)`.
+
+| Part | Text |
+|---|---|
+| Place | Step cell: `step <k> "<step name>" – <Label>`; process field: `<Label>`; a sub-field adds `, <sub label>` (S07: `Inputs` / `Outputs`; others: the sub-field key with `_` → space) |
+| Holder: expert | `You said "<value>".` |
+| Holder: expert-confirmed document value | `You confirmed "<value>" from "<holder name>".` |
+| Holder: proposed document value | `"<holder name>" says "<value>";` |
+| Offered | `"<name>" says "<value>".` — an image adds ` (from an image)` after the name |
+| Close, expert kind, every unit list-like and the union fits `max_items` | `Which should I keep: yours, the document's, both, or tell me in your words?` |
+| Close, expert kind, otherwise | `Which should I keep: yours or the document's, or tell me in your words?` |
+| Close, document kind | `Which is right, or how would you put it?` |
+
+One conflict: `About <place>:` on line 1, holder and offered on line 2, the close on line 3. Two or three: `About <step k "<name>" / the process>, "<name>" differs from what you told me:` (document kind: `… "<holder name>" and "<name>" differ:`), then one line per conflict `- <Label>[, <sub label>]: you said "<v>"; the document says "<v>".` (document kind: `- …: "<holder name>" says "<v>"; "<name>" says "<v>".`), then the close. Never "noted", "saved" or "recorded".
+
+**4. Reading the reply** (`replies.read_conflict_reply(state, text, *, lexicon, names) -> Choice | None`, `Choice = "current" | "offered" | "both"`). Only when `last_question.conflicts` is non-empty. Normalised and short (≤ 6 words) as §3.7. `names` = holder and offering document names (from `hydrate`). First match wins.
+
+| # | Reply | Expert kind | Document kind |
+|---|---|---|---|
+| 1 | Whole reply in `conflict_keep` ("keep", "keep it", "leave it", "as it is", "behalten") | `current` | `current` |
+| 2 | Whole reply in `conflict_mine` ("yours", "mine", "my version", "keep mine", "as i said", "meins") | `current` | None |
+| 3 | Whole reply in `conflict_document` ("the documents", "the document", "document", "the file", "the new one", "das dokument") | `offered` | None |
+| 4 | Whole reply in `conflict_both` ("both", "keep both", "both of them", "beide") | `both` if offered, else None | None |
+| 5 | Whole reply `1`, `2` or `3` (also `option 1` …) | 1 `current`, 2 `offered`, 3 `both` if offered | 1 holder → `current`, 2 → `offered`, 3 None |
+| 6 | Contains, as whole words, exactly one of the group's file names, full or without extension, normalised (≥ 3 characters) | The offering file → `offered` | Holder file → `current`; offering file → `offered` |
+| 7 | Anything else (a short yes or no, "ok", a sentence) | None | None |
+
+The word lists are configuration (the company `language.yaml`, spec 10; English and German, every word quoted; the loader rejects a word that is also a yes or no word). A choice applies to **every** conflict of the group. A None reply is the expert's own words: EXTRACT reads it as any reply (it sees the question fenced and the units' keys).
+
+**5. In the turn** (additions to §3.4).
+
+| § 3.4 step | Addition |
+|---|---|
+| 2 | `read_conflict_reply` on the incoming state. Nothing written yet |
+| 5 | When step 2 read a choice, EXTRACT writes to the group's fields are dropped this turn (the choice is the answer). When it read None, an expert write that lands on a group's field closes that field's conflicts as `own_words` (spec 13 §3.13) |
+| 8b (new) | Choice → `profile.resolve_conflicts(profile, group keys, choice, vocab=…, at=now)` (spec 13 §3.13) |
+| 10 | Charge: every conflict key of the group still open after the turn gets `conflict_asks[key] += 1` |
+| 10b (new) | Limit: a conflict with `conflict_asks ≥ CONFLICT_ASK_LIMIT` (2) → `profile.mark_conflicts_left(keys)`: status `left`, never asked again, the stored value stays as it is, listed in the report's gaps (spec 20) |
+
+**6. Rules around it.**
+
+| # | Rule |
+|---|---|
+| R1 | Nothing changes until the expert answers: the stored value keeps its value, meta and counting (spec 13 §3.13). *Finish* is never blocked by a conflict |
+| R2 | A new conflict on the same conflict key (spec 17 CF3) resets `conflict_asks[key]` to 0 |
+| R3 | ✓ in the panel on a proposed field with an open document conflict confirms the stored value and closes the conflict as `current`; ✎ is the expert's own words (`own_words`) |
+| R4 | A conflict question replaces `last_question` like any question; an armed cluster proposal or recommendation is put again later (§3.16 R3) |
+| R5 | Turn log (§3.11) gains `ask=conflict`, `conflicts` (group size), `choice` (`current` / `offered` / `both` / `none` / `own_words`), `left` (count). Never a value or a file name |
+| R6 | `make chat --fake`: `/upload` of a conflicting fixture prints the conflict question; the reply is read as above |
+
+**7. Examples** (spec 17 §3.21 worked example 5).
+
+*Example 4 (expert vs document, list-like; the upload reply).*
+
+```
+About step 3 "Collect explanations" – Data in and out, Outputs:
+You said "a cost report". "site_report_march.xlsx" says "Excel cost report per site with variance comments, one tab per site".
+Which should I keep: yours, the document's, both, or tell me in your words?
+```
+
+`last_question.conflicts = ["process.substeps[3].data.outputs"]`.
+
+| Expert replies | Choice | Step 3 `outputs` after |
+|---|---|---|
+| "both" / "3" | `both` | `["a cost report", "Excel cost report per site with variance comments, one tab per site"]`, item 2 sourced to `site_report_march.xlsx` |
+| "the document's" / "2" / "site report march" | `offered` | `["Excel cost report …"]`, sourced to the file, confirmed |
+| "mine" / "1" | `current` | Unchanged |
+| "It's the Excel report, one tab per site" | None → EXTRACT writes `outputs` | The expert's words; conflict closed `own_words` |
+| "ok", twice | None, charged twice | Unchanged; conflict `left`, listed in the gaps |
+
+*Example 5 (document vs document, single).*
+
+```
+About step 4 "Review" – Effort, frequency:
+"Monthly cost review procedure.docx" says "monthly"; "review_slides.pptx" says "weekly".
+Which is right, or how would you put it?
+```
+
+"review slides" or "2" → `frequency = "weekly"`; `duration` is still the procedure's proposal, so the field stays proposed (spec 13 §3.13) and the next `proposals` ask shows `Step 4 "Review" – Effort: 2 hours, weekly`. "weekly, but only in the busy months" → EXTRACT writes the expert's words; conflict closed `own_words`.
+
+*Example 6 (another session: grouped, expert kind, single values).*
+
+```
+About step 4 "Review", "review_slides.pptx" differs from what you told me:
+- Step owner: you said "the controller"; the document says "Head of finance".
+- Effort, frequency: you said "monthly"; the document says "weekly".
+Which should I keep: yours or the document's, or tell me in your words?
+```
+
+"keep" → both unchanged and closed.
+
+#### Acceptance criteria (amendment §3.17)
+
+| ID | Given / when / then |
+|---|---|
+| AC-14.91 | Given spec 17 worked example 5 upload A applied, the upload reply equals example 4 exactly, `last_question.conflicts == ["process.substeps[3].data.outputs"]`, `proposals == []`, and `FakeLLM` records no call |
+| AC-14.92 | A reading with 2 proposals and 1 conflict gives the §3.16 question with the "It also differs … I'll ask about that next." sentence before the closing question; the next turn's ask is `conflict` (before the remaining proposals), its message is the code-built text, and GUIDE is not called |
+| AC-14.93 | A unit with an open conflict is never in a proposal group (§3.8 or §3.16); once the conflict is closed it can be |
+| AC-14.94 | Group: 4 open conflicts on step 4 from the same document and kind → 3 in the group, the 4th asked next turn; conflicts on step 3 and step 4, or from two documents, or of two kinds, are never in one group |
+| AC-14.95 | Message: example 5 and example 6 exactly; "both" is offered only for an expert-kind group whose units are all list-like and whose union fits `max_items` (S03 with 4 + 2 items: not offered); an image adds `(from an image)` after its name only; a 300-character value is cut to 200 with `…` |
+| AC-14.96 | `read_conflict_reply`, parametrised over item 4: each row's examples for both kinds, "yes", "no", "ok" → None, a reply naming both files → None, "3" when "both" is not offered → None, a 7-word reply containing "mine" → None |
+| AC-14.97 | Choices (example 4): "both" → the union with per-item sources; "2" → the offered value, confirmed, sourced to the file; "mine" → value and meta unchanged; in every case the conflict is closed and no other key changes |
+| AC-14.98 | A clear choice drops EXTRACT's writes to the group's fields that turn; a None reply whose EXTRACT writes `process.substeps[3].data` closes the conflict as `own_words` with expert meta; a None reply with no write closes nothing |
+| AC-14.99 | Counter: two None replies with no write → `conflict_asks = 2`, status `left`, never asked again, value unchanged, the field listed in the report gaps; a new conflict on the same key resets the counter to 0 and asks again |
+| AC-14.100 | R3: ✓ on a proposed field with an open document conflict confirms the stored value and closes the conflict; the turn log carries `ask=conflict`, `choice`, `left` and no value or file name (sentinel test) |
+| AC-14.101 | `scripts/chat.py --fake` with `/upload site_report_march.xlsx` after the expert said "a cost report" prints example 4, and "both" gives the union |
+
+| Test file | Covers |
+|---|---|
+| `backend/tests/unit/process_discovery/interview/test_conflict_question.py` | AC-14.91, 14.94, 14.95 |
+| `backend/tests/unit/process_discovery/interview/test_replies_conflicts.py` | AC-14.96 |
+| `backend/tests/unit/process_discovery/interview/test_conflict_turn.py` | AC-14.92, 14.93, 14.97–14.100 |
+| `backend/tests/unit/process_discovery/interview/test_chat_cli.py` | AC-14.101 |
+
+**Build notes and deviations (§3.17, built 2026-11-20).**
+
+| # | Spec says | Built | Why |
+|---|---|---|---|
+| 1 | Item 4: the word lists are configuration (`language.yaml`, spec 10) | Constants `CONFLICT_KEEP`, `CONFLICT_MINE`, `CONFLICT_DOCUMENT`, `CONFLICT_BOTH` in `interview/replies.py` (English and German) | Spec 10 and the config loader are being changed by another workstream; to move later |
+| 2 | `read_conflict_reply(state, text, *, lexicon, names)` | `read_conflict_reply(text, *, kind, both_offered, holder_name, offered_name)`; the node reads the group from the state | Pure and testable without a state |
+| 3 | R3: ✓ closes a document conflict as `current` | `confirm_proposals` closes every conflict on the confirmed fields (✓ and a chat "yes"); a group never holds a disputed unit (Q3), so a chat "yes" cannot reach one | One rule |
+| 4 | Item 5 step 5: an expert write closes the field's conflicts | `apply_changes` closes them on any landed write (`ChangeResult.conflicts_closed`), a specialist edit included | A conflict over a specialist's value is never asked (C7) |
+| 5 | Report gaps (spec 20) | Each open or left conflict is a gaps row: `Not settled: the expert says "…"; "<file>" says "…"`, source `document`, the quote | Spec 20 gives no wording |
+| 6 | §3.16 R5 GUIDE lines | "(from an image)" when the field meta (or every part) is from an image; per item only in the upload question and the panel | The GUIDE line shows the value as one string |
+| 7 | Spec 23: the panel marks a field with an open conflict | The field view carries `conflict`; the frontend shows the per-item sources and the image mark from meta, but no conflict marker yet | `FieldRow.tsx` is being changed by another workstream |
+
+**Contract changes this amendment needs** (lead to apply): spec 12 `LastQuestion.conflicts`, `Counters.conflict_asks`; spec 10 `language.yaml` keys `conflict_keep`, `conflict_mine`, `conflict_document`, `conflict_both` and the loader check; spec 20 gaps list open and left conflicts (place, both values, both sources); spec 23 the panel marks a field with an open conflict.
+
 ## 4. Interfaces
 
 ```python
@@ -864,3 +1009,21 @@ LLM calls use `FakeLLM` (spec 11) with scripted replies per call type. Profiles 
 | Q7 | §3.15: steering questions cover all candidates at once (one question per signal pair) to keep `find` short. Ask per candidate instead? | All at once, at most 3 questions |
 | Q8 | §3.15: weights hours 0.5, people 0.2, data 0.3; full scores 500 h and 5 people | Assumption, tuned with the evaluation set |
 | Q9 | §3.15: input cue words and solo phrases are English only | Add German with the yes/no lists if needed |
+| Q10 | §3.17: `CONFLICT_ASK_LIMIT` = 2 and `CONFLICT_GROUP_MAX` = 3 (a conflict leaves a value that already counts, so fewer asks than a field) | **Decided 2026-11-20:** 2 asks per conflict, 3 conflicts per question, 6 per reading (spec 17 CF1); constants in `phases.py`, tuned later with the evaluation set |
+| Q11 | §3.17 Q4: a conflict turn skips GUIDE, so the expert's previous answer is not acknowledged in that message | **Decided 2026-11-20:** a conflict turn asks only the conflict question and skips GUIDE; revisit if the evaluation shows it reads abruptly |
+
+### 3.18 Amendment (approved 2026-11-20, to build): offering *Finish* in long sessions
+
+| # | Rule |
+|---|---|
+| L1 | Code counts the expert's messages (`Counters.expert_messages`). |
+| L2 | At 40 expert messages, and again at 50, 60, … (every `finish_offer_every` = 10, config), the agent's message ends with a code-built offer: "We have covered a lot. You can press *Finish* now; still missing: <up to 3 gaps by label>. Or we can keep going." |
+| L3 | The offer never closes the walk and never changes the phase: the employee may keep going without limit (per-field limits still apply). |
+| L4 | No offer when *Finish* is not available yet (below the gate): then the line says what is still needed to reach it. |
+
+| ID | Given / when / then |
+|---|---|
+| AC-14.102 | After the 40th expert message the reply ends with the finish offer listing at most 3 gaps; the 41st–49th do not repeat it; the 50th does |
+| AC-14.103 | The offer does not change the phase, the counters other than `expert_messages`, or block a 61st message |
+| AC-14.104 | Below the gate the line names what is missing to reach it instead of offering *Finish* |
+

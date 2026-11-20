@@ -9,13 +9,16 @@
 //   0.5 vCPU / 1 GiB, min minReplicas / max 1 replica, the settings of spec 25
 //   §3.5 as environment variables, and the three workspace values plus the App
 //   Insights connection string as Container Apps secrets (secretRef).
+//   Open workspace (amended 2026-11-20, AC-25.30): WORKSPACE_OPEN comes from the
+//   workspaceOpen parameter; each workspace code (secret and variable) is added
+//   only when it is not empty, because an open workspace needs no code.
 //   First provision (appExists=false): the public placeholder image and no custom
 //   probes (D7). Later provisions: the image passed in (the one running) and
 //   startup / liveness / readiness probes on /api/health.
 // What it must not do: set AZURE_OPENAI_API_KEY, LLM_CACHE_ENABLED or APP_VERSION
 //   (the image carries its version); take AZURE_CLIENT_ID from anything but the
 //   identity; put a secret in a plain env value or an output.
-// Acceptance criteria: AC-25.15, AC-25.17, AC-25.18, AC-25.19, AC-25.20, AC-25.29.
+// Acceptance criteria: AC-25.15, AC-25.17, AC-25.18, AC-25.19, AC-25.20, AC-25.29, AC-25.30.
 
 @description('Container Apps environment name, e.g. cae-discovery-<token>.')
 param environmentName string
@@ -80,12 +83,15 @@ param openAiApiVersion string
 param dailyTokenBudget int
 
 @secure()
-@description('Workspace access code for specialists.')
-param workspaceCodeSpecialist string
+@description('Workspace access code for specialists; empty = not set (open workspace).')
+param workspaceCodeSpecialist string = ''
 
 @secure()
-@description('Workspace access code for AI engineers.')
-param workspaceCodeEngineer string
+@description('Workspace access code for AI engineers; empty = not set (open workspace).')
+param workspaceCodeEngineer string = ''
+
+@description('Open demo workspace: name-only login, delete switched off (WORKSPACE_OPEN).')
+param workspaceOpen bool = true
 
 @secure()
 @minLength(32)
@@ -95,6 +101,37 @@ param workspaceTokenSecret string
 var placeholderImage = 'mcr.microsoft.com/k8se/quickstart:latest'
 var healthPath = '/api/health'
 var port = 8000
+
+// Every variable of spec 25 §3.5 that is always set (AC-25.19).
+var baseEnv = [
+  { name: 'DEPLOYMENT_STAGE', value: 'demo' }
+  { name: 'STORE', value: 'cosmos' }
+  { name: 'COSMOS_ENDPOINT', value: cosmosEndpoint }
+  { name: 'COSMOS_DATABASE', value: cosmosDatabase }
+  { name: 'COSMOS_CONTAINER', value: cosmosContainer }
+  { name: 'AZURE_OPENAI_ENDPOINT', value: openAiEndpoint }
+  { name: 'AZURE_OPENAI_DEPLOYMENT', value: appDeploymentName }
+  { name: 'AZURE_OPENAI_EVAL_DEPLOYMENT', value: evalDeploymentName }
+  { name: 'AZURE_OPENAI_API_VERSION', value: openAiApiVersion }
+  { name: 'AZURE_CLIENT_ID', value: identityClientId }
+  { name: 'LOG_LEVEL', value: 'INFO' }
+  { name: 'DAILY_TOKEN_BUDGET', value: string(dailyTokenBudget) }
+  { name: 'COMPANY_CONFIG_DIR', value: '/app/config/nig' }
+  { name: 'FRONTEND_DIST', value: '/app/frontend/dist' }
+  { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', secretRef: 'appinsights-connection-string' }
+  { name: 'WORKSPACE_TOKEN_SECRET', secretRef: 'workspace-token-secret' }
+  { name: 'WORKSPACE_OPEN', value: workspaceOpen ? 'true' : 'false' }
+]
+
+// Each workspace code is a secret and a variable only when it is set (AC-25.30).
+var codeSecrets = concat(
+  empty(workspaceCodeSpecialist) ? [] : [{ name: 'workspace-code-specialist', value: workspaceCodeSpecialist }],
+  empty(workspaceCodeEngineer) ? [] : [{ name: 'workspace-code-engineer', value: workspaceCodeEngineer }]
+)
+var codeEnv = concat(
+  empty(workspaceCodeSpecialist) ? [] : [{ name: 'WORKSPACE_CODE_SPECIALIST', secretRef: 'workspace-code-specialist' }],
+  empty(workspaceCodeEngineer) ? [] : [{ name: 'WORKSPACE_CODE_ENGINEER', secretRef: 'workspace-code-engineer' }]
+)
 
 resource workspace 'Microsoft.OperationalInsights/workspaces@2025-02-01' existing = {
   name: logAnalyticsName
@@ -145,12 +182,13 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
           identity: identityId
         }
       ]
-      secrets: [
-        { name: 'workspace-code-specialist', value: workspaceCodeSpecialist }
-        { name: 'workspace-code-engineer', value: workspaceCodeEngineer }
-        { name: 'workspace-token-secret', value: workspaceTokenSecret }
-        { name: 'appinsights-connection-string', value: appInsights.properties.ConnectionString }
-      ]
+      secrets: concat(
+        [
+          { name: 'workspace-token-secret', value: workspaceTokenSecret }
+          { name: 'appinsights-connection-string', value: appInsights.properties.ConnectionString }
+        ],
+        codeSecrets
+      )
     }
     template: {
       containers: [
@@ -161,26 +199,7 @@ resource app 'Microsoft.App/containerApps@2025-01-01' = {
             cpu: json('0.5')
             memory: '1Gi'
           }
-          env: [
-            { name: 'DEPLOYMENT_STAGE', value: 'demo' }
-            { name: 'STORE', value: 'cosmos' }
-            { name: 'COSMOS_ENDPOINT', value: cosmosEndpoint }
-            { name: 'COSMOS_DATABASE', value: cosmosDatabase }
-            { name: 'COSMOS_CONTAINER', value: cosmosContainer }
-            { name: 'AZURE_OPENAI_ENDPOINT', value: openAiEndpoint }
-            { name: 'AZURE_OPENAI_DEPLOYMENT', value: appDeploymentName }
-            { name: 'AZURE_OPENAI_EVAL_DEPLOYMENT', value: evalDeploymentName }
-            { name: 'AZURE_OPENAI_API_VERSION', value: openAiApiVersion }
-            { name: 'AZURE_CLIENT_ID', value: identityClientId }
-            { name: 'LOG_LEVEL', value: 'INFO' }
-            { name: 'DAILY_TOKEN_BUDGET', value: string(dailyTokenBudget) }
-            { name: 'COMPANY_CONFIG_DIR', value: '/app/config/nig' }
-            { name: 'FRONTEND_DIST', value: '/app/frontend/dist' }
-            { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', secretRef: 'appinsights-connection-string' }
-            { name: 'WORKSPACE_CODE_SPECIALIST', secretRef: 'workspace-code-specialist' }
-            { name: 'WORKSPACE_CODE_ENGINEER', secretRef: 'workspace-code-engineer' }
-            { name: 'WORKSPACE_TOKEN_SECRET', secretRef: 'workspace-token-secret' }
-          ]
+          env: concat(baseEnv, codeEnv)
           probes: appExists
             ? [
                 {

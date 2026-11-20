@@ -1,0 +1,17 @@
+{
+  "sessionId": "ed69c526-8b72-40a9-a0ec-f941e62f7e80",
+  "messages": [
+    {
+      "id": "cd66a3f9-d327-47a4-8104-ec54b2bb33a7",
+      "role": "agent",
+      "text": "Hello Anna, I am here to help you map one process.",
+      "at": "2026-11-19T10:00:00+00:00"
+    },
+    {
+      "id": "3c105360-f41a-409d-b639-19ffa7713864",
+      "role": "expert",
+      "text": "Every month I review our cost centres.",
+      "at": "2026-11-19T10:00:00+00:00"
+    }
+  ]
+}

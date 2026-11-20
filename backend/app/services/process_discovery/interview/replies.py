@@ -14,7 +14,9 @@ them); a reply longer than 6 words decides nothing unless its opening clause is 
 rest holds no no word (and, for the cluster, names no other cluster): "Yes, that cluster fits." is a
 yes, "well yes, but" is not; a correction in the same message outranks a yes.
 Must not: write the profile (the extract node applies what these return), call a model, or read a
-clock. Spec 14 §3.7, §3.15 item 9; AC-14.6 to AC-14.19, AC-14.72.
+clock. Spec 14 §3.7, §3.15 item 9; AC-14.6 to AC-14.19, AC-14.72. Amendment §3.17 item 4:
+`read_conflict_reply` reads keep / mine / the document / both / 1–3 / a file name; anything else is
+the expert's own words (AC-14.96).
 """
 
 from __future__ import annotations
@@ -280,3 +282,60 @@ def read_rollup_reply(
     recent = recent_agent_messages(state, CUE_LOOKBACK)
     cued = tuple(t for t in pending if any(mentions(m, cue) for m in recent for cue in cues[t]))
     return cued or (pending[0],)
+
+
+# --- Conflicts (§3.17 item 4) ---------------------------------------------------------------------
+
+#: The reply words of §3.17 item 4 (English and German), normalised like a reply. Kept in code for
+#: now; spec 14 §3.17 asks for them in `language.yaml` (a spec 10 change, listed as a deviation).
+CONFLICT_KEEP = frozenset({"keep", "keep it", "leave it", "as it is", "behalten"})
+CONFLICT_MINE = frozenset({"yours", "mine", "my version", "keep mine", "as i said", "meins"})
+CONFLICT_DOCUMENT = frozenset({"the documents", "the document", "document", "the file", "the new one", "das dokument"})
+CONFLICT_BOTH = frozenset({"both", "keep both", "both of them", "beide"})
+_OPTION = re.compile(r"^(?:option )?([123])$")
+Choice = Literal["current", "offered", "both"]
+
+
+def _file_names(name: str) -> list[str]:
+    """A file name as a reply could say it: full and without the extension, `_`/`-` as spaces, normalised."""
+    spaced = re.sub(r"[_\-]+", " ", name)
+    stem = spaced.rsplit(".", 1)[0] if "." in spaced else spaced
+    return [n for n in dict.fromkeys((normalise_reply(spaced), normalise_reply(stem))) if len(n) >= 3]
+
+
+def read_conflict_reply(
+    text: str | None, *, kind: str, both_offered: bool, holder_name: str | None, offered_name: str
+) -> Choice | None:
+    """A clear choice for the conflict group in the last question (§3.17 item 4), or `None` (the expert's own words).
+
+    `kind` is the group's kind (`expert` or `document`); `holder_name` is the holder document of a
+    document-kind group. First match wins; a reply over 6 words or naming both files decides nothing.
+    """
+    reply = normalise_reply(text)
+    if not reply or len(reply.split()) > REPLY_MAX_WORDS:
+        return None
+    expert = kind == "expert"
+    if reply in CONFLICT_KEEP:
+        return "current"
+    if reply in CONFLICT_MINE:
+        return "current" if expert else None
+    if reply in CONFLICT_DOCUMENT:
+        return "offered" if expert else None
+    if reply in CONFLICT_BOTH:
+        return "both" if expert and both_offered else None
+    option = _OPTION.match(reply)
+    if option is not None:
+        number = option.group(1)
+        if number == "1":
+            return "current"
+        if number == "2":
+            return "offered"
+        return "both" if expert and both_offered else None
+    spoken = re.sub(r"[_\-]+", " ", text or "")
+    named_offered = any(mentions(spoken, n) for n in _file_names(offered_name))
+    named_holder = bool(holder_name) and any(mentions(spoken, n) for n in _file_names(holder_name or ""))
+    if named_offered and not named_holder:
+        return "offered"
+    if named_holder and not named_offered and not expert:
+        return "current"
+    return None

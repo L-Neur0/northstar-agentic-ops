@@ -69,6 +69,7 @@ jobs:
       WORKSPACE_CODE_SPECIALIST: ${{ secrets.WORKSPACE_CODE_SPECIALIST }}
       WORKSPACE_CODE_ENGINEER: ${{ secrets.WORKSPACE_CODE_ENGINEER }}
       WORKSPACE_TOKEN_SECRET: ${{ secrets.WORKSPACE_TOKEN_SECRET }}
+      WORKSPACE_OPEN: ${{ vars.WORKSPACE_OPEN || 'true' }} # spec 25 AC-25.30: open demo workspace unless set to false
     steps:
       - uses: actions/checkout@v4
       - uses: Azure/setup-azd@v2

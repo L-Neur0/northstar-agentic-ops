@@ -71,7 +71,9 @@ class InterviewContext:
     steering: SteeringConfig | None = None
 
 
-AskKind = Literal["widening", "proposals", "steer", "recommend", "cluster", "field", "cell", "rollups", "wrap_up"]
+AskKind = Literal[
+    "widening", "conflict", "proposals", "steer", "recommend", "cluster", "field", "cell", "rollups", "wrap_up"
+]
 
 
 class Ask(NamedTuple):

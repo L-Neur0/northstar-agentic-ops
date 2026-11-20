@@ -93,7 +93,7 @@ def test_fill_only(vocab):
     """AC-13.35."""
     expert = write(vocab, empty_profile(), {"process.trigger": "Expert words"})
     assert apply_proposals(expert, procedure_diff(names=()), vocab=vocab, at=AT).refused == [
-        ("process.trigger", "confirmed")
+        ("process.trigger", "conflict")  # spec 17 §3.21: a differing value is never written
     ]
     specialist = set_field(empty_profile(), "process.trigger", "Spec", by="s", vocab=vocab, at=AT).profile
     assert apply_proposals(specialist, procedure_diff(names=()), vocab=vocab, at=AT).refused == [
@@ -102,12 +102,13 @@ def test_fill_only(vocab):
     first = apply_proposals(empty_profile(), procedure_diff(names=()), vocab=vocab, at=AT).profile
     confirmed_doc = confirm_proposals(first, ["process.trigger"], vocab=vocab, at=AT).profile
     assert apply_proposals(confirmed_doc, procedure_diff("d2", names=()), vocab=vocab, at=AT).refused == [
-        ("process.trigger", "confirmed")
+        ("process.trigger", "same_value")
     ]
     newer = ProposalDiff("d2", fields=(FieldProposal("process.trigger", "Newer reading", "newer"),))
-    replaced = apply_proposals(first, newer, vocab=vocab, at=AT).profile
-    assert replaced["process"]["trigger"] == "Newer reading"
-    assert replaced["__meta"]["process.trigger"]["documentId"] == "d2"
+    replaced = apply_proposals(first, newer, vocab=vocab, at=AT)
+    # Spec 17 §3.21 C5: a newer document no longer replaces a proposed single value; it is a conflict.
+    assert replaced.refused == [("process.trigger", "conflict")]
+    assert replaced.profile["__meta"]["process.trigger"]["documentId"] == "d1"
 
 
 def test_rows_only_on_an_empty_table(vocab):

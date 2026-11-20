@@ -15,8 +15,10 @@ used (`not_used` for the rest); `resolve_target` picks the step a step-scoped fi
 `check_description` is the evidence rule for a file description (D1–D5), placed first in the target
 step's `data` (D6) and merged into a proposed cell (D7). §3.19 I4: every value read from an image
 passes the contact-data check (`personal_data`). Spec 17 Q5: a partly answered field takes a
-whole-field proposal that keeps the person's sub-values (`conflicts_with_expert` for a differing one).
-AC-17.47 to AC-17.53, AC-17.58, AC-17.59, AC-17.62, AC-17.65.
+whole-field proposal that keeps the person's sub-values. Amendment §3.21: a stored unit is never
+overwritten; `profile.conflicts.plan_offer` decides (C1–C8) whether the offer is the same meaning
+(`same_value`), a merge, or a conflict kept in `diff.conflicts` (at most 6, CF1).
+AC-17.47 to AC-17.53, AC-17.58, AC-17.59, AC-17.62, AC-17.70 to AC-17.75, AC-17.80, AC-17.81.
 """
 
 from __future__ import annotations
@@ -45,8 +47,9 @@ from ..domain.field_spec import (
     step_cell_key,
     step_key_template,
 )
+from ..profile.conflicts import plan_offer
 from ..profile.constants import NUMBER_BOUNDS_PROPOSAL
-from ..profile.proposals import FieldProposal, ProposalDiff, StepProposal, fill_target, merge_offered
+from ..profile.proposals import ConflictOffer, FieldProposal, ProposalDiff, StepProposal, fill_target
 from ..profile.shapes import meta_for, normalized_profile, process_of, resolve_key, rows_of
 from ..profile.verdicts import P16_KEY
 from .context import ReadingContext
@@ -75,7 +78,10 @@ NO_TARGET_STEP = "no_target_step"
 DESCRIPTION_INVALID = "description_invalid"
 DESCRIPTION_UNSUPPORTED = "description_unsupported"
 PERSONAL_DATA = "personal_data"
-CONFLICTS_WITH_EXPERT = "conflicts_with_expert"
+SAME_VALUE = "same_value"
+TOO_MANY_CONFLICTS = "too_many_conflicts"
+#: CF1 (spec 17 §3.21): conflicts kept per reading, in ask order.
+CONFLICTS_PER_READING = 6
 QUOTE_INVALID = "quote_invalid"
 STEPS_KEY = "steps"
 TARGET_KEY = "target_step"
@@ -286,6 +292,7 @@ class _Builder:
         self.vocab = vocab
         self.from_image = from_image
         self.skips: list[Skip] = []
+        self.conflicts: list[ConflictOffer] = []
 
     def unsafe(self, texts: Sequence[Any]) -> str | None:
         """`unsafe_value` for an injection pattern; from an image, `personal_data` for contact data (I4)."""
@@ -434,18 +441,20 @@ class _Builder:
         shaped = self.shape(spec, raw, key, loop)
         if shaped is None:
             return None
-        reason = refusal(self.profile, key, vocab=self.vocab)
-        if reason is not None:
-            self.skip(key, reason)
+        if refusal(self.profile, key) == NOT_ALLOWED:
+            self.skip(key, NOT_ALLOWED)
             return None
-        value, conflicts = merge_offered(spec, shaped[0], fill_target(self.profile, key, vocab=self.vocab))
-        if conflicts:
-            self.skip(key, CONFLICTS_WITH_EXPERT, conflicts)
-        if value is None:
-            if not conflicts:
-                self.skip(key, CONFIRMED)
+        plan = plan_offer(self.profile, key, shaped[0], vocab=self.vocab)
+        for offer in plan.conflicts:  # C3, C5, C8; at most CONFLICTS_PER_READING (CF1)
+            if len(self.conflicts) >= CONFLICTS_PER_READING:
+                self.skip(key, TOO_MANY_CONFLICTS)
+                continue
+            self.conflicts.append(ConflictOffer(key, offer.sub, offer.value, shaped[1]))
+        if plan.refusal is not None:
+            self.skip(key, plan.refusal)
+        if plan.value is None:
             return None
-        return FieldProposal(emit, value, shaped[1])
+        return FieldProposal(emit, plan.value, shaped[1])
 
 
 def _no_loop(_: Any) -> int | None:
@@ -629,7 +638,14 @@ def build_diff(
         else:
             step_cells = _target_cells(data, role, builder, target=target, rows=rows, text=text, name=name)
 
-    diff = ProposalDiff(document_id, fields=tuple(fields), steps=tuple(new_rows), step_cells=tuple(step_cells))
+    diff = ProposalDiff(
+        document_id,
+        fields=tuple(fields),
+        steps=tuple(new_rows),
+        step_cells=tuple(step_cells),
+        conflicts=tuple(builder.conflicts),
+        from_image=from_image,
+    )
     return Filtered(
         diff,
         tuple(builder.skips),

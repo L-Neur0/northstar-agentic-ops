@@ -13,11 +13,17 @@
  * outcomes by file name, fill-only proposals with quotes, ✓ / ✎, removal, the report and the PDF.
  * Divergence kept on purpose: like the built server, a report asked for before *Finish* is 409
  * `report_not_ready` (the spec text said 404).
+ * Part 3 (spec 23 §19.10; AC-23.139, AC-23.140): the workspace login (`demo-specialist`,
+ * `demo-engineer`), the token check of every workspace call, five seeded sessions (option
+ * `workspaceSeed`; hidden from the expert's Home), the review list with spec 21 §3.2 filters, the
+ * read-only view with display-text grid cells, the conversation, the PDF and delete with an etag.
+ * Workspace triggers typed in the Search box: `/error <code>`, `/expire`, `/touch <id>`.
  */
 import { ApiError, type DiscoveryApi } from './api'
 import {
   BPMN_LANES,
   CLUSTERS,
+  COST_REVIEW_ANSWERS,
   COST_REVIEW_STEPS,
   DOCUMENT_SENTENCES,
   FAKE_CONFIG,
@@ -28,11 +34,15 @@ import {
   PROCESS_FIELDS,
   SCRIPT,
   STEP_FIELDS,
+  WORKSPACE_SEED,
   emptyProfile,
   emptyStep,
+  type WorkspaceSeedSession,
 } from './fakeData'
+import { readWorkspaceToken } from '../access/workspaceToken'
+import type { ReviewRow, ReviewSessionOut, StepGrid } from '../types/workspace'
 import { euReport, withFailedNote } from '../test/fixtures/report'
-import { getValue } from '../utils/discoveryFormat'
+import { formatValue, getValue } from '../utils/discoveryFormat'
 import { PART_KEYS, type DiscoveryReport } from '../types/report'
 import { typeSentence } from '../utils/documentLimits'
 import type {
@@ -48,6 +58,7 @@ import type {
   Profile,
   SessionOut,
   SessionSummary,
+  Step,
 } from '../types/process-discovery'
 
 export const FAKE_SCRIPT_LENGTH = SCRIPT.length
@@ -71,11 +82,18 @@ interface FakeSession {
   docProposals?: Record<string, { docId: string; quote: string }>
   /** Keys confirmed from a document: the document id (the name is looked up; gone = removed). */
   docConfirmed?: Record<string, { docId: string; quote: string }>
+  /** Part 3: a workspace seed (not listed on the expert's Home). */
+  seeded?: boolean
+  /** Part 3: the steps as the expert first told them, or null when nothing froze them. */
+  rawSteps?: Step[] | null
+  /** Part 3: the etag counter, bumped on every write. */
+  etag?: number
 }
 
 interface Store {
   sessions: FakeSession[]
   ideas: Idea[]
+  seeded?: boolean
 }
 
 export interface FakeApiOptions {
@@ -83,6 +101,19 @@ export interface FakeApiOptions {
   delayMs?: number | [number, number]
   /** Keep data in sessionStorage so a reload keeps it. Default true. */
   persist?: boolean
+  /** Part 3: add the five workspace seed sessions (spec 23 §19.10.3). Default false. */
+  workspaceSeed?: boolean
+  /** Part 3: the workspace token of the caller. Default: the stored one. */
+  getToken?: () => string | null
+  /** Open demo workspace (spec 23 §19.10.9, amended 2026-11-20): name-only login, delete 403. Default false. */
+  workspaceOpen?: boolean
+}
+
+export const FAKE_SPECIALIST_TOKEN = 'fake.specialist'
+export const FAKE_ENGINEER_TOKEN = 'fake.engineer'
+const FAKE_CODES: Record<string, { token: string; role: 'specialist' | 'engineer' }> = {
+  'demo-specialist': { token: FAKE_SPECIALIST_TOKEN, role: 'specialist' },
+  'demo-engineer': { token: FAKE_ENGINEER_TOKEN, role: 'engineer' },
 }
 
 const STORAGE_KEY = 'discovery_fake_store'
@@ -110,6 +141,10 @@ const ERROR_STATUS: Record<ApiErrorCode, number> = {
   document_type: 415,
   document_unreadable: 422,
   report_not_ready: 409,
+  workspace_code_invalid: 401,
+  workspace_code_required: 401,
+  forbidden: 403,
+  etag_required: 428,
 }
 
 let clockTick = 0
@@ -392,8 +427,159 @@ function completeMap(s: FakeSession): void {
   s.turn = SCRIPT.length
 }
 
+/* ---- workspace (part 3): the fake's version of spec 21 ---- */
+
+/** One seed of `WORKSPACE_SEED` as a stored fake session (spec 23 §19.10.3). */
+function seedSession(seed: WorkspaceSeedSession, at: number): FakeSession {
+  const iso = (hoursAgo: number) => new Date(at - hoursAgo * 3_600_000).toISOString()
+  const s: FakeSession = {
+    id: seed.id,
+    status: seed.status,
+    displayName: null,
+    createdAt: iso(seed.createdDaysAgo * 24 + seed.updatedHoursAgo),
+    updatedAt: iso(seed.updatedHoursAgo),
+    finishedAt: seed.status === 'active' ? null : iso(seed.updatedHoursAgo),
+    messages: [],
+    profile: emptyProfile(),
+    proposals: {},
+    turn: 0,
+    proposingCluster: false,
+    seeded: true,
+    rawSteps: null,
+    etag: 1,
+  }
+  const p = s.profile
+  if (seed.fill === 'complete' || seed.fill === 'steps') {
+    completeMap(s)
+    p.process.substeps_complete = seed.fill === 'complete'
+    p.process.roles_confirmed = seed.fill === 'complete'
+    p.process.tools_confirmed = seed.fill === 'complete'
+    if (seed.fill === 'steps') p.process.substeps = p.process.substeps.slice(0, 2)
+  }
+  if (seed.department) p.department = seed.department
+  if (seed.processName) p.process.name = seed.processName
+  const cluster = CLUSTERS.find((c) => c.code === seed.clusterCode)
+  if (cluster) p.process.cluster = { code: cluster.code, name: cluster.name, decided_by: 'picker' }
+  rebuildRollups(p)
+  if (seed.rawSteps) {
+    const raw = structuredClone(COST_REVIEW_STEPS)
+    raw[1].name = 'Merge the files'
+    raw[1].systems = ['Excel', 'Email']
+    s.rawSteps = raw
+  }
+  s.documents = (seed.documents ?? []).map((d, i) => ({
+    id: `${seed.id}-doc-${i + 1}`,
+    name: d.name,
+    kind: d.kind,
+    bytes: d.bytes,
+    chars: d.outcome === 'read' ? 1000 : 0,
+    truncated: false,
+    uploadedAt: iso(seed.updatedHoursAgo + 24),
+    outcome: d.outcome,
+    proposals: 0,
+  }))
+  // The conversation: the welcome, then the expert's answers with the agent's lines.
+  let t = at - (seed.createdDaysAgo * 24 + seed.updatedHoursAgo) * 3_600_000
+  const say = (role: Message['role'], text: string) => {
+    t += 60_000
+    s.messages.push({ id: `${seed.id}-m${s.messages.length + 1}`, role, text, at: new Date(t).toISOString() })
+  }
+  say('agent', 'Hello! I will help you map one process from your work in about 15 minutes.\n\n**Which department do you work in?**')
+  const pairs: Array<[string, string]> =
+    seed.conversation.length > 0
+      ? seed.conversation
+      : COST_REVIEW_ANSWERS.map((answer, i) => [answer, SCRIPT[i].reply(p)])
+  for (const [expert, agentText] of pairs) {
+    say('expert', expert)
+    if (agentText) say('agent', agentText)
+  }
+  return s
+}
+
+const stepKey = (i: number, leaf: string) => `process.substeps[${i + 1}].${leaf}`
+
+/** The step grid of spec 21 §3.3: one row per step field, one display-text cell per step. */
+function stepGrid(s: FakeSession, substeps: Step[]): StepGrid {
+  const view: FakeSession = { ...s, profile: { ...s.profile, process: { ...s.profile.process, substeps } } }
+  const views = fieldViews(view)
+  return {
+    stepNames: substeps.map((st) => st.name),
+    rows: STEP_FIELDS.map((f) => ({
+      key: f.leaf,
+      id: f.id,
+      label: f.label,
+      cells: substeps.map((_, i) => {
+        const v = views.find((x) => x.key === stepKey(i, f.leaf))
+        return {
+          value: formatValue(view.profile, stepKey(i, f.leaf)),
+          source: v && v.status !== 'empty' ? v.source : null,
+          status: v?.status ?? null,
+        }
+      }),
+    })),
+  }
+}
+
+const blankToNull = (v: string) => (v.trim() ? v : null)
+
+function reviewRow(s: FakeSession): ReviewRow {
+  const out = toOut(s)
+  const p = s.profile
+  return {
+    id: s.id,
+    createdAt: s.createdAt,
+    updatedAt: s.updatedAt,
+    processName: blankToNull(p.process.name),
+    department: blankToNull(p.department),
+    clusterCode: blankToNull(p.process.cluster.code),
+    clusterName: blankToNull(p.process.cluster.name),
+    region: blankToNull(p.region),
+    status: s.status,
+    phase: out.phase,
+    fieldsFilled: out.fieldViews.filter((v) => v.status === 'complete').length,
+    fieldsTotal: out.fieldViews.length,
+    steps: p.process.substeps.length,
+    messageCount: s.messages.length,
+    documentCount: (s.documents ?? []).length,
+  }
+}
+
+function reviewSessionOut(s: FakeSession): ReviewSessionOut {
+  const row = reviewRow(s)
+  const out = toOut(s)
+  const p = s.profile.process
+  const started = p.substeps.filter((st) => JSON.stringify(st) !== JSON.stringify(emptyStep())).length
+  return structuredClone({
+    id: s.id,
+    etag: `"e${s.etag ?? 1}"`,
+    summary: {
+      department: row.department,
+      function: blankToNull(s.profile.user_function),
+      region: row.region,
+      processName: row.processName,
+      clusterName: row.clusterName,
+      status: s.status,
+      phase: row.phase,
+      fieldsFilled: row.fieldsFilled,
+      fieldsTotal: row.fieldsTotal,
+      stepsStarted: started,
+      stepsExpected: p.substep_count ?? p.substeps.length,
+      completeness: out.score.value,
+      filledPoints: out.score.filledPoints,
+      totalPoints: out.score.totalPoints,
+      messageCount: row.messageCount,
+      documentCount: row.documentCount,
+    },
+    steps: stepGrid(s, p.substeps),
+    rawSteps: s.rawSteps ? stepGrid(s, s.rawSteps) : null,
+    documents: (s.documents ?? []).map((d) => ({ name: d.name, kind: d.kind, bytes: d.bytes, uploadedAt: d.uploadedAt, outcome: d.outcome })),
+    report: s.status === 'finished' ? structuredClone(euReport) : null,
+  })
+}
+
 export function createFakeApi(options: FakeApiOptions = {}): DiscoveryApi {
   const persist = options.persist ?? true
+  const workspaceOpen = options.workspaceOpen ?? false
   const range = options.delayMs ?? [300, 800]
   let armedError: string | null = null
   let reportFailed: string | null = null
@@ -414,6 +600,13 @@ export function createFakeApi(options: FakeApiOptions = {}): DiscoveryApi {
     return { sessions: [], ideas: [] }
   }
   const store = load()
+  if (options.workspaceSeed && !store.seeded) {
+    const at = Date.now()
+    store.sessions.push(...WORKSPACE_SEED.map((seed) => seedSession(seed, at)))
+    store.seeded = true
+  }
+  const getToken = options.getToken ?? (() => readWorkspaceToken()?.token ?? null)
+  let armedWorkspace: { code: string } | null = null
   const save = () => {
     if (!persist) return
     try {
@@ -446,6 +639,36 @@ export function createFakeApi(options: FakeApiOptions = {}): DiscoveryApi {
     return result
   }
 
+  /** Every workspace call: delay, the armed trigger, the token check of spec 21 §3.1, the work. */
+  async function wsCall<T>(work: () => T): Promise<T> {
+    await wait()
+    if (armedWorkspace) {
+      const { code } = armedWorkspace
+      armedWorkspace = null
+      throw new ApiError(ERROR_STATUS[code as ApiErrorCode] ?? 400, code, `Simulated ${code}.`)
+    }
+    const token = getToken()
+    if (token === FAKE_ENGINEER_TOKEN) throw new ApiError(403, 'forbidden', 'This action is not available for your role.')
+    if (token !== FAKE_SPECIALIST_TOKEN) throw new ApiError(401, 'workspace_code_required', 'Enter the workspace access code.')
+    const result = work()
+    save()
+    return result
+  }
+
+  /** A Search box trigger (spec 23 §19.10.7): arms the next workspace call; true when it was one. */
+  const workspaceTrigger = (q: string): boolean => {
+    const text = q.trim()
+    const error = /^\/error\s+(\w+)/.exec(text)
+    const touch = /^\/touch\s+(\S+)/.exec(text)
+    if (error) armedWorkspace = { code: error[1] }
+    else if (text === '/expire') armedWorkspace = { code: 'workspace_code_required' }
+    else if (touch) {
+      const target = store.sessions.find((x) => x.id === touch[1])
+      if (target) target.etag = (target.etag ?? 1) + 1
+    } else return false
+    return true
+  }
+
   const find = (id: string): FakeSession => {
     const s = store.sessions.find((x) => x.id === id)
     if (!s) throw new ApiError(404, 'not_found', NOT_FOUND)
@@ -459,6 +682,7 @@ export function createFakeApi(options: FakeApiOptions = {}): DiscoveryApi {
   const touched = (s: FakeSession) => {
     rebuildRollups(s.profile)
     s.updatedAt = now()
+    s.etag = (s.etag ?? 1) + 1
     return toOut(s)
   }
   const agent = (text: string): Message => ({ id: uid(), role: 'agent', text, at: now() })
@@ -503,7 +727,10 @@ export function createFakeApi(options: FakeApiOptions = {}): DiscoveryApi {
 
     listSessions: () =>
       call(() => ({
-        sessions: [...store.sessions].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).map(toSummary),
+        sessions: store.sessions
+          .filter((s) => !s.seeded)
+          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+          .map(toSummary),
       })),
 
     getSession: (id) => call(() => toOut(find(id))),
@@ -640,7 +867,7 @@ export function createFakeApi(options: FakeApiOptions = {}): DiscoveryApi {
 
     getConfig: async () => {
       await wait()
-      return structuredClone(FAKE_CONFIG)
+      return { ...structuredClone(FAKE_CONFIG), workspaceOpen }
     },
 
     uploadDocument: async (id, file, onProgress) => {
@@ -802,6 +1029,61 @@ export function createFakeApi(options: FakeApiOptions = {}): DiscoveryApi {
           throw new ApiError(409, 'report_not_ready', 'The report is ready once the map is finished.')
         }
         return { blob: new Blob([FAKE_PDF], { type: 'application/pdf' }), filename: 'discovery-report-monthly-cost-review.pdf' }
+      }),
+
+    workspaceLogin: async (code, name) => {
+      await wait()
+      if (!name.trim() || name.length > 40) throw new ApiError(422, 'invalid_value', 'name: 1 to 40 characters')
+      const match = workspaceOpen ? FAKE_CODES['demo-specialist'] : FAKE_CODES[code]
+      if (!match) throw new ApiError(401, 'workspace_code_invalid', 'The access code is not valid.')
+      return { token: match.token, role: match.role, name, expiresAt: new Date(Date.now() + 8 * 3_600_000).toISOString() }
+    },
+
+    reviewList: (filters) =>
+      wsCall(() => {
+        const triggered = workspaceTrigger(filters.q)
+        const q = triggered ? '' : filters.q.trim().toLowerCase()
+        if (q.length > 100) throw new ApiError(422, 'invalid_value', 'q: at most 100 characters')
+        if (filters.status && !['active', 'finished', 'no_candidate'].includes(filters.status)) {
+          throw new ApiError(422, 'invalid_value', 'status: not a known status')
+        }
+        const all = [...store.sessions]
+          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || a.id.localeCompare(b.id))
+          .map(reviewRow)
+        const rows = all.filter(
+          (r) =>
+            (!filters.status || r.status === filters.status) &&
+            (!filters.cluster || r.clusterCode === filters.cluster) &&
+            (!q || [r.processName, r.department, r.id].some((v) => v?.toLowerCase().includes(q))),
+        )
+        const count = (status: string) => all.filter((r) => r.status === status).length
+        return {
+          counts: { total: all.length, active: count('active'), finished: count('finished'), noCandidate: count('no_candidate') },
+          rows,
+          matching: rows.length,
+          truncated: false,
+        }
+      }),
+
+    reviewSession: (id) => wsCall(() => reviewSessionOut(find(id))),
+
+    reviewConversation: (id) => wsCall(() => ({ sessionId: id, messages: structuredClone(find(id).messages) })),
+
+    getReviewReportPdf: (id) =>
+      wsCall(() => {
+        if (find(id).status !== 'finished') {
+          throw new ApiError(409, 'report_not_ready', 'The report is ready once the map is finished.')
+        }
+        return { blob: new Blob([FAKE_PDF], { type: 'application/pdf' }), filename: 'discovery-report-monthly-cost-review.pdf' }
+      }),
+
+    deleteReviewSession: (id, etag) =>
+      wsCall(() => {
+        if (workspaceOpen) throw new ApiError(403, 'forbidden', 'Deleting is switched off on this open demo.')
+        const s = find(id)
+        if (!etag) throw new ApiError(428, 'etag_required', 'This request needs the If-Match header.')
+        if (etag !== `"e${s.etag ?? 1}"`) throw new ApiError(409, 'conflict', 'The session changed. Reload it and try again.')
+        store.sessions = store.sessions.filter((x) => x.id !== id)
       }),
   }
 }

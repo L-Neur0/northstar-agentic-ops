@@ -56,6 +56,21 @@ export interface FieldView {
   quote: string | null
   documentName: string | null
   asks: number
+  /** Spec 13 §3.13 item 5: the value was read from an image (meta `fromImage`). */
+  fromImage?: boolean
+  /** Spec 13 §3.13 item 5: an open or left conflict with a document on this field. */
+  conflict?: 'open' | 'left' | null
+  /** Spec 17 §3.21 P4: one source per item when the value mixes sources (else empty). */
+  items?: FieldItemView[]
+}
+
+/** The source of one item of a value read from several files (spec 17 §3.21 P2–P4). */
+export interface FieldItemView {
+  sub: string | null
+  item: string | null
+  source: 'expert' | 'document' | 'specialist' | null
+  documentName: string | null
+  fromImage: boolean
 }
 
 export interface FinishState {
@@ -203,6 +218,8 @@ export interface DocumentReportOut {
   targetStep: number | null
   targetSource: 'document' | 'expert' | 'focus' | 'none'
   fromImage: boolean
+  /** Spec 17 §3.21 item 6: conflicts the reading recorded (asked in the chat). */
+  conflicts?: number
 }
 
 export interface DocumentUploadOut {
@@ -267,6 +284,10 @@ export type ApiErrorCode =
   | 'document_type' // 415, upload
   | 'document_unreadable' // 422, upload
   | 'report_not_ready' // 409, report before Finish
+  | 'workspace_code_invalid' // 401, workspace login (spec 16)
+  | 'workspace_code_required' // 401, workspace call without a valid token
+  | 'forbidden' // 403, workspace token of another role
+  | 'etag_required' // 428, workspace delete without If-Match (spec 21)
 
 export interface ApiErrorBody {
   /** An `ApiErrorCode`, or a code this client does not know yet (its message is shown). */
@@ -285,6 +306,8 @@ export interface PublicConfig {
   regions: string[]
   languages: string[]
   documents: { allowedTypes: string[]; maxFiles: number; maxFileMb: number; maxImageMb: number }
+  /** Open demo workspace: name-only login, delete switched off (spec 16 §3.2 item 5). */
+  workspaceOpen: boolean
 }
 
 export interface DeletedCounts {

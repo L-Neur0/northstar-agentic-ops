@@ -89,10 +89,11 @@ def test_ac_17_42_filled_specialist_and_none_cells_are_refused(vocab):
     out = build_diff(raw(steps=[cells]), document_id="d1", text=TEXT, profile=profile)
     kept = [c.key for c in out.diff.step_cells]
     assert kept == [step_cell_key(1, leaf) for leaf in ("goal", "activities", "data")]
-    assert keys(out.skipped) == [
-        (step_cell_key(1, "roles"), "confirmed"),
-        (step_cell_key(1, "owner"), "specialist_owned"),
-        (step_cell_key(1, "systems"), "confirmed"),
+    assert keys(out.skipped) == [(step_cell_key(1, "owner"), "specialist_owned")]
+    # §3.21: the none row (C8, single) and the differing systems (C3, list-like) are conflicts.
+    assert [(c.key, c.sub) for c in out.diff.conflicts] == [
+        (step_cell_key(1, "roles"), None),
+        (step_cell_key(1, "systems"), None),
     ]
 
 

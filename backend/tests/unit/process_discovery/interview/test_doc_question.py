@@ -190,7 +190,9 @@ def image_session(ctx) -> Session:
 
     profile = expert_steps(ctx.vocab, procedure_profile(ctx.vocab), SITE_STEPS)
     diff = ProposalDiff(
-        "d3", step_cells=(FieldProposal("process.substeps[2].systems", ["Planning tool"], "Planning tool"),)
+        "d3",
+        step_cells=(FieldProposal("process.substeps[2].systems", ["Planning tool"], "Planning tool"),),
+        from_image=True,  # spec 17 §3.21 P7: the reading marks the diff, copied onto meta at write time
     )
     record = DocumentRecord(
         id="d3", name="planning_tool.png", kind="png", bytes=10, chars=5, text="Image", uploaded_at=AT, outcome="read"

@@ -67,7 +67,7 @@ class ProposalKeysIn(WireModel):
 
 
 class LoginIn(WireModel):
-    code: str = Field(max_length=200)
+    code: str = Field(default="", max_length=200)  # ignored when the workspace is open (spec 16 §3.2 item 5)
     name: str = Field(min_length=1, max_length=40)
 
 
@@ -157,6 +157,8 @@ class DocumentReportOut(WireModel):
     skipped: list[SkippedOut]
     step_list: int
     message: str
+    #: Conflicts the reading recorded (spec 17 §3.21 item 6).
+    conflicts: int = 0
 
 
 class DocumentUploadOut(WireModel):
@@ -242,6 +244,7 @@ class ConfigOut(WireModel):
     regions: list[str]
     languages: list[str]
     documents: DocumentLimitsOut
+    workspace_open: bool = False  # spec 16 AC-16.19
 
 
 class StoreHealthOut(WireModel):

@@ -5,8 +5,8 @@ etag on every write, owner scoping, `If-Match` conflicts) without an Azure accou
 text, not model objects, means a stored document is serialised exactly as Cosmos would hold it
 and nothing returned can alias what is stored.
 What: `MemoryRepository`, the storage primitives of `DocumentRepository` over a dict keyed by
-`(ownerId, id)`. The ttl is stored as a field; expiry is not simulated. Passes the shared contract
-(AC-15.1 to AC-15.18, AC-15.25).
+`(ownerId, id)`, including the workspace's cross-partition reads (spec 21). The ttl is stored as a
+field; expiry is not simulated. Passes the shared contract (AC-15.1 to AC-15.18, AC-15.25, AC-21.20).
 Must not: hold state across instances, simulate time, or be used in the demo stage (settings
 refuse `STORE=memory` there).
 """
@@ -67,7 +67,11 @@ class MemoryRepository(DocumentRepository):
             raise ConflictError(f"document {doc['id']} changed since it was read")
         return self._store(doc)
 
-    async def _delete(self, owner_id: str, doc_id: str) -> bool:
+    async def _delete(self, owner_id: str, doc_id: str, etag: str | None = None) -> bool:
+        if etag is not None:
+            current = await self._read(owner_id, doc_id)
+            if current is not None and current.get("_etag") != etag:
+                raise ConflictError(f"document {doc_id} changed since it was read")
         return self._documents.pop((owner_id, doc_id), None) is not None
 
     async def _session_summaries(self, owner_id: str) -> list[dict[str, Any]]:
@@ -80,6 +84,18 @@ class MemoryRepository(DocumentRepository):
 
     async def _ids(self, owner_id: str) -> list[tuple[str, str]]:
         return [(d["id"], str(d.get("type"))) for d in self._partition(owner_id)]
+
+    async def _find(self, doc_id: str) -> dict[str, Any] | None:
+        for (_, item_id), text in self._documents.items():
+            doc = json.loads(text)
+            if item_id == doc_id and doc.get("type") == "session":
+                return doc
+        return None
+
+    async def _scan(self, limit: int) -> list[dict[str, Any]]:
+        docs = [json.loads(t) for t in self._documents.values()]
+        sessions = [d for d in docs if d.get("type") == "session"]
+        return sorted(sessions, key=lambda d: str(d.get("updatedAt")), reverse=True)[:limit]
 
     async def check(self) -> StoreHealth:
         return StoreHealth(ok=True, ttl_enabled=None, detail="memory store (ttl not simulated)")

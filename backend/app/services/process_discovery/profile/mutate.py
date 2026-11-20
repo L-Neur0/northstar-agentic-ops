@@ -13,7 +13,8 @@ whitelist and its shape report), `apply_changes`, `mark_cells_skipped`, `assume_
 `resize_steps`, `close_if_complete`, `rebuild_rollups`, `make_meta`) the proposal writer reuses.
 Must not: read a clock (`at` is passed in), mutate an input, log a value (keys, reasons and value
 types only), or let a model write the cluster, a flag, a roll-up or a sidecar.
-Spec 13 §3.4–§3.8; AC-13.4 to AC-13.31.
+Spec 13 §3.4–§3.8; AC-13.4 to AC-13.31. Amendment §3.13 item 3: a landed write closes the field's
+conflicts (`conflicts_closed`, AC-13.60); `__conflicts` is a sidecar no change may write.
 """
 
 from __future__ import annotations
@@ -23,6 +24,7 @@ from collections.abc import Iterator, Mapping, Sequence
 from typing import Any, NamedTuple
 
 from ..domain.field_spec import (
+    CONFLICTS_KEY,
     MAX_STEPS,
     META_KEY,
     MIN_STEPS,
@@ -95,9 +97,18 @@ logger = logging.getLogger("app.profile")
 BASE_KEYS: tuple[str, ...] = tuple(s.key for s in PROFILE_SPECS if not s.is_process)
 #: Keys on `process` that no change may write: flags, the parked count, roll-ups, sidecars.
 _CODE_OWNED_LEAVES: frozenset[str] = frozenset(
-    {*CONFIRMATION_FLAGS, FLAG_SUBSTEP_COUNT_REJECTED, "all_roles", "all_tools", "substeps", META_KEY, SKIPPED_KEY}
+    {
+        *CONFIRMATION_FLAGS,
+        FLAG_SUBSTEP_COUNT_REJECTED,
+        "all_roles",
+        "all_tools",
+        "substeps",
+        META_KEY,
+        SKIPPED_KEY,
+        CONFLICTS_KEY,
+    }
 )
-_SIDECARS: frozenset[str] = frozenset({META_KEY, SKIPPED_KEY})
+_SIDECARS: frozenset[str] = frozenset({META_KEY, SKIPPED_KEY, CONFLICTS_KEY})
 
 
 class ChangeResult(NamedTuple):
@@ -108,6 +119,8 @@ class ChangeResult(NamedTuple):
     refused: list[tuple[str, str]]
     verdicts: dict[str, Verdict]
     touched_steps: bool
+    #: Conflict keys closed because a person wrote the field (spec 13 §3.13 item 3, `own_words`).
+    conflicts_closed: tuple[str, ...] = ()
 
 
 class UnknownClusterError(ValueError):
@@ -543,8 +556,25 @@ def _apply_batch(
         if parsed is not None:
             steps_landed = True
             leaves.add(parsed[1])
+    closed = close_written_conflicts(result, written)
     finish_batch(result, vocab=vocab, was_closed=was_closed, steps_landed=steps_landed, leaves=leaves)
-    return ChangeResult(result, written, refused, grade_written(result, written, vocab=vocab), steps_landed)
+    return ChangeResult(result, written, refused, grade_written(result, written, vocab=vocab), steps_landed, closed)
+
+
+def close_written_conflicts(profile: dict[str, Any], written: Sequence[str]) -> tuple[str, ...]:
+    """A person's write on a field closes that field's conflicts (spec 13 §3.13 item 3); returns their keys."""
+    closed: list[str] = []
+    for key in written:
+        address = resolve_key(key)
+        if address is None:
+            continue
+        holder = profile if address.step is None else rows_of(profile)[address.step - 1]
+        container = as_dict(holder.get(CONFLICTS_KEY)) or {}
+        leaf = address.spec.key
+        for record in as_list(container.pop(leaf, None)) or []:
+            sub = (as_mapping(record) or {}).get("sub")
+            closed.append(address.key if not isinstance(sub, str) else f"{address.key}.{sub}")
+    return tuple(closed)
 
 
 def apply_changes(

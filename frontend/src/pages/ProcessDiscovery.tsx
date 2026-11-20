@@ -39,7 +39,7 @@ import { hasSeenIntro, markIntroSeen } from '../components/process-discovery/int
 import { applyPhase, defaultSections, toggleSection, type SectionStateMap } from '../components/process-discovery/sectionState'
 import { useDiscoveryState } from '../hooks/useDiscoveryState'
 import { activeStepIndex } from '../utils/substepProgress'
-import { IMAGE_KINDS, type Phase, type SessionSummary } from '../types/process-discovery'
+import { type Phase, type SessionSummary } from '../types/process-discovery'
 
 function HeaderAction({ label, icon, onClick }: { label: string; icon: React.ReactNode; onClick: () => void }) {
   return (
@@ -144,7 +144,6 @@ export function ProcessDiscovery() {
       }),
     onConfirm: (keys) => void d.confirmProposals(keys),
     onReject: (key, label) => void d.rejectProposals([key], label),
-    imageDocuments: new Set((session?.documents ?? []).filter((doc) => IMAGE_KINDS.includes(doc.kind)).map((doc) => doc.name)),
   }
   const showHint = active && documents.length === 0 && (session?.phase === 'context' || session?.phase === 'find')
 

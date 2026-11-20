@@ -1,0 +1,4 @@
+{
+  "code": "etag_required",
+  "message": "This action needs the session's current version (If-Match)."
+}

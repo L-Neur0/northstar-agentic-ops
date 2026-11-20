@@ -7,7 +7,9 @@ What: `SessionRepository` (the protocol the engine receives), `SessionSummary`, 
 `StoreHealth`, `StoredIdea` (an `Idea` that carries its etag), the errors, and
 `DocumentRepository`, a base that implements the protocol on top of a few storage primitives
 that `MemoryRepository` and `CosmosRepository` provide. Whole documents only, never a patch;
-every replace needs the etag it was read with (AC-15.1 to AC-15.18, AC-15.24).
+every replace needs the etag it was read with (AC-15.1 to AC-15.18, AC-15.24). The workspace
+reads `find_session` and `scan_sessions` cross every partition and never return document text
+(spec 21 §4.3, AC-21.20).
 Must not: import Azure SDKs, read a clock, log message, profile or document text, or mutate the
 models it is given.
 """
@@ -26,6 +28,7 @@ from app.models.process_discovery_schemas import Idea, Phase, Session, SessionSt
 logger = logging.getLogger(__name__)
 
 SECONDS_PER_DAY = 86_400
+SCAN_LIMIT = 1000  # spec 21 §3.2: the workspace list reads at most the 1,000 newest sessions
 SYSTEM_FIELDS = ("_rid", "_self", "_etag", "_attachments", "_ts")
 DocType = Literal["session", "idea"]
 
@@ -96,7 +99,7 @@ class SessionRepository(Protocol):
     async def create_session(self, session: Session) -> Session: ...
     async def get_session(self, owner_id: str, session_id: str) -> Session | None: ...
     async def replace_session(self, session: Session) -> Session: ...
-    async def delete_session(self, owner_id: str, session_id: str) -> bool: ...
+    async def delete_session(self, owner_id: str, session_id: str, etag: str | None = None) -> bool: ...
     async def list_sessions(self, owner_id: str) -> list[SessionSummary]: ...
     async def create_idea(self, idea: Idea) -> StoredIdea: ...
     async def get_idea(self, owner_id: str, idea_id: str) -> StoredIdea | None: ...
@@ -104,6 +107,8 @@ class SessionRepository(Protocol):
     async def delete_idea(self, owner_id: str, idea_id: str) -> bool: ...
     async def list_ideas(self, owner_id: str) -> list[StoredIdea]: ...
     async def delete_owner_data(self, owner_id: str) -> DeletedCounts: ...
+    async def find_session(self, session_id: str) -> Session | None: ...
+    async def scan_sessions(self, limit: int = SCAN_LIMIT) -> tuple[list[Session], bool]: ...
     async def check(self) -> StoreHealth: ...
     async def close(self) -> None: ...
 
@@ -177,7 +182,8 @@ class DocumentRepository(ABC):
         self.retention_days = retention_days
 
     # Primitives. Documents are dicts as stored, with `_etag`. `_create` and `_replace` raise
-    # `ConflictError`; reads of a missing document return None; `_delete` returns False.
+    # `ConflictError`; reads of a missing document return None; `_delete` returns False, and with an
+    # `etag` deletes only if the document still has it (else `ConflictError`, nothing deleted).
     @abstractmethod
     async def _read(self, owner_id: str, doc_id: str) -> dict[str, Any] | None: ...
 
@@ -188,7 +194,7 @@ class DocumentRepository(ABC):
     async def _replace(self, doc: dict[str, Any], etag: str) -> dict[str, Any]: ...
 
     @abstractmethod
-    async def _delete(self, owner_id: str, doc_id: str) -> bool: ...
+    async def _delete(self, owner_id: str, doc_id: str, etag: str | None = None) -> bool: ...
 
     @abstractmethod
     async def _session_summaries(self, owner_id: str) -> list[dict[str, Any]]:
@@ -201,6 +207,14 @@ class DocumentRepository(ABC):
     @abstractmethod
     async def _ids(self, owner_id: str) -> list[tuple[str, str]]:
         """(id, type) of every document in the owner's partition."""
+
+    @abstractmethod
+    async def _find(self, doc_id: str) -> dict[str, Any] | None:
+        """The session document with this id in any partition (workspace read, spec 21)."""
+
+    @abstractmethod
+    async def _scan(self, limit: int) -> list[dict[str, Any]]:
+        """At most `limit` session documents of every partition, newest `updatedAt` first."""
 
     @abstractmethod
     async def check(self) -> StoreHealth: ...
@@ -224,8 +238,9 @@ class DocumentRepository(ABC):
         log_event(logger, "store_session_replaced", sessionId=session.id, owner=owner_prefix(session.owner_id))
         return load_session(stored, session.owner_id)
 
-    async def delete_session(self, owner_id: str, session_id: str) -> bool:
-        return await self._delete_typed(owner_id, session_id, "session")
+    async def delete_session(self, owner_id: str, session_id: str, etag: str | None = None) -> bool:
+        """With `etag`, a conditional delete: a changed session raises `ConflictError` (spec 21 §3.6)."""
+        return await self._delete_typed(owner_id, session_id, "session", etag)
 
     async def list_sessions(self, owner_id: str) -> list[SessionSummary]:
         rows = await self._session_summaries(owner_id)
@@ -283,6 +298,35 @@ class DocumentRepository(ABC):
             raise StoreUnavailableError(f"{failures} documents could not be deleted; retry")
         return DeletedCounts(sessions=counts["session"], ideas=counts["idea"])
 
+    # --- workspace reads (spec 21 §4.3): across every partition, read-only ---
+
+    async def find_session(self, session_id: str) -> Session | None:
+        """Any owner's session by id, with its etag; `None` when missing or not a session."""
+        doc = await self._find(session_id)
+        if doc is None or doc.get("type") != "session":
+            return None
+        return load_session(doc, str(doc.get("ownerId")))
+
+    async def scan_sessions(self, limit: int = SCAN_LIMIT) -> tuple[list[Session], bool]:
+        """The `limit` newest sessions (ties by id) with document text blanked, and whether more exist.
+
+        A stored session that no longer validates is logged (by id) and left out, so one old
+        document cannot take the whole workspace list down.
+        """
+        docs = await self._scan(limit + 1)
+        sessions: list[Session] = []
+        for doc in docs[:limit]:
+            for record in doc.get("documents") or []:
+                if isinstance(record, dict):
+                    record["text"] = ""
+            try:
+                sessions.append(load_session(doc, str(doc.get("ownerId"))))
+            except CorruptDocumentError:
+                continue
+        sessions.sort(key=lambda s: s.id)
+        sessions.sort(key=lambda s: s.updated_at, reverse=True)
+        return sessions, len(docs) > limit
+
     # --- helpers ---
 
     @staticmethod
@@ -302,10 +346,10 @@ class DocumentRepository(ABC):
             return None
         return doc
 
-    async def _delete_typed(self, owner_id: str, doc_id: str, doc_type: DocType) -> bool:
+    async def _delete_typed(self, owner_id: str, doc_id: str, doc_type: DocType, etag: str | None = None) -> bool:
         if await self._read_typed(owner_id, doc_id, doc_type) is None:
             return False
-        deleted = await self._delete(owner_id, doc_id)
+        deleted = await self._delete(owner_id, doc_id, etag)
         if deleted:
             log_event(
                 logger, f"store_{doc_type}_deleted", **{_id_field(doc_type): doc_id}, owner=owner_prefix(owner_id)

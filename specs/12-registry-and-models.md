@@ -1,6 +1,6 @@
 # 12 · Field registry, Verdicts, taxonomy, rubric and models
 
-> **Status:** built · **Implements:** F-05 (product); the vocabulary behind F-04, F-06, F-07, F-08, F-09, F-10, F-11, F-22; architecture §3.2, §5 · **Depends on:** spec 10
+> **Status:** built · **§3.6 amendment (conflicts, a source per item): approved and built 2026-11-20** (`MetaPart`, `ConflictRecord`; `fromImage`, `parts` and an empty `__conflicts` are left out of the dump) · **Implements:** F-05 (product); the vocabulary behind F-04, F-06, F-07, F-08, F-09, F-10, F-11, F-22; architecture §3.2, §5 · **Depends on:** spec 10
 > **Contract:** C1 of the [implementation plan](03-implementation-plan.md). Every other workstream codes against this spec. A change here goes through the lead.
 > **Code:** `backend/app/services/process_discovery/domain/{field_spec,taxonomy,scope,node_order}.py`, `backend/app/models/process_discovery_schemas.py`, `config/nig/taxonomy.yaml`
 > **Tests:** `backend/tests/unit/process_discovery/domain/`, `backend/tests/unit/models/`
@@ -277,6 +277,23 @@ Every written field carries one meta entry. Context and process fields keep thei
 ```
 
 The Verdict is `complete`, the display status is `proposed`, and it adds 0 points. After the expert says "yes, that's right", `status` becomes `confirmed` and P06 adds 1 point.
+
+
+**Amendment (approved 2026-11-20; spec 17 §3.21, spec 13 §3.13, spec 14 §3.17).** Contract changes:
+
+| Where | Change |
+|---|---|
+| Meta entry | Gains `fromImage: bool = false` (copied from the document record at write time), `replaces: {value, meta} \| null` (built 2026-11-20, spec 17 §3.20 row 1), and `parts: list[Part] \| null` |
+| `Part` | `{sub: str \| null, item: str \| null, source, documentId, quote, fromImage, at}`: one per list item (`item` = the item text, or a row's required sub-field) or per single sub-field (`item: null`). The source of an item is its part, else the field meta. Written only when a value mixes sources |
+| Sidecar `__conflicts` (§3.3) | On the profile (process fields, keyed by registry key) and on each step row (keyed by leaf): a list of `{sub, kind: expert \| document, holderDocumentId, value, documentId, quote, fromImage, list, status: open \| left, at}` |
+| `Counters` | Gains `conflict_asks: dict[str, int]`, keyed by conflict key (`"process.substeps[3].data.outputs"`) |
+| `LastQuestion` | Gains `conflicts: list[str]` (conflict keys), default `[]` |
+| Transitions | A document offer that differs from a stored value records a conflict; the value and meta are unchanged until the expert chooses (spec 13 §3.13) |
+
+| ID | Given / when / then |
+|---|---|
+| AC-12.48 | `Profile` validates a meta entry with `parts` and `fromImage` and a `__conflicts` sidecar on the profile and on a row; an old session without them loads with the defaults; sidecars are never offered to a model or graded |
+| AC-12.49 | `Session` round-trips `counters.conflictAsks` and `lastQuestion.conflicts` (camelCase on the wire, snake_case in Python); a new session has both empty |
 
 ### 3.7 Whitelists
 
@@ -769,12 +786,12 @@ def rank_nodes(node_ids: Iterable[str], edges: Iterable[tuple[str, str]]) -> tup
 |---|---|
 | `tests/unit/process_discovery/domain/test_field_spec.py` | AC-12.1–12.6, 12.17–12.24 |
 | `tests/unit/process_discovery/domain/test_evaluate_field.py` | AC-12.7–12.16, 12.45 |
-| `tests/unit/process_discovery/domain/test_provenance.py` | AC-12.25–12.28 |
+| `tests/unit/process_discovery/domain/test_provenance.py` | AC-12.25–12.28, 12.48 |
 | `tests/unit/process_discovery/domain/test_taxonomy.py` | AC-12.29–12.32 (bad taxonomies parametrised) |
 | `tests/unit/process_discovery/domain/test_scope.py` | AC-12.33–12.37 |
 | `tests/unit/process_discovery/domain/test_node_order.py` | AC-12.38 |
 | `tests/unit/models/test_registry_parity.py` | AC-12.39, 12.40 |
-| `tests/unit/models/test_process_discovery_schemas.py` | AC-12.41–12.43 |
+| `tests/unit/models/test_process_discovery_schemas.py` | AC-12.41–12.43, 12.49 |
 | `tests/unit/models/test_import_order.py` | AC-12.44 (subprocess per import) |
 
 A shared fixture `nig_vocabulary` (in `tests/conftest.py`) builds the `Vocabulary` from `config/nig`. Tests feed real producer output (`empty_profile()`, `extract_keys()`, `resolve_address` of real keys), never hand-typed keys.

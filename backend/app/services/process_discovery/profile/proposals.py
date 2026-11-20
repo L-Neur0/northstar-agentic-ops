@@ -16,7 +16,12 @@ Amendment (spec 17 Q5/Q7, decided 2026-11-20): a partly answered object field (v
 and no period; step data with inputs and no outputs) may take a WHOLE-field proposal: the person's
 sub-values unchanged plus the document's missing ones, with meta `replaces` = the previous value and
 meta; a no restores them exactly and a yes confirms the whole field. A document never changes a
-sub-value a person gave (`fill_target`, `merge_offered`). AC-17.52, AC-17.62 to AC-17.65.
+sub-value a person gave. AC-17.52, AC-17.62 to AC-17.64.
+Amendment (spec 17 §3.21, spec 13 §3.13, approved 2026-11-20): every offer is re-checked with
+`conflicts.plan_offer` (C1–C8) at write time; a differing value is stored as a conflict, never
+written; lists from two files merge with one source per item (`parts`); removal is per item and a
+held document conflict becomes a proposal (P5, P6); ✓ closes a field's conflicts. AC-13.57,
+AC-17.70 to AC-17.78.
 """
 
 from __future__ import annotations
@@ -52,6 +57,18 @@ from .coercion import (
     normalise,
     raw_number,
 )
+from .conflicts import (
+    CONFLICT,
+    SAME_VALUE,
+    close_conflicts,
+    item_name,
+    item_sources,
+    merged_meta,
+    open_conflicts,
+    plan_offer,
+    same_single,
+    store_conflict,
+)
 from .constants import (
     CONFIRMED,
     FLAG_SUBSTEPS_COMPLETE,
@@ -81,6 +98,7 @@ from .mutate import (
 from .shapes import (
     Address,
     as_dict,
+    as_list,
     as_mapping,
     empty_value,
     meta_for,
@@ -114,25 +132,42 @@ class StepProposal:
 
 
 @dataclass(frozen=True)
+class ConflictOffer:
+    """A document value that differs from a stored unit (spec 17 §3.21 item 4); `sub=None` is the whole field."""
+
+    key: str
+    sub: str | None
+    value: Any
+    quote: str
+
+
+@dataclass(frozen=True)
 class ProposalDiff:
-    """Everything one document proposes. `steps` and `step_cells` are never both non-empty."""
+    """Everything one document proposes. `steps` and `step_cells` are never both non-empty.
+
+    `conflicts` (spec 17 §3.21) are recorded, never proposed; `from_image` is copied onto meta, parts
+    and conflict records at write time (P7).
+    """
 
     document_id: str
     fields: tuple[FieldProposal, ...] = ()
     steps: tuple[StepProposal, ...] = ()
     step_cells: tuple[FieldProposal, ...] = ()
+    conflicts: tuple[ConflictOffer, ...] = ()
+    from_image: bool = False
 
     @property
     def is_empty(self) -> bool:
-        return not (self.fields or self.steps or self.step_cells)
+        return not (self.fields or self.steps or self.step_cells or self.conflicts)
 
 
 class ProposalResult(NamedTuple):
-    """The new profile, the keys written as proposals, and the refused keys with a reason."""
+    """The new profile, the keys written as proposals, the refused keys with a reason, the conflict keys stored."""
 
     profile: dict[str, Any]
     applied: list[str]
     refused: list[tuple[str, str]]
+    conflicts: tuple[str, ...] = ()
 
 
 # --- Applying ----------------------------------------------------------------------------------------
@@ -220,74 +255,12 @@ def fill_target(profile: Mapping[str, Any], key: str, *, vocab: Vocabulary | Non
     return FillTarget(refusal=CONFIRMED)
 
 
-def _blank(value: Any) -> bool:
-    return value is None or value == "" or value == [] or value == {} or value is False
-
-
-def _same(a: Any, b: Any) -> bool:
-    if isinstance(a, str) and isinstance(b, str):
-        return " ".join(a.split()).casefold() == " ".join(b.split()).casefold()
-    return a == b
-
-
-def _union(first: Any, second: Any) -> list[str]:
-    out: list[str] = []
-    for item in [*(_strings(first)), *(_strings(second))]:
-        if not any(_same(item, seen) for seen in out):
-            out.append(item)
-    return out
-
-
-def _strings(value: Any) -> list[str]:
-    return [v for v in value if isinstance(v, str)] if isinstance(value, list) else []  # pyright: ignore[reportUnknownVariableType]
-
-
-def merge_offered(spec: FieldSpec, offered: Any, target: FillTarget) -> tuple[Any, int]:
-    """The whole value to propose and the number of offered sub-values that contradict a person's.
-
-    Non-object kinds pass through. For an object: S07 lists are merged into a stored proposal (spec 17
-    D7); every `fixed` sub-value is kept as the person gave it, and a differing offered one is counted
-    as a conflict. `None` when the proposal adds nothing to what the person gave.
-    """
-    if spec.kind != "object":
-        return offered, 0
-    value: dict[str, Any] = dict(as_mapping(offered) or {})
-    current = as_mapping(target.current)
-    if current is not None:
-        for sub in spec.subfields:
-            if sub.kind == "list":
-                value[sub.key] = _union(current.get(sub.key), value.get(sub.key))
-    fixed = as_mapping(target.fixed)
-    if fixed is None:
-        return value, 0
-    conflicts = 0
-    added = False
-    for sub in spec.subfields:
-        mine = fixed.get(sub.key)
-        theirs = value.get(sub.key)
-        if sub.kind == "bool":
-            value[sub.key] = mine if mine is not None else theirs
-        elif sub.kind == "list":
-            if _strings(mine):
-                conflicts += sum(1 for t in _strings(theirs) if not any(_same(t, m) for m in _strings(mine)))
-                value[sub.key] = list(_strings(mine))
-            else:
-                added = added or bool(_strings(theirs))
-        elif not _blank(mine):
-            if not _blank(theirs) and not _same(mine, theirs):
-                conflicts += 1
-            value[sub.key] = mine
-        else:
-            added = added or not _blank(theirs)
-    return (value if added else None), conflicts
-
-
 def _propose_one(
     profile: dict[str, Any],
     proposal: FieldProposal,
     key: str,
     *,
-    document_id: str,
+    diff: ProposalDiff,
     vocab: Vocabulary,
     at: str,
     max_index: int,
@@ -298,32 +271,73 @@ def _propose_one(
         return None, NOT_PROPOSABLE
     if address.step is None and key != address.spec.key:
         return None, NOT_PROPOSABLE
-    if not document_id or not proposal.quote.strip():
+    if not diff.document_id or not proposal.quote.strip():
         return None, NO_QUOTE
     if address.step is not None and not 1 <= address.step <= max_index:
         return None, INDEX_OUT_OF_RANGE
-    target = fill_target(profile, address.key, vocab=vocab)
-    if target.refusal is not None:
-        return None, target.refusal
     if _out_of_bounds(address, proposal.value):
         return None, OUT_OF_BOUNDS
     value = _proposal_value(profile, address, proposal.value, vocab=vocab)
     if value is None:
         return None, SHAPE
-    value, _conflicts = merge_offered(address.spec, value, target)
-    if value is None:
-        return None, CONFIRMED
-    write_value(profile, address, value)
-    meta = make_meta(
-        SOURCE_DOCUMENT,
-        "proposed",
-        at,
-        document_id=document_id,
-        quote=proposal.quote.strip(),
-        replaces=target.replaces,
-    )
+    plan = plan_offer(profile, address.key, value, vocab=vocab)  # C1–C8 re-checked at write time
+    if plan.refusal is not None:
+        return None, plan.refusal
+    if plan.value is None:
+        return None, CONFLICT if plan.conflicts else SAME_VALUE
+    old_value = copy.deepcopy(stored_value(profile, address.key))
+    old_meta = meta_for(profile, address.key)
+    write_value(profile, address, plan.value)
+    meta = _document_meta(diff, proposal.quote, at, replaces=plan.replaces)
+    if plan.merged:
+        meta = merged_meta(address.spec, plan.value, old_value, old_meta, meta)
     set_meta(profile, address, meta)
     return address.key, None
+
+
+def _document_meta(diff: ProposalDiff, quote: str, at: str, *, replaces: Mapping[str, Any] | None) -> dict[str, Any]:
+    meta = make_meta(
+        SOURCE_DOCUMENT, "proposed", at, document_id=diff.document_id, quote=quote.strip(), replaces=replaces
+    )
+    if diff.from_image:
+        meta["fromImage"] = True
+    return meta
+
+
+def _offered_unit(spec: FieldSpec, offer: ConflictOffer) -> Any:
+    if offer.sub is None:
+        return offer.value
+    return {**empty_value(spec), offer.sub: offer.value}
+
+
+def _record_conflict(
+    profile: dict[str, Any], offer: ConflictOffer, *, diff: ProposalDiff, vocab: Vocabulary, at: str
+) -> tuple[str | None, str | None]:
+    """Re-check one conflict at write time: still a conflict → stored; the unit emptied → a proposal (AC-13.57)."""
+    address = resolve_key(offer.key)
+    if address is None or (address.step is not None and address.step > len(rows_of(profile))):
+        return None, NOT_PROPOSABLE
+    plan = plan_offer(profile, address.key, _offered_unit(address.spec, offer), vocab=vocab)
+    if plan.refusal is not None and not plan.conflicts:
+        return None, plan.refusal
+    if plan.value is not None and not any(c.sub == offer.sub for c in plan.conflicts):
+        landed, reason = _propose_one(
+            profile,
+            FieldProposal(address.key, plan.value, offer.quote),
+            address.key,
+            diff=diff,
+            vocab=vocab,
+            at=at,
+            max_index=len(rows_of(profile)),
+        )
+        return None, reason if landed is None else None
+    found = next((c for c in plan.conflicts if c.sub == offer.sub), None)
+    if found is None:
+        return None, SAME_VALUE
+    stored = store_conflict(
+        profile, address, found, document_id=diff.document_id, quote=offer.quote, from_image=diff.from_image, at=at
+    )
+    return stored, None
 
 
 def apply_proposals(profile: Mapping[str, Any], diff: ProposalDiff, *, vocab: Vocabulary, at: str) -> ProposalResult:
@@ -338,9 +352,7 @@ def apply_proposals(profile: Mapping[str, Any], diff: ProposalDiff, *, vocab: Vo
     leaves: set[str] = set()
 
     def take(proposal: FieldProposal, key: str, max_index: int) -> None:
-        landed, reason = _propose_one(
-            result, proposal, key, document_id=diff.document_id, vocab=vocab, at=at, max_index=max_index
-        )
+        landed, reason = _propose_one(result, proposal, key, diff=diff, vocab=vocab, at=at, max_index=max_index)
         if reason is not None:
             refused.append((key, reason))
             log_refusal(key, reason, proposal.value)
@@ -367,9 +379,17 @@ def apply_proposals(profile: Mapping[str, Any], diff: ProposalDiff, *, vocab: Vo
     for proposal in diff.step_cells:
         take(proposal, proposal.key, existing_rows)
 
+    conflicts: list[str] = []
+    for offer in diff.conflicts:
+        stored, reason = _record_conflict(result, offer, diff=diff, vocab=vocab, at=at)
+        if stored is not None:
+            conflicts.append(stored)
+        elif reason is not None:
+            refused.append((offer.key, reason))
+
     steps_landed = bool(leaves)
     finish_batch(result, vocab=vocab, was_closed=was_closed, steps_landed=steps_landed, leaves=set())
-    return ProposalResult(result, applied, refused)
+    return ProposalResult(result, applied, refused, tuple(conflicts))
 
 
 # --- Confirming and rejecting --------------------------------------------------------------------
@@ -398,6 +418,8 @@ def confirm_proposals(profile: Mapping[str, Any], keys: Sequence[str], *, vocab:
         meta.pop("replaces", None)
         set_meta(result, address, meta)
         written.append(address.key)
+    if written:  # ✓ on a field with an open conflict keeps the stored value (spec 14 §3.17 R3)
+        result, _closed = close_conflicts(result, written)
     rows = rows_of(result)
     if (
         written
@@ -446,13 +468,84 @@ def reject_proposals(profile: Mapping[str, Any], keys: Sequence[str], *, vocab: 
     return ChangeResult(result, written, [], {}, steps)
 
 
+def _without_document(spec: FieldSpec, value: Any, meta: Mapping[str, Any], document_id: str) -> tuple[Any, list[Any]]:
+    """P5: the value with the removed document's items taken out, and the sources of the items that stay."""
+    sources = item_sources(spec, value, meta)
+    gone = [(s["sub"], s["item"]) for s in sources if s.get("documentId") == document_id]
+    kept = [s for s in sources if s.get("documentId") != document_id]
+
+    def keep(sub: str | None, items: Any) -> list[Any]:
+        return [
+            i
+            for i in as_list(items) or []
+            if not any(g[0] == sub and g[1] is not None and same_single(g[1], item_name(spec, i)) for g in gone)
+        ]
+
+    if spec.kind == "object":
+        out = dict(as_mapping(value) or {})
+        for sub in spec.subfields:
+            if sub.kind == "list":
+                out[sub.key] = keep(sub.key, out.get(sub.key))
+        return out, kept
+    return keep(None, value), kept
+
+
 def remove_document_proposals(
     profile: Mapping[str, Any], document_id: str, *, vocab: Vocabulary, at: str
 ) -> ChangeResult:
-    """Reject every unconfirmed proposal from `document_id`; values confirmed from it stay."""
+    """Remove a document's open proposals, per item (spec 17 §3.21 P5, P6); values confirmed from it stay.
+
+    A proposed value that mixes sources keeps the other sources' items; one left with nothing is
+    cleared (or restored from `replaces`). The document's conflicts go; a document conflict it held
+    whose proposal was cleared becomes the offering document's proposal on the now-empty unit.
+    """
     normal = normalized_profile(profile)
-    keys = [k for k in proposed_keys(normal) if (meta_for(normal, k) or {}).get("documentId") == document_id]
-    return reject_proposals(normal, keys, vocab=vocab, at=at)
+    views = open_conflicts(normal)
+    promote = [v for v in views if v.kind == "document" and v.holder_document_id == document_id]
+    for view in views:
+        if view.document_id == document_id or view in promote:
+            normal, _closed = close_conflicts(normal, [view.conflict_key])
+    keys: list[str] = []
+    for key in proposed_keys(normal):
+        meta = meta_for(normal, key) or {}
+        address = resolve_key(key)
+        parts = as_list(meta.get("parts")) or []
+        if address is not None and any((as_mapping(x) or {}).get("documentId") == document_id for x in parts):
+            value, kept = _without_document(address.spec, stored_value(normal, key), meta, document_id)
+            if kept and has_any_answer(address.spec, value):
+                write_value(normal, address, value)
+                newest = kept[-1]
+                new_meta = {**dict(meta), **{k: newest.get(k) for k in ("source", "documentId", "quote", "fromImage")}}
+                if len({(k.get("source"), k.get("documentId")) for k in kept}) > 1:
+                    new_meta["parts"] = kept
+                else:
+                    new_meta.pop("parts", None)
+                if not new_meta.get("fromImage"):
+                    new_meta.pop("fromImage", None)
+                set_meta(normal, address, new_meta)
+                continue
+            keys.append(key)
+            continue
+        if meta.get("documentId") == document_id:
+            keys.append(key)
+    result = reject_proposals(normal, keys, vocab=vocab, at=at)
+    profile_after = result.profile
+    for view in promote:  # P6
+        address = resolve_key(view.key)
+        if address is None:
+            continue
+        diff = ProposalDiff(view.document_id, from_image=view.from_image)
+        unit = view.offered if view.sub is None else {**empty_value(address.spec), view.sub: view.offered}
+        _propose_one(
+            profile_after,
+            FieldProposal(view.key, unit, view.quote),
+            view.key,
+            diff=diff,
+            vocab=vocab,
+            at=at,
+            max_index=len(rows_of(profile_after)),
+        )
+    return ChangeResult(profile_after, result.written, [], {}, result.touched_steps)
 
 
 def propose_from_idea(profile: Mapping[str, Any], name: str, words: str, *, at: str) -> dict[str, Any]:

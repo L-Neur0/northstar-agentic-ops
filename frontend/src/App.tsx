@@ -2,12 +2,14 @@
  * The router of the interview side (spec 23 §3.1; AC-23.6).
  * Why: replaces the spec 10 scaffold page. `/` is My processes, `/process-discovery[/:id]` the
  * interview, `/report/:id` the report (a placeholder in part 1); anything else goes to `/`.
+ * Part 3: `/workspace` is the specialist's workspace (spec 23 §19.1); no expert screen links to it.
  * Rules: providers live in `main.tsx` (and in tests); this file only maps paths to pages.
  */
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { Home } from './pages/Home'
 import { ProcessDiscovery } from './pages/ProcessDiscovery'
 import { DiscoveryReport } from './pages/DiscoveryReport'
+import { Workspace } from './pages/Workspace'
 
 export default function App() {
   return (
@@ -16,6 +18,7 @@ export default function App() {
       <Route path="/process-discovery" element={<ProcessDiscovery />} />
       <Route path="/process-discovery/:sessionId" element={<ProcessDiscovery />} />
       <Route path="/report/:sessionId" element={<DiscoveryReport />} />
+      <Route path="/workspace" element={<Workspace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

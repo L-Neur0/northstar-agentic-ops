@@ -5,7 +5,7 @@ mirror the field registry one to one (a parity test enforces it), so a key the r
 know fails loudly in tests instead of disappearing on the next save, and an out-of-range step
 count can never make a session unloadable.
 What: three bases (`ProfileModel` keeps registry keys; `StorageModel` and `WireModel` use camelCase
-aliases), the enums, the profile with its rows and sidecars (`__meta`, `__skipped`), the session and
+aliases), the enums, the profile with its rows and sidecars (`__meta`, `__skipped`, `__conflicts`), the session and
 idea documents (with the steering state and idea signals of spec 14 §3.15), the assessment
 containers that specs 18, 19, 20, 21, 23 and 26 fill, and the shared wire models. Every dump uses
 `by_alias=True`. Every field added after the first stored session has a default, so a document
@@ -126,11 +126,25 @@ class Grade(StrEnum):
 # --- Provenance -----------------------------------------------------------------------------------
 
 
+class MetaPart(StorageModel):
+    """The source of one list item or one sub-field of a value that mixes sources (spec 17 §3.21 P2)."""
+
+    sub: str | None = None
+    item: str | None = None
+    source: Literal["expert", "document", "specialist"]
+    document_id: str | None = None
+    quote: str | None = None
+    from_image: bool = False
+    at: str
+
+
 class FieldMeta(StorageModel):
     """Who wrote a field and whether it is confirmed (§3.6). JSON keys: source, status, documentId, quote, by, at.
 
     `replaces` (spec 17 Q5, AC-17.62): on a document proposal that completes a partly answered field,
     the value and meta it replaced, `{"value": ..., "meta": {...} | None}`, restored exactly on a no.
+    `fromImage` and `parts` (spec 17 §3.21 item 5, AC-12.48): the image flag copied from the record at
+    write time, and one source per item when a value mixes sources.
     """
 
     source: Literal["expert", "document", "specialist"]
@@ -140,13 +154,18 @@ class FieldMeta(StorageModel):
     by: str | None = None
     at: str
     replaces: dict[str, Any] | None = None
+    from_image: bool = False
+    parts: list[MetaPart] | None = None
 
     @model_serializer(mode="wrap")
     def _drop_empty_replaces(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
-        """`replaces` is stored only when present, so every other meta keeps its six keys."""
+        """`replaces`, `fromImage` and `parts` are stored only when present, so every other meta keeps its six keys."""
         data: dict[str, Any] = handler(self)
-        if data.get("replaces") is None:
-            data.pop("replaces", None)
+        for key in ("replaces", "parts"):
+            if data.get(key) is None:
+                data.pop(key, None)
+        if not data.get("fromImage"):
+            data.pop("fromImage", None)
         return data
 
     @model_validator(mode="after")
@@ -161,6 +180,28 @@ class FieldMeta(StorageModel):
             if self.status == "proposed":
                 raise ValueError("a specialist value is never proposed")
         return self
+
+
+class ConflictRecord(StorageModel):
+    """A document value that differs from a stored one, kept until the expert chooses (spec 17 §3.21 item 4)."""
+
+    sub: str | None = None
+    kind: Literal["expert", "document"]
+    holder_document_id: str | None = None
+    value: Any = None
+    document_id: str
+    quote: str
+    from_image: bool = False
+    list: bool = False
+    status: Literal["open", "left"] = "open"
+    at: str
+
+
+def _drop_empty_conflicts(data: dict[str, Any]) -> dict[str, Any]:
+    """`__conflicts` is stored only when it holds something, so older documents keep their shape."""
+    if not data.get("__conflicts"):
+        data.pop("__conflicts", None)
+    return data
 
 
 # --- Profile ----------------------------------------------------------------------------------------
@@ -253,6 +294,11 @@ class Step(ProfileModel):
     handover: str = ""
     meta: dict[str, FieldMeta] = Field(default_factory=dict, alias="__meta")
     skipped: list[str] = Field(default_factory=list, alias="__skipped")
+    conflicts: dict[str, list[ConflictRecord]] = Field(default_factory=dict, alias="__conflicts")
+
+    @model_serializer(mode="wrap")
+    def _drop_conflicts(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
+        return _drop_empty_conflicts(handler(self))
 
 
 class Process(ProfileModel):
@@ -298,6 +344,11 @@ class Profile(ProfileModel):
     region: str = ""
     process: Process = Field(default_factory=Process)
     meta: dict[str, FieldMeta] = Field(default_factory=dict, alias="__meta")
+    conflicts: dict[str, list[ConflictRecord]] = Field(default_factory=dict, alias="__conflicts")
+
+    @model_serializer(mode="wrap")
+    def _drop_conflicts(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
+        return _drop_empty_conflicts(handler(self))
 
 
 # --- Session parts ----------------------------------------------------------------------------------
@@ -322,6 +373,8 @@ class Counters(StorageModel):
     find_turns: int = 0
     widening_count: int = 0
     confirm_turns: int = 0
+    #: Asks per conflict key (spec 14 §3.17, AC-12.49).
+    conflict_asks: dict[str, int] = Field(default_factory=dict)
 
 
 class ScopeVerdict(StorageModel):
@@ -366,6 +419,8 @@ class LastQuestion(StorageModel):
     focus: list[str] = Field(default_factory=list)
     proposals: list[str] = Field(default_factory=list)
     confirm: Literal["cluster", "roles", "systems", "recommendation"] | None = None
+    #: The conflict keys of a conflict question (spec 14 §3.17, AC-12.49).
+    conflicts: list[str] = Field(default_factory=list)
 
 
 class StepListItem(StorageModel):
@@ -737,8 +792,22 @@ class Idea(StorageModel):
 # --- Shared wire models ------------------------------------------------------------------------------
 
 
+class FieldItemView(WireModel):
+    """The source of one item of a value that mixes sources (spec 13 §3.13 item 5); never the quote."""
+
+    sub: str | None = None
+    item: str | None = None
+    source: str | None = None
+    document_name: str | None = None
+    from_image: bool = False
+
+
 class FieldView(WireModel):
-    """One field as the panel and the review screen show it. Built by the snapshot (spec 13)."""
+    """One field as the panel and the review screen show it. Built by the snapshot (spec 13).
+
+    Amendment (spec 13 §3.13 item 5): `fromImage`, `conflict` (`open` / `left`) and, for a value with
+    `parts`, one source per item in `items`.
+    """
 
     key: str
     id: str
@@ -751,6 +820,9 @@ class FieldView(WireModel):
     quote: str | None = None
     document_name: str | None = None
     asks: int = 0
+    from_image: bool = False
+    conflict: Literal["open", "left"] | None = None
+    items: list[FieldItemView] = Field(default_factory=list)
 
 
 class FinishState(WireModel):

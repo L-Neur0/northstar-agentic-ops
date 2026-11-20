@@ -1,4 +1,4 @@
-"""Tests for the terminal runner behind `make chat` (spec 14 §3.12; AC-14.57).
+"""Tests for the terminal runner behind `make chat` (spec 14 §3.12; AC-14.57, AC-14.90, AC-14.101).
 
 Why: the runner must drive the interview exactly as the API does, and it is only trustworthy if it
 runs in tests with a scripted model. What: three turns from injected stdin with a status line after
@@ -76,3 +76,38 @@ def test_ac_14_90_upload_prints_the_question_and_yes_confirms():
     assert "Should I fill it like this, or is something wrong?" in text
     profile_lines = [line for line in text.splitlines() if line.startswith("process.trigger:")]
     assert profile_lines and "proposed" not in profile_lines[-1]
+
+
+def test_ac_14_101_upload_a_conflicting_file_and_choose_both(tmp_path, ctx):
+    """AC-14.101: after "a cost report", `/upload site_report_march.xlsx` prints example 4; "both" gives the union."""
+    import json
+
+    from app.models.process_discovery_schemas import LastQuestion
+
+    from ..documents.helpers import site_reply
+    from .conflict_helpers import DATA, DESCRIPTION, example_session
+    from .test_conflict_question import EXAMPLE_4
+
+    session = example_session(ctx)
+    session = session.model_copy(
+        update={
+            "documents": [d for d in session.documents if d.id != "d2"],
+            "last_question": LastQuestion(focus=[DATA]),
+        }
+    )
+    saved, after = tmp_path / "session.json", tmp_path / "after.json"
+    saved.write_text(session.model_dump_json(by_alias=True), encoding="utf-8")
+    script = tmp_path / "fake.yaml"
+    script.write_text(
+        json.dumps({"READ_DOCUMENT": [site_reply()], "EXTRACT": [{}], "GUIDE": ["What goes into this step?"]}),
+        encoding="utf-8",
+    )
+    report = BACKEND / "tests" / "fixtures" / "documents" / "site_report_march.xlsx"
+    stdin = io.StringIO(f"/load {saved}\n/upload {report}\nboth\n/save {after}\n/quit\n")
+    out = io.StringIO()
+    assert load_chat().main(["--fake", str(script)], stdin=stdin, out=out) == 0
+    assert f"agent> {EXAMPLE_4}" in out.getvalue()
+    data = json.loads(after.read_text(encoding="utf-8"))
+    row = data["profile"]["process"]["substeps"][2]
+    assert row["data"]["outputs"] == ["a cost report", DESCRIPTION]
+    assert [p["documentId"] for p in row["__meta"]["data"]["parts"]][1].startswith("d")

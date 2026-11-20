@@ -109,3 +109,12 @@ describe('ChatInput (AC-23.20)', () => {
     expect(screen.getByRole('textbox', { name: 'Message' })).toBeDisabled()
   })
 })
+
+describe('workspace props stay off the interview page (AC-23.132)', () => {
+  it('the interview list still says "You" and shows only the time', () => {
+    render(<ChatMessageList messages={[msg('2', 'expert', 'Hi')]} sending={false} />)
+    expect(screen.getByText('You')).toBeInTheDocument()
+    expect(screen.queryByText('Expert')).toBeNull()
+    expect(screen.queryByText(/\d{4},/)).toBeNull()
+  })
+})

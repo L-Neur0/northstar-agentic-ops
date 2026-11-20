@@ -1,6 +1,6 @@
 # 16 · Access: visitor key, workspace code, limits
 
-> **Status:** built · **Implements:** F-21 (product), architecture §3.5 · **Depends on:** specs 10, 11, 15
+> **Status:** amended 2026-11-20 (open workspace: `WORKSPACE_OPEN`, product owner decision) · built · **Implements:** F-21 (product), architecture §3.5 · **Depends on:** specs 10, 11, 15
 > **Code:** `backend/app/core/access.py`, `backend/app/core/rate_limit.py` · **Tests:** `backend/tests/unit/core/test_access.py`, `test_rate_limit.py`, `backend/tests/api/test_access_routes.py`
 
 ## 1. Purpose
@@ -27,6 +27,7 @@ Let anyone with the link start a discovery session without an account, keep each
 2. Success returns `{token, role, name, expiresAt}`. The token is `base64url(payload).base64url(hmac_sha256(secret, payload))`, payload `{role, name, exp}`; lifetime 8 hours.
 3. Workspace routes require `Authorization: Bearer <token>`; missing, malformed, wrong signature or expired → 401 `workspace_code_required`; a valid token with the wrong role → 403 `forbidden`. Engineers reach only brief routes (spec 21).
 4. Login attempts are rate-limited per IP (5 per minute).
+5. **Open workspace** *(amended 2026-11-20 (open workspace))*. Setting `WORKSPACE_OPEN` (bool, default `false`, spec 10). When `true`: the login takes `{name}` only; a `code` sent anyway is ignored; every login with a valid name (1–40 characters) gets role `specialist` (the engineer role cannot be reached). Rate limit (item 4) and the `workspace_login` audit line are unchanged. Delete is switched off (spec 21 §3.6 item 4). `GET /api/config` returns `workspaceOpen` so the screen can drop the code field (spec 23 §19.2). When `false`: exactly items 1–4. Why: the product owner decided on 2026-11-20 that the demo workspace may be opened by anyone with the link, as long as nothing can be deleted there.
 
 ### 3.3 Rate limits
 
@@ -95,6 +96,9 @@ POST /api/workspace/login
 | AC-16.14 | With the budget used up, a message returns 429 `budget_exhausted` and no model request is made |
 | AC-16.15 | One log line at 80 % and one at 100 % of the budget per day, not more |
 | AC-16.16 | Only the trusted proxy's `X-Forwarded-For` hop is used for the IP; a client-supplied header cannot change the key |
+| AC-16.17 | *(amended 2026-11-20 (open workspace))* With `WORKSPACE_OPEN=true`, `workspace/login` with `{name}` only, with a wrong code, or with the engineer code returns 200 and a `specialist` token for that name; a name that is empty or over 40 characters returns 422 `invalid_value` |
+| AC-16.18 | *(amended 2026-11-20 (open workspace))* With `WORKSPACE_OPEN=true`, the login limit (5 a minute per IP) and the `workspace_login` audit line (role, name, outcome `ok`; no code) are unchanged; with `WORKSPACE_OPEN=false` a login without a code returns 401 `workspace_code_invalid` |
+| AC-16.19 | *(amended 2026-11-20 (open workspace))* `GET /api/config` returns `workspaceOpen` equal to the setting (`false` by default) |
 
 ## 7. Test plan
 
@@ -103,6 +107,7 @@ POST /api/workspace/login
 | `tests/unit/core/test_access.py` | AC-16.2, 16.3, 16.5–16.8 |
 | `tests/unit/core/test_rate_limit.py` | AC-16.12, 16.13, 16.15, 16.16 |
 | `tests/api/test_access_routes.py` | AC-16.1, 16.4, 16.9–16.11, 16.14 |
+| `tests/api/test_open_workspace.py` | AC-16.17–16.19 (amended 2026-11-20 (open workspace)) |
 
 ## 8. Out of scope
 

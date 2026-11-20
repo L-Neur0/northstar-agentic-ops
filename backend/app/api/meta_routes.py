@@ -5,7 +5,8 @@ reachable, and the frontend needs the cluster picker, the product name, the regi
 languages and the upload limits from the company configuration without rebuilding the image.
 What: `GET /api/health` (status, stage, version and the store check made at start-up, so the probe
 stays cheap and touches no store or model), `GET /api/config` and `GET /api/taxonomy`. All three
-are public; health is never rate-limited (spec 16 AC-16.11). AC-15.46, AC-15.47.
+are public; health is never rate-limited (spec 16 AC-16.11). `workspaceOpen` tells the workspace
+screen to drop the code field and the delete button (spec 16 AC-16.19). AC-15.46, AC-15.47.
 Must not: expose secrets or settings beyond what the frontend needs.
 """
 
@@ -34,8 +35,10 @@ def health(request: Request, settings: Settings = Depends(get_settings)) -> Heal
 
 
 @router.get("/config", response_model=ConfigOut)
-def public_config(company: CompanyConfig = Depends(get_company)) -> ConfigOut:
-    """The runtime values the frontend shows: product name, regions, languages, upload limits."""
+def public_config(
+    company: CompanyConfig = Depends(get_company), settings: Settings = Depends(get_settings)
+) -> ConfigOut:
+    """The runtime values the frontend shows: product name, regions, languages, upload limits, open workspace."""
     documents = company.documents
     return ConfigOut(
         product_name=company.organisation.product_name,
@@ -47,6 +50,7 @@ def public_config(company: CompanyConfig = Depends(get_company)) -> ConfigOut:
             max_file_mb=documents.max_file_mb,
             max_image_mb=documents.max_image_mb,
         ),
+        workspace_open=settings.workspace_open,
     )
 
 

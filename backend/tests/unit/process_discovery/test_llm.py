@@ -171,7 +171,9 @@ def test_the_default_budgets_match_the_spec():
     settings = make_settings()
     budgets = {ct: getattr(settings, f"llm_max_tokens_{ct.value.lower()}") for ct in CallType}
     assert budgets[CallType.GUIDE] == 100_000 and budgets[CallType.OPPORTUNITIES] == 100_000
-    assert all(v == 32_000 for ct, v in budgets.items() if ct not in (CallType.GUIDE, CallType.OPPORTUNITIES))
+    assert budgets[CallType.JUDGE] == 2_000  # spec 24 §5
+    others = (CallType.GUIDE, CallType.OPPORTUNITIES, CallType.JUDGE)
+    assert all(v == 32_000 for ct, v in budgets.items() if ct not in others)
 
 
 def test_the_step_assessment_has_its_own_call_type_and_budget():

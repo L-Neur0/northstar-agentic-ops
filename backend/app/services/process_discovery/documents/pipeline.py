@@ -13,7 +13,9 @@ Spec 17 §3.1, §3.7, §3.12–§3.14, §3.17, §4; AC-17.32 to AC-17.38. Amendm
 reading context goes to the reader and the filter; images are prepared (`image.py`), read by one
 call, stored as their transcription only, and screened after the call (I1, I2); the report and the
 log line gain the role, the target step and `from_image`; the extra sentences are returned apart so
-the interview's chat question can reuse them. AC-17.47 to AC-17.61.
+the interview's chat question can reuse them. AC-17.47 to AC-17.61. Amendment §3.21: the report,
+the sentence and the log line count the conflicts a reading recorded (never a value); removing a
+document removes its items and conflicts only (P5, P6). AC-17.70, AC-17.77, AC-17.79.
 """
 
 from __future__ import annotations
@@ -95,6 +97,8 @@ class DocumentReport(WireModel):
     skipped: list[SkipOut]
     step_list: int
     message: str
+    #: Conflicts recorded by this reading (spec 17 §3.21 item 6).
+    conflicts: int = 0
 
 
 class DocumentView(WireModel):
@@ -153,13 +157,19 @@ def read_message(
     unmatched: int,
     no_target: str | None = None,
     image: bool = False,
+    conflicts: int = 0,
 ) -> str:
-    """The sentence the expert sees after a reading (§3.12), built by code."""
+    """The sentence the expert sees after a reading (§3.12, §3.21 item 6), built by code."""
     shown = single_line(name, NAME_MAX)
     verb = "looked at" if image else "read"
+    places = f"{conflicts} place{'' if conflicts == 1 else 's'}"
     if values or steps:
         found = f"{values} value{'' if values == 1 else 's'}" + (f" and {steps} steps" if steps else "")
         parts = [f'I {verb} "{shown}" and found {found} for your process. Nothing counts until you confirm it.']
+        if conflicts:
+            parts.append(f"It also differs from what I have in {places}.")
+    elif conflicts:
+        parts = [f'I {verb} "{shown}". It differs from what I have in {places}; I\'ll ask you which to keep.']
     else:
         parts = [f'I {verb} "{shown}" but found nothing new for the form.']
     parts += read_extras(
@@ -296,6 +306,7 @@ async def read_document(
             values=kept.fields + len(diff.step_cells),
             steps=kept.steps,
             image=from_image,
+            conflicts=len(diff.conflicts),
             **facts,
         )
 
@@ -330,6 +341,7 @@ async def read_document(
         else [],
         step_list=len(record.step_list),
         message=message,
+        conflicts=len(diff.conflicts),
     )
     _log(
         logging.INFO if outcome == "read" else logging.WARNING,
@@ -347,6 +359,7 @@ async def read_document(
         kept_fields=kept.fields,
         kept_steps=kept.steps,
         kept_cells=kept.cells,
+        conflicts=len(diff.conflicts),
         dropped=_dropped(filtered),
         step_list=len(record.step_list),
         injection_patterns=0,

@@ -8,7 +8,12 @@
  * on `/api/taxonomy` or `/api/config`; every failure becomes one `ApiError{status, code, message,
  * reason?}`. The upload uses `XMLHttpRequest` because only XHR reports upload progress; the PDF is
  * fetched (not linked) so it carries the visitor key.
- * Must not: log or put the visitor key in an error, read a file's content, or build any profile logic.
+ * Part 3 (spec 23 §20; AC-23.111, AC-23.112): the workspace calls of spec 21 send
+ * `Authorization: Bearer <token>` (read per request) and never the visitor key; expert calls never
+ * send the token; a workspace call without a token fails locally with 401
+ * `workspace_code_required` and sends nothing; delete sends `If-Match`.
+ * Must not: log or put the visitor key or the token in an error, read a file's content, or build
+ * any profile logic.
  */
 import type { DiscoveryReport } from '../types/report'
 import type {
@@ -22,6 +27,8 @@ import type {
   Taxonomy,
   TurnOut,
 } from '../types/process-discovery'
+import type { ConversationOut, ReviewFilters, ReviewListOut, ReviewSessionOut, WorkspaceLogin } from '../types/workspace'
+import { readWorkspaceToken } from '../access/workspaceToken'
 
 export class ApiError extends Error {
   readonly status: number
@@ -59,6 +66,26 @@ export interface DiscoveryApi {
   rejectProposals(id: string, keys: string[]): Promise<SessionOut>
   getReport(id: string): Promise<DiscoveryReport>
   getReportPdf(id: string): Promise<{ blob: Blob; filename: string }>
+  workspaceLogin(code: string, name: string): Promise<WorkspaceLogin>
+  reviewList(filters: ReviewFilters): Promise<ReviewListOut>
+  reviewSession(id: string): Promise<ReviewSessionOut>
+  reviewConversation(id: string): Promise<ConversationOut>
+  getReviewReportPdf(id: string): Promise<{ blob: Blob; filename: string }>
+  deleteReviewSession(id: string, etag: string): Promise<void>
+}
+
+/** The local refusal of a workspace call made without a token (nothing is sent). */
+export const noWorkspaceToken = () =>
+  new ApiError(401, 'workspace_code_required', 'Enter the workspace access code.')
+
+/** The query string of the list: empty filters are left out (spec 23 §19.3). */
+export function reviewQuery(filters: ReviewFilters): string {
+  const params = new URLSearchParams()
+  if (filters.status) params.set('status', filters.status)
+  if (filters.cluster) params.set('cluster', filters.cluster)
+  if (filters.q.trim()) params.set('q', filters.q.trim())
+  const text = params.toString()
+  return text ? `?${text}` : ''
 }
 
 /** Turns a failed reply's status and body text into the one `ApiError` shape. */
@@ -126,11 +153,13 @@ function uploadWithProgress(
 async function request<T>(
   method: string,
   path: string,
-  options: { body?: unknown; key?: string } = {},
+  options: { body?: unknown; key?: string; auth?: string; ifMatch?: string } = {},
 ): Promise<T> {
   const headers: Record<string, string> = { Accept: 'application/json' }
   if (options.body !== undefined) headers['Content-Type'] = 'application/json'
   if (options.key) headers['X-Visitor-Key'] = options.key
+  if (options.auth) headers.Authorization = `Bearer ${options.auth}`
+  if (options.ifMatch) headers['If-Match'] = options.ifMatch
 
   let response: Response
   try {
@@ -159,10 +188,35 @@ async function request<T>(
   return data as T
 }
 
-/** The real client. `getKey` is called per request, so a resume link takes effect at once. */
-export function createHttpApi(getKey: () => string): DiscoveryApi {
+/** A file download: the blob and the `Content-Disposition` name (report PDFs, both sides). */
+async function fetchBlob(path: string, headers: Record<string, string>): Promise<{ blob: Blob; filename: string }> {
+  let response: Response
+  try {
+    response = await fetch(path, { method: 'GET', headers: { Accept: 'application/pdf', ...headers } })
+  } catch {
+    throw new ApiError(0, 'network', 'Could not reach the server.')
+  }
+  if (!response.ok) throw toApiError(response.status, await response.text())
+  return { blob: await response.blob(), filename: filenameFrom(response.headers.get('Content-Disposition')) }
+}
+
+/**
+ * The real client. `getKey` and `getToken` are called per request, so a resume link or a new
+ * workspace login takes effect at once.
+ */
+export function createHttpApi(
+  getKey: () => string,
+  getToken: () => string | null = () => readWorkspaceToken()?.token ?? null,
+): DiscoveryApi {
   const expert = <T>(method: string, path: string, body?: unknown) =>
     request<T>(method, path, { body, key: getKey() })
+  const bearer = () => {
+    const token = getToken()
+    if (!token) throw noWorkspaceToken()
+    return token
+  }
+  const workspace = async <T>(method: string, path: string, ifMatch?: string) =>
+    request<T>(method, path, { auth: bearer(), ifMatch })
   const id = encodeURIComponent
 
   return {
@@ -190,18 +244,13 @@ export function createHttpApi(getKey: () => string): DiscoveryApi {
     confirmProposals: (s, keys) => expert('POST', `/api/sessions/${id(s)}/proposals/confirm`, { keys }),
     rejectProposals: (s, keys) => expert('POST', `/api/sessions/${id(s)}/proposals/reject`, { keys }),
     getReport: (s) => expert('GET', `/api/sessions/${id(s)}/report`),
-    getReportPdf: async (s) => {
-      let response: Response
-      try {
-        response = await fetch(`/api/sessions/${id(s)}/report.pdf`, {
-          method: 'GET',
-          headers: { Accept: 'application/pdf', 'X-Visitor-Key': getKey() },
-        })
-      } catch {
-        throw new ApiError(0, 'network', 'Could not reach the server.')
-      }
-      if (!response.ok) throw toApiError(response.status, await response.text())
-      return { blob: await response.blob(), filename: filenameFrom(response.headers.get('Content-Disposition')) }
-    },
+    getReportPdf: (s) => fetchBlob(`/api/sessions/${id(s)}/report.pdf`, { 'X-Visitor-Key': getKey() }),
+    workspaceLogin: (code, name) => request('POST', '/api/workspace/login', { body: { code, name } }),
+    reviewList: (filters) => workspace('GET', `/api/review/sessions${reviewQuery(filters)}`),
+    reviewSession: (s) => workspace('GET', `/api/review/sessions/${id(s)}`),
+    reviewConversation: (s) => workspace('GET', `/api/review/sessions/${id(s)}/conversation`),
+    getReviewReportPdf: async (s) =>
+      fetchBlob(`/api/review/sessions/${id(s)}/report.pdf`, { Authorization: `Bearer ${bearer()}` }),
+    deleteReviewSession: (s, etag) => workspace('DELETE', `/api/review/sessions/${id(s)}`, etag),
   }
 }

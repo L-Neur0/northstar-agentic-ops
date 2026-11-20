@@ -9,7 +9,8 @@ service errors (via the engine facade), `ConflictError` and other store errors (
 `invalid_value`, field paths and pydantic's message only, never the input) and any other
 `HTTPException` to that body; anything unexpected is 500 `internal_error`. A refused upload
 (`DocumentRejected`) keeps its own code and its one plain sentence (spec 17 §3.2, §3.12), with the
-status from `DOCUMENT_STATUS`. A report asked for before *Finish* is 409 `report_not_ready` (spec 20 §3.5).
+status from `DOCUMENT_STATUS`. A report asked for before *Finish* is 409 `report_not_ready` (spec 20 §3.5); a workspace delete
+without `If-Match` is 428 `etag_required` (spec 21 §3.6).
 Must not: include request bodies, message text or exception details from below in a response.
 """
 
@@ -74,6 +75,7 @@ def install_error_handlers(app: FastAPI) -> None:
         ),
         (engine.ReportNotReady, 409, "report_not_ready", "The report is ready once the map is finished."),
         (engine.UnknownCluster, 422, "unknown_cluster", "This cluster code is not in the taxonomy."),
+        (engine.EtagRequired, 428, "etag_required", "This action needs the session's current version (If-Match)."),
         (engine.IdeaAlreadyStarted, 409, "idea_started", "A session was already started from this idea."),
         (engine.ConflictError, 409, "conflict", "This session was changed elsewhere. Please reload and try again."),
         (

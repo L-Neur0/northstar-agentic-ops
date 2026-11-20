@@ -1,6 +1,6 @@
 # 13 · Profile: applying changes, proposals, completeness, *Finish*
 
-> **Status:** approved · **Implements:** F-05, F-08, F-10, F-11 (product); the write side of F-04 (proposals) and F-09 (skipped cells, assumed step count); architecture §3.2 (`profile`), §5 (session document) · **Depends on:** specs 10, 12
+> **Status:** approved · **§3.13 amendment (conflicts, a source per item): approved and built 2026-11-20** (deviations: spec 17 §3.22, spec 14 §3.17 build notes) · **Implements:** F-05, F-08, F-10, F-11 (product); the write side of F-04 (proposals) and F-09 (skipped cells, assumed step count); architecture §3.2 (`profile`), §5 (session document) · **Depends on:** specs 10, 12
 > **Code:** `backend/app/services/process_discovery/profile/{constants,shapes,coercion,verdicts,mutate,proposals,scoring,views,raw_snapshot}.py`
 > **Tests:** `backend/tests/unit/process_discovery/profile/`
 
@@ -249,6 +249,49 @@ Declaring more steps lowers the percentage (the denominator grows). That is corr
 
 `freeze_raw_substeps(raw, profile) -> list` returns the session's `raw_substeps` (spec 12): if `raw` is non-empty it is returned unchanged (frozen once, forever); otherwise a deep copy of `profile.process.substeps` (possibly `[]`, which the next call may retake). **Every non-expert writer calls it immediately before writing**: `apply_proposals` callers (spec 17) and specialist edits (spec 21). The interview never calls it (it writes only the expert's words). The snapshot never contains a word the expert did not say.
 
+### 3.13 Amendment: conflicts and a source per item
+
+> **Status:** approved 2026-11-20. Write side of spec 17 §3.21 and spec 14 §3.17. Where it differs from §3.6, this section wins.
+
+**1. `apply_proposals` changes.** Rules 3–5 of §3.6 are re-checked as spec 17 §3.21 C1–C8 at write time. A `ConflictOffer` that still meets C3, C5 or C8 is stored in the `__conflicts` sidecar (process fields: `profile.__conflicts[<registry key>]`; step cells: `row.__conflicts[<leaf>]`, so it moves with the row), as a list of the records of spec 17 §3.21 item 4, at most one per `sub`. One that no longer does is dropped (`same_value`, `specialist_owned`, or it became a C1 proposal when the unit was emptied). A C4 merge writes `parts` (spec 12 §3.6). `ProposalResult` gains `conflicts: list[str]` (conflict keys stored).
+
+**2. New functions** (`proposals.py`, pure).
+
+| Function | Does |
+|---|---|
+| `open_conflicts(profile) -> list[ConflictView]` | Every stored conflict, ask order; `ConflictView{key, sub, conflict_key, kind, status, list, offered, current, document_id, holder_document_id, from_image}`; `current` is read live from the stored unit |
+| `resolve_conflicts(profile, conflict_keys, choice, *, vocab, at) -> ChangeResult` | Table below, then the §3.4 steps 10–15 (un-skip, invalidate, resize, close test, roll-ups, grade) |
+| `mark_conflicts_left(profile, conflict_keys) -> profile` | `status: "left"`; value untouched |
+| `close_conflicts(profile, key, how) -> profile` | Removes the field's conflicts; used by `apply_changes` (item 3) and the ✓ shortcut (spec 14 §3.17 R3) |
+
+**What a choice writes.**
+
+| Choice | Unit after | Source of the written items |
+|---|---|---|
+| `current` | Unchanged | Unchanged |
+| `offered` | The offered value replaces the unit (a sub-field: only that sub-field) | `document`, the offering `documentId`, `quote`, `fromImage` (a part when the field now mixes sources) |
+| `both` (expert kind, list-like, union fits `max_items`) | Stored items first, then the offered items not already present | One part per item |
+
+| Then | Rule |
+|---|---|
+| Status | The field is `confirmed` (the expert decided), **unless** it was `proposed` and other proposed sub-values or items remain: then it stays `proposed` and comes back in a proposals question |
+| `replaces` | When the field is proposed with `replaces` (spec 17 §3.1 item 5), the choice is written into `replaces.value` too, so a later "no" to the proposal keeps the expert's choice |
+| Conflict | Removed. A conflict key whose record no longer exists is ignored (never an error) |
+
+**3. `apply_changes` addition** (§3.4, after step 9): a landed expert write on a field removes that field's conflicts (closed `own_words`); `ChangeResult` gains `conflicts_closed: list[str]`.
+
+**4. `remove_document_proposals` change**: per item (spec 17 §3.21 P5, P6): only the removed document's items and sub-values leave a proposed field; its conflicts are removed; a document conflict whose holder proposal was cleared becomes the offering document's proposal.
+
+**5. Views** (§3.11): a field view gains `conflict: "open" | "left" | None` and, for a value with `parts`, `items: [{sub, item, source, documentId, fromImage}]` so the panel can name a file per item.
+
+| ID | Given / when / then |
+|---|---|
+| AC-13.57 | `apply_proposals` with a `ConflictOffer` on an expert unit stores the record in the right sidecar (process / row); on a now-specialist unit stores nothing (`specialist_owned`); on a unit emptied since the reading writes a proposal instead |
+| AC-13.58 | Inserting a step before row 3 moves row 3's `__conflicts` with the row; the conflict key in `open_conflicts` follows the new index |
+| AC-13.59 | `resolve_conflicts` for `current`, `offered` and `both` writes exactly the table above, with parts per item for `both`; a sub-field choice on a field proposed with `replaces` stays `proposed` and is also written into `replaces.value`, so `reject_proposals` afterwards restores the chosen sub-value |
+| AC-13.60 | An expert write through `apply_changes` on a field with an open conflict closes it (`conflicts_closed`); `mark_conflicts_left` changes only `status` |
+| AC-13.61 | Neither an open nor a left conflict changes the score, the counting rule or the *Finish* check |
+
 ## 4. Interfaces
 
 ```python
@@ -432,6 +475,7 @@ All tests use the `nig_vocabulary` fixture (spec 12) and build profiles with the
 | `backend/tests/unit/process_discovery/profile/test_views.py` | AC-13.50 |
 | `backend/tests/unit/process_discovery/profile/test_raw_snapshot.py` | AC-13.51 |
 | `backend/tests/unit/process_discovery/profile/test_state_integrity.py` | AC-13.52–13.54 (round trips through the Pydantic models; purity AST check; log sentinel) |
+| `backend/tests/unit/process_discovery/profile/test_conflicts.py` | AC-13.57–13.61 (amendment §3.13) |
 
 ## 8. Out of scope
 

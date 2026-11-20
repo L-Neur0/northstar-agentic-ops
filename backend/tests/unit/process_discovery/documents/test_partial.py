@@ -83,11 +83,12 @@ def test_ac_17_64_a_correction_keeps_the_experts_inputs(vocab):
 
 
 def test_ac_17_65_a_differing_expert_value_is_never_changed(vocab):
+    """Replaced by §3.21 (AC-17.70): the differing input is a conflict; the proposal keeps the expert's."""
     profile = inputs_only(vocab)
     out = output_reading(vocab, profile, inputs=["Budget file"])
     [cell] = out.diff.step_cells
     assert cell.value["inputs"] == ["Ledger export"]
-    assert (KEY, "conflicts_with_expert", 1) in {(s.key, s.reason, s.items) for s in out.skipped}
+    assert [(c.key, c.sub, c.value) for c in out.diff.conflicts] == [(KEY, "inputs", ["Budget file"])]
 
 
 def test_ac_17_65_specialist_and_complete_fields_stay_refused(vocab):
@@ -98,7 +99,7 @@ def test_ac_17_65_specialist_and_complete_fields_stay_refused(vocab):
     full = write(vocab, inputs_only(vocab), {KEY: {"outputs": ["Report"]}})
     out = output_reading(vocab, full)
     assert out.diff.step_cells == ()
-    assert (KEY, "confirmed") in {(s.key, s.reason) for s in out.skipped}
+    assert [(c.key, c.sub) for c in out.diff.conflicts] == [(KEY, "outputs")]  # §3.21 C3
 
 
 def test_ac_17_62_volume_with_a_count_and_no_period(vocab):
@@ -112,4 +113,4 @@ def test_ac_17_62_volume_with_a_count_and_no_period(vocab):
     out = build_diff(raw, document_id="d1", text="It runs every month.", profile=profile, vocab=vocab)
     [field] = out.diff.fields
     assert (field.value["count"], field.value["period"]) == (14, "month")
-    assert ("process.volume", "conflicts_with_expert", 1) in {(s.key, s.reason, s.items) for s in out.skipped}
+    assert [(c.key, c.sub, c.value) for c in out.diff.conflicts] == [("process.volume", "count", 12)]  # AC-17.72

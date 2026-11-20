@@ -7,7 +7,8 @@ What: parses `azure.yaml` (service `app`, Docker build, pipeline values), `main.
 (every azd value the template needs) and `.github/workflows/ci.yml` (jobs, trigger, approval
 environment, OIDC, no Azure secret).
 Must not: run azd or call Azure.
-Spec: 25. Acceptance criteria: AC-25.21, AC-25.26 (static half); spec 25 Q1 for the trigger.
+Spec: 25. Acceptance criteria: AC-25.21, AC-25.26 (static half), AC-25.30 (amended 2026-11-20,
+open workspace: `WORKSPACE_OPEN` defaults to true, the codes are optional); spec 25 Q1 for the trigger.
 """
 
 from __future__ import annotations
@@ -43,7 +44,12 @@ def test_ac_25_21_pipeline_variables_and_secrets() -> None:
         "WORKSPACE_CODE_ENGINEER",
         "WORKSPACE_TOKEN_SECRET",
     }
-    assert set(pipeline["variables"]) == {"AZURE_RESOURCE_GROUP", "MIN_REPLICAS", "DEVELOPER_PRINCIPAL_ID"}
+    assert set(pipeline["variables"]) == {
+        "AZURE_RESOURCE_GROUP",
+        "MIN_REPLICAS",
+        "DEVELOPER_PRINCIPAL_ID",
+        "WORKSPACE_OPEN",  # AC-25.30
+    }
 
 
 def test_parameters_map_every_azd_value() -> None:
@@ -53,9 +59,10 @@ def test_parameters_map_every_azd_value() -> None:
         "developerPrincipalId": "${DEVELOPER_PRINCIPAL_ID=}",
         "minReplicas": "${MIN_REPLICAS=1}",
         "appExists": "${SERVICE_APP_RESOURCE_EXISTS=false}",
-        "workspaceCodeSpecialist": "${WORKSPACE_CODE_SPECIALIST}",
-        "workspaceCodeEngineer": "${WORKSPACE_CODE_ENGINEER}",
+        "workspaceCodeSpecialist": "${WORKSPACE_CODE_SPECIALIST=}",  # AC-25.30: optional
+        "workspaceCodeEngineer": "${WORKSPACE_CODE_ENGINEER=}",
         "workspaceTokenSecret": "${WORKSPACE_TOKEN_SECRET}",
+        "workspaceOpen": "${WORKSPACE_OPEN=true}",
     }
     assert {k: v["value"] for k, v in PARAMS.items()} == expected
     assert "AZURE_PRINCIPAL_ID" not in json.dumps(PARAMS)  # the CI principal must not get Cosmos access
@@ -99,3 +106,8 @@ def test_ac_25_26_no_azure_secret_in_the_workflow() -> None:
     for word in ("client-secret", "AZURE_CREDENTIALS", "AZURE_CLIENT_SECRET"):
         assert word not in text
     assert "azd down" not in text
+
+
+def test_ac_25_30_deploy_passes_workspace_open_defaulting_to_true() -> None:
+    env = CI["jobs"]["deploy"]["env"]
+    assert env["WORKSPACE_OPEN"] == "${{ vars.WORKSPACE_OPEN || 'true' }}"

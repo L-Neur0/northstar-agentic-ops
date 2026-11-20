@@ -1,0 +1,102 @@
+{
+  "id": "37360ca0-f57a-4602-8667-6448437946df",
+  "etag": "\"f2889fefcaf44d899530e8c1d88cce39\"",
+  "summary": {
+    "department": null,
+    "function": null,
+    "region": null,
+    "processName": null,
+    "clusterName": null,
+    "status": "active",
+    "phase": "context",
+    "fieldsFilled": 0,
+    "fieldsTotal": 16,
+    "stepsStarted": 0,
+    "stepsExpected": 0,
+    "completeness": 0.0,
+    "filledPoints": 0,
+    "totalPoints": 18,
+    "messageCount": 1,
+    "documentCount": 0
+  },
+  "steps": {
+    "stepNames": [],
+    "rows": [
+      {
+        "key": "name",
+        "id": "S01",
+        "label": "Step name",
+        "cells": []
+      },
+      {
+        "key": "goal",
+        "id": "S02",
+        "label": "Goal",
+        "cells": []
+      },
+      {
+        "key": "activities",
+        "id": "S03",
+        "label": "Activities",
+        "cells": []
+      },
+      {
+        "key": "roles",
+        "id": "S04",
+        "label": "Roles involved",
+        "cells": []
+      },
+      {
+        "key": "owner",
+        "id": "S05",
+        "label": "Step owner",
+        "cells": []
+      },
+      {
+        "key": "systems",
+        "id": "S06",
+        "label": "Systems",
+        "cells": []
+      },
+      {
+        "key": "data",
+        "id": "S07",
+        "label": "Data in and out",
+        "cells": []
+      },
+      {
+        "key": "effort",
+        "id": "S08",
+        "label": "Effort",
+        "cells": []
+      },
+      {
+        "key": "pain_points",
+        "id": "S09",
+        "label": "Pain points",
+        "cells": []
+      },
+      {
+        "key": "approvals",
+        "id": "S10",
+        "label": "Approvals",
+        "cells": []
+      },
+      {
+        "key": "exceptions",
+        "id": "S11",
+        "label": "Exceptions",
+        "cells": []
+      },
+      {
+        "key": "handover",
+        "id": "S12",
+        "label": "Hand-over",
+        "cells": []
+      }
+    ]
+  },
+  "rawSteps": null,
+  "documents": [],
+  "report": null
+}

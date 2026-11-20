@@ -1,6 +1,6 @@
 # 23 · Frontend, part 1: the interview side
 
-> **Status:** part 1 approved · §3.13 theme approved · part 2 (§10–§17: documents, report) built · part 3 (§18–§25: workspace) draft · **Implements:** the screens of F-01, F-02, F-03 (honest exit), F-07 (cluster picker), F-08 (step tabs), F-10, F-11, F-21.1–2 (visitor key, resume link), F-23.4 (delete my data) (product); architecture §1 (two sides), §4 (frontend) · **Depends on:** specs 10 (toolchain), 12 (wire models), 13 (field views, *Finish*), 14 (turn), 15 part 2 (routes), 16 (visitor key)
+> **Status:** amended 2026-11-20 (open workspace: `WORKSPACE_OPEN`, product owner decision) · part 1 approved · §3.13 theme approved · part 2 (§10–§17: documents, report) built · part 3 (§18–§25: workspace) approved 2026-11-20 (Q14 server names win; Q15 cells as display text from the server; Q16–Q20 defaults) · **Implements:** the screens of F-01, F-02, F-03 (honest exit), F-07 (cluster picker), F-08 (step tabs), F-10, F-11, F-21.1–2 (visitor key, resume link), F-23.4 (delete my data) (product); architecture §1 (two sides), §4 (frontend) · **Depends on:** specs 10 (toolchain), 12 (wire models), 13 (field views, *Finish*), 14 (turn), 15 part 2 (routes), 16 (visitor key)
 > **Code:** `frontend/src/{main.tsx,App.tsx,pages,components,services,types,utils,hooks,access}` · **Tests:** next to each file (`*.test.ts[x]`), setup `frontend/src/test/setup.ts`
 > **Part 2** (§10–§17 of this file): document upload and proposals (✓ / ✎), the report screen. **Part 3** (§18–§25): the workspace: access-code login, session list, read-only session popup, conversation, PDF, delete. Overview, edits, validation and briefs come later.
 
@@ -1143,6 +1143,7 @@ Header (`AppHeader`, title "Process Discovery · Workspace"): when logged in, th
 | 7 | If `sessionStorage` throws, the token lives in memory for this tab only; login still works |
 | 8 | **Log out** and every 401 / 403 call `clearWorkspaceToken()`. 403 `forbidden` shows "This access code does not open the workspace." on the login form |
 | 9 | The visitor key (part 1 §3.2) is not touched and not sent on workspace calls; the token is not sent on expert calls |
+| 10 | *(Amended 2026-11-20 (open workspace).)* The page reads `GET /api/config` (React Query `['config']`, shared with part 2). When `workspaceOpen` is `true`, the card has no **Access code** field; it shows the line "Open demo workspace: anyone with the link can read sessions. Deleting is switched off." under the intro, and **Open workspace** is disabled only while the name is blank or a login is in flight; it calls `workspaceLogin('', name)`. While the config loads, or if it fails, the card behaves as closed (code field shown); `WorkspaceLogin` gets this as an `open` prop from the page. When `workspaceOpen` is `false`: rules 1–9 unchanged |
 
 ### 19.3 Session list (`components/workspace/SessionFilters.tsx`, `SessionTable.tsx`)
 
@@ -1275,6 +1276,7 @@ No Markdown, no HTML. If spec 21 sends a string, `formatCell` returns it unchang
 | 5 | 404 → both close, the list refetches, status "This session was already deleted." |
 | 6 | 428 `etag_required` cannot happen from this client (the etag is always sent); if it does, the part 1 fallback sentence |
 | 7 | Delete is shown for every status. There is no delete button in the list rows |
+| 8 | *(Amended 2026-11-20 (open workspace).)* When `GET /api/config` says `workspaceOpen: true` (or has not loaded), the **Delete session** button is not rendered (the server refuses delete there anyway, spec 21 §3.6 item 4); a failed config counts as closed. `SessionDialog` gets this as a `canDelete` prop from the page (default `true`). Download and Close are unchanged |
 
 ### 19.8 Words (`utils/workspaceFormat.ts`)
 
@@ -1315,6 +1317,7 @@ One helper `isSessionEnded(error)` (401 `workspace_code_required` or 403) is che
 | 6 | `reviewConversation(id)` returns the stored messages; `getReviewReportPdf(id)` returns `FAKE_PDF` for finished sessions, else 409 `report_not_ready`; `deleteReviewSession(id, etag)` checks the etag (stale → 409 `conflict`), removes the session (so Home no longer lists it) and keeps ideas |
 | 7 | **Manual triggers** through the search box (the text is not sent as a filter): `/error <code>` fails the next workspace call with that code; `/expire` makes the next call 401 `workspace_code_required`; `/touch <id>` changes that session's etag (to try the delete conflict) |
 | 8 | Tests construct the fake with `createFakeApi({workspaceSeed, delayMs: [0, 0]})`; fixtures in `src/test/fixtures/workspace.ts` are shared by the fake and the tests |
+| 9 | *(Amended 2026-11-20 (open workspace).)* `createFakeApi({workspaceOpen: true})`: `getConfig` returns `workspaceOpen: true`, `workspaceLogin` ignores the code and gives a specialist token for any valid name, `deleteReviewSession` returns 403 `forbidden` "Deleting is switched off on this open demo.". Default `false` |
 
 ## 20. Interfaces (part 3)
 
@@ -1442,6 +1445,9 @@ access/workspaceToken.ts · types/workspace.ts · utils/workspaceFormat.ts
 | AC-23.140 | Fake triggers: `/error <code>` in Search fails the next workspace call with that code and is not sent as `q`; `/expire` makes the next call 401 and the page returns to login; `/touch <id>` makes the next delete of that session 409 |
 | AC-23.141 | New components use theme tokens only (the AC-23.57 scan covers `components/workspace/` and `pages/Workspace.tsx`); the login, list and popup render in both themes, and the map in the popup follows the theme (part 2 rule) |
 | AC-23.142 | Below 1024 px the summary cards stack (2 then 1 column), the list and the grid scroll sideways inside their regions with no page-wide horizontal scroll, and the header actions are icon buttons with `aria-label`s below 640 px |
+| AC-23.143 | *(amended 2026-11-20 (open workspace))* With `workspaceOpen: true`, the login has no access-code field, shows "Open demo workspace: anyone with the link can read sessions. Deleting is switched off.", enables **Open workspace** with a name alone, and logs in (stores the specialist token, shows the list); with `workspaceOpen: false` the code field is there and AC-23.107 holds |
+| AC-23.144 | *(amended 2026-11-20 (open workspace))* With `workspaceOpen: true`, the session popup renders no **Delete session** button (Download and Close remain); with `false` it does |
+| AC-23.145 | *(amended 2026-11-20 (open workspace))* Fake API with `workspaceOpen: true`: config says so, any valid name logs in as specialist whatever the code, delete is 403 `forbidden`; `checkPublicConfig` requires `workspaceOpen` (boolean) |
 
 ## 23. Test plan (part 3)
 
@@ -1449,14 +1455,14 @@ access/workspaceToken.ts · types/workspace.ts · utils/workspaceFormat.ts
 |---|---|
 | `src/access/workspaceToken.test.ts` | AC-23.106 (read, expiry, malformed), 23.108 (storage key, no code), 23.110 |
 | `src/services/api.test.ts` | AC-23.111, 23.112 (stubbed `fetch`) |
-| `src/services/fakeApi.test.ts` | AC-23.139, 23.140 |
+| `src/services/fakeApi.test.ts` | AC-23.139, 23.140; `fakeApi.workspace.test.ts` and `contract.test.ts`: AC-23.145 |
 | `src/utils/workspaceFormat.test.ts` | AC-23.127 and the words of §19.8 |
 | `src/utils/discoveryErrors.test.ts` | §19.9 rows, `isSessionEnded` |
-| `src/components/workspace/WorkspaceLogin.test.tsx` | AC-23.107, 23.109 |
+| `src/components/workspace/WorkspaceLogin.test.tsx` | AC-23.107, 23.109, 23.143 |
 | `src/components/workspace/SessionTable.test.tsx` | AC-23.116–23.119, 23.121 (row opener) |
 | `src/components/workspace/SessionFilters.test.tsx` | AC-23.120 (fake timers for the 300 ms debounce) |
 | `src/components/workspace/StepGrid.test.tsx` | AC-23.125, 23.126 |
-| `src/components/workspace/SessionDialog.test.tsx` | AC-23.122–23.124, 23.128–23.137 (fake API through `ApiProvider`; Mermaid renderer stubbed; `saveBlob` stubbed) |
+| `src/components/workspace/SessionDialog.test.tsx` | AC-23.122–23.124, 23.128–23.137, 23.144 (fake API through `ApiProvider`; Mermaid renderer stubbed; `saveBlob` stubbed) |
 | `src/components/workspace/ConversationView.test.tsx` | AC-23.131, 23.132 |
 | `src/pages/Workspace.test.tsx` | AC-23.106, 23.108, 23.113–23.115, 23.142 (login → list → popup → delete → list, against the fake) |
 | `src/components/chat/chat.test.tsx` | AC-23.132 (interview page still shows "You") |

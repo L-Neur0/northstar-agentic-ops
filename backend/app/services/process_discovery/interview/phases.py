@@ -12,7 +12,9 @@ back; terminals never change), `missing_fields`, `step_focus`, `posture`, `propo
 Must not: write the profile, call a model, read a clock or mutate its inputs; every function
 derives what it needs from the whole `counters` so no caller can forget a set.
 Spec 14 §3.3, §3.5, §3.6, §3.8, §3.15 item 10; AC-14.20 to AC-14.30, AC-14.41 to AC-14.43, AC-14.65,
-AC-14.73.
+AC-14.73. Amendment §3.17: the `conflict` ask (after `widening`, before `proposals`), its group
+(`conflict_group`), its counter (`charge_conflicts`: 2 asks, then `left`), and proposal groups that
+leave out a unit under dispute (AC-14.92 to AC-14.94, AC-14.99).
 """
 
 from __future__ import annotations
@@ -50,6 +52,7 @@ from ..domain.field_spec import (
 )
 from ..domain.scope import proposable_code
 from ..profile.coercion import coerce_count
+from ..profile.conflicts import ConflictView, conflicted_fields, open_conflicts
 from ..profile.constants import (
     FLAG_SUBSTEPS_COMPLETE,
     NONE_ROW_LEAVES,
@@ -73,6 +76,9 @@ from .steering import RECOMMEND_ASK_LIMIT, STEER_PREFIX, next_signals, read_stee
 from .types import Ask
 
 PROPOSAL_GROUP_MAX = 4
+#: Spec 14 §3.17 (decided 2026-11-20): asks per conflict before it is left, conflicts per question.
+CONFLICT_ASK_LIMIT = 2
+CONFLICT_GROUP_MAX = 3
 #: Q4 (spec 14): a given-up field is offered once more in the wrap-up with an easy way to settle it.
 WRAP_UP_ASKS = 1
 TERMINAL_PHASES: tuple[str, ...] = (PHASE_FINISHED, PHASE_NO_CANDIDATE)
@@ -100,6 +106,7 @@ def read_counters(counters: Mapping[str, Any] | None) -> dict[str, Any]:
         "find_turns": coerce_count(source.get("find_turns")),
         "widening_count": coerce_count(source.get("widening_count")),
         "confirm_turns": coerce_count(source.get("confirm_turns")),
+        "conflict_asks": _asks(source, "conflict_asks"),
     }
 
 
@@ -268,6 +275,7 @@ def proposal_group(
     held = set(given_up_keys(p, counters, vocab=vocab))
     if phase != PHASE_REVIEW:
         held |= set(deferred_keys(p, counters, vocab=vocab))
+    held |= conflicted_fields(p)  # §3.17 Q3: a unit under dispute is never in a proposal group
     rows = rows_of(p)
     fields: list[str] = []
     cells: dict[int, list[str]] = {}
@@ -278,7 +286,7 @@ def proposal_group(
                 fields.append(key)
             continue
         index, leaf = parsed
-        if index <= len(rows) and not cell_skipped(rows[index - 1], leaf):
+        if index <= len(rows) and not cell_skipped(rows[index - 1], leaf) and key not in held:
             cells.setdefault(index, []).append(key)
     if fields:
         return fields[:PROPOSAL_GROUP_MAX]
@@ -310,12 +318,13 @@ def document_group(
     """
     p = normalized_profile(profile)
     held = set(given_up_keys(p, counters, vocab=vocab))
+    disputed = conflicted_fields(p)
     rows = rows_of(p)
     fields: list[str] = []
     cells: dict[int, list[str]] = {}
     for key in proposed_keys(p):
         meta = meta_for(p, key) or {}
-        if meta.get("documentId") != document_id:
+        if meta.get("documentId") != document_id or key in disputed:
             continue
         parsed = parse_step_key(key)
         if parsed is None:
@@ -334,6 +343,33 @@ def document_group(
         names = [k for i in sorted(cells) for k in cells[i] if k.endswith(".name")]
         group = names or next((cells[i] for i in sorted(cells)), [])[:PROPOSAL_GROUP_MAX]
     return group, len([k for k in candidates if k not in group])
+
+
+# --- Conflict groups (§3.17 item 2) ---------------------------------------------------------------
+
+
+def _step_of(view: ConflictView) -> int | None:
+    parsed = parse_step_key(view.key)
+    return parsed[0] if parsed is not None else None
+
+
+def conflict_group(profile: Mapping[str, Any], *, document_id: str | None = None) -> list[ConflictView]:
+    """The open conflicts asked together (at most 3): the first in ask order, plus those on the same
+    step (or the process), from the same document, of the same kind and, for the document kind, the
+    same holder."""
+    views = [v for v in open_conflicts(profile, status="open") if document_id is None or v.document_id == document_id]
+    if not views:
+        return []
+    first = views[0]
+    same = [
+        v
+        for v in views
+        if _step_of(v) == _step_of(first)
+        and v.document_id == first.document_id
+        and v.kind == first.kind
+        and (first.kind != "document" or v.holder_document_id == first.holder_document_id)
+    ]
+    return same[:CONFLICT_GROUP_MAX]
 
 
 # --- The ask target -------------------------------------------------------------------------------
@@ -388,6 +424,10 @@ def next_ask(state: Mapping[str, Any], *, vocab: Vocabulary, steering: SteeringC
     scope = as_mapping(state.get("scope")) or {}
     if scope.get("awaiting_widening") is True:
         return Ask("widening")
+    if phase != PHASE_CONTEXT and phase not in TERMINAL_PHASES:
+        disputed = conflict_group(profile)
+        if disputed:
+            return Ask("conflict", tuple(v.conflict_key for v in disputed))
     group = proposal_group(profile, phase, counters, vocab=vocab)
     if group:
         return Ask("proposals", tuple(group))
@@ -416,6 +456,8 @@ def last_question_for(ask: Ask) -> dict[str, Any]:
     """The `LastQuestion` (spec 12) that records an ask target, so the next turn can read the reply."""
     if ask.kind == "proposals":
         return {"focus": [], "proposals": list(ask.keys), "confirm": None}
+    if ask.kind == "conflict":
+        return {"focus": [], "proposals": [], "confirm": None, "conflicts": list(ask.keys)}
     if ask.kind == "cluster":
         return {"focus": list(ask.keys), "proposals": [], "confirm": "cluster" if ask.mode == "propose" else None}
     if ask.kind == "rollups":
@@ -437,6 +479,8 @@ def ask_count(ask: Ask, counters: Mapping[str, Any]) -> int:
     c = read_counters(counters)
     if ask.kind == "rollups":
         return c["confirm_turns"]
+    if ask.kind == "conflict":
+        return max((c["conflict_asks"].get(k, 0) for k in ask.keys), default=0)
     counts = [c["cell_asks"].get(k, 0) if parse_step_key(k) else c["field_asks"].get(k, 0) for k in ask.keys]
     return max(counts, default=0)
 
@@ -474,6 +518,21 @@ def charge_asks(
     if prior_phase == PHASE_CONFIRM:
         out["confirm_turns"] += 1
     return out
+
+
+def charge_conflicts(
+    counters: Mapping[str, Any], keys: list[str], open_keys: set[str]
+) -> tuple[dict[str, Any], list[str]]:
+    """§3.17 item 5, steps 10 and 10b: one ask per asked conflict still open; those at the limit are returned."""
+    out = read_counters(counters)
+    left: list[str] = []
+    for key in keys:
+        if key not in open_keys:
+            continue
+        out["conflict_asks"][key] = out["conflict_asks"].get(key, 0) + 1
+        if out["conflict_asks"][key] >= CONFLICT_ASK_LIMIT:
+            left.append(key)
+    return out, left
 
 
 def cell_escapes(

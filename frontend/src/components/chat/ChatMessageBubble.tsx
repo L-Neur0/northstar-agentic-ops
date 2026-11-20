@@ -5,6 +5,8 @@
  * remark-gfm with compact renderers tuned for a bubble.
  * Rules: raw HTML is never rendered (no rehype-raw); links come from model output, so they open in
  * a new tab with `rel="noopener noreferrer"`. The expert's text keeps its line breaks.
+ * Part 3 (spec 23 §19.5; AC-23.132): the workspace passes `speaker` labels ("Expert" / "Agent")
+ * and `showDate` (date and time); the interview page keeps "You" and the time only.
  * Colours are theme tokens only, never raw palette classes (spec 23 §3.13.2; AC-23.57).
  */
 import type { ReactNode } from 'react'
@@ -37,7 +39,21 @@ const time = (iso: string) => {
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
-export function ChatMessageBubble({ message }: { message: Message }) {
+const dateTime = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+const when = (iso: string) => {
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? '' : dateTime.format(d)
+}
+
+export function ChatMessageBubble({
+  message,
+  speaker = { expert: 'You', agent: 'Agent' },
+  showDate = false,
+}: {
+  message: Message
+  speaker?: { expert: string; agent: string }
+  showDate?: boolean
+}) {
   const isExpert = message.role === 'expert'
   return (
     <div className={`flex items-start gap-3 px-4 py-2 ${isExpert ? 'flex-row-reverse' : ''}`}>
@@ -48,7 +64,7 @@ export function ChatMessageBubble({ message }: { message: Message }) {
         {isExpert ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
       </div>
       <div className={`flex max-w-[75%] flex-col ${isExpert ? 'items-end' : 'items-start'}`}>
-        <span className="mb-0.5 text-xs font-medium text-subtle">{isExpert ? 'You' : 'Agent'}</span>
+        <span className="mb-0.5 text-xs font-medium text-subtle">{isExpert ? speaker.expert : speaker.agent}</span>
         <div
           className={`break-words rounded-xl px-4 py-2.5 text-sm leading-6 ${
             isExpert ? 'whitespace-pre-wrap bg-bubble-expert text-fg ring-1 ring-inset ring-primary/30' : 'bg-bubble-agent text-fg'
@@ -56,7 +72,7 @@ export function ChatMessageBubble({ message }: { message: Message }) {
         >
           {isExpert ? message.text : <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdown}>{message.text}</ReactMarkdown>}
         </div>
-        <span className="mt-0.5 text-[0.6875rem] text-subtle">{time(message.at)}</span>
+        <span className="mt-0.5 text-[0.6875rem] text-subtle">{showDate ? when(message.at) : time(message.at)}</span>
       </div>
     </div>
   )

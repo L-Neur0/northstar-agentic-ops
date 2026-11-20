@@ -49,6 +49,8 @@ STATUS_COMPLETE, STATUS_PARTIAL, STATUS_INVALID = "complete", "partial", "invali
 SOURCE_EXPERT, SOURCE_DOCUMENT, SOURCE_SPECIALIST = "expert", "document", "specialist"
 META_PROPOSED, META_CONFIRMED = "proposed", "confirmed"
 META_KEY, SKIPPED_KEY, NONE_KEY, NONE_FLAG = "__meta", "__skipped", "none", "none_identified"
+#: Open and left document conflicts (spec 17 §3.21): on the profile and on each row, never graded or shown to a model.
+CONFLICTS_KEY = "__conflicts"
 
 #: Flags on `process`: set only by code, never fields, never scored, on no whitelist.
 FLAG_KEYS: tuple[str, ...] = ("substeps_complete", "roles_confirmed", "tools_confirmed", "substep_count_rejected")

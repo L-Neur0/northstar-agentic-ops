@@ -1,6 +1,6 @@
 # 21 · Admin: the workspace backend (session list, read-only session view, conversation, PDF, delete)
 
-> **Status:** draft · **Implements:** F-17.1, F-17.6, F-17.7 (read-only part), F-21.3, F-23.5 (product); §3.4 workspace routes, §3.5 workspace token, §3.7 audit log, §5 workspace reads (architecture) · **Depends on:** specs 12 (models), 13 (field views), 15 (store, errors, etag), 16 (workspace login and token, built), 20 (report model and PDF, built)
+> **Status:** amended 2026-11-20 (open workspace: `WORKSPACE_OPEN`, product owner decision) · built 2026-11-20 (approved 2026-11-20: log only conversation, download, delete; first name shown; ideas kept on delete; step-grid cells sent as display text by the server; deviations in §10) · **Implements:** F-17.1, F-17.6, F-17.7 (read-only part), F-21.3, F-23.5 (product); §3.4 workspace routes, §3.5 workspace token, §3.7 audit log, §5 workspace reads (architecture) · **Depends on:** specs 12 (models), 13 (field views), 15 (store, errors, etag), 16 (workspace login and token, built), 20 (report model and PDF, built)
 > **Code:** `backend/app/services/process_discovery/admin/{listing,view}.py`; use cases in `service.py`; routes in `backend/app/api/workspace_routes.py`; wire models in `backend/app/models/workspace_wire.py`; store methods in `backend/app/services/store/`
 > **Tests:** `backend/tests/unit/process_discovery/admin/`, `backend/tests/unit/store/test_workspace_queries.py`, `backend/tests/api/test_workspace_routes.py`
 
@@ -69,8 +69,8 @@ A read-only body for the popup, for any status:
 | Part | Content |
 |---|---|
 | **Summary cards** | *Context:* department, function (P02), region. *Process:* name, cluster, status, phase. *Scope:* fields filled `n / total`, steps with content `n / expected`. *Measures:* completeness (score value as %), points `filledPoints / totalPoints`, message count, document count |
-| **Step grid (current)** | One column per step, one row per step field (S01–S12): label, value, and per cell its source (`expert`, `document`, `specialist`) and status from the field views |
-| **Step grid (as first told)** | Same shape built from `raw_substeps`; `rawSteps: null` when nothing froze them (the screen then disables the toggle) |
+| **Step grid (current)** | One column per step, one row per step field (S01–S12): label, and per cell its **display text** (built by the server with the report's cell rules, spec 20 §3.3: lists joined, "—" when empty, "— (skipped)", "(proposed, not confirmed)"; the screen never formats a value), its source (`expert`, `document`, `specialist`) and status from the field views |
+| **Step grid (as first told)** | Same shape built from `raw_substeps` (display text too; `source` and `status` are `null`, since the snapshot holds only the expert's words); `rawSteps: null` when nothing froze them (the screen then disables the toggle) |
 | **Documents** | Name, kind, bytes, upload time, outcome. Never text |
 | **Assessment and map** | For a finished session: `report` = the `DiscoveryReport` from `build_report` (spec 20), which holds the map part, the step-by-step AI assessment, the recommended route and the opportunities. `null` before *Finish* |
 | **etag** | The session etag, also in the `ETag` header (needed for delete) |
@@ -91,6 +91,7 @@ A read-only body for the popup, for any status:
 1. Needs `If-Match` with the session etag. Missing → 428 `etag_required`; stale → 409 `conflict`; nothing deleted.
 2. Hard-deletes the session document. The expert's ideas stay (they belong to the expert).
 3. Returns 204 and writes one audit line `delete_session`.
+4. *(Amended 2026-11-20 (open workspace).)* When the workspace is open (`WORKSPACE_OPEN=true`, spec 16 §3.2 item 5), delete is switched off: the route returns 403 `forbidden` with "Deleting is switched off on this open demo." before any store call (no read, no etag check, nothing deleted) and writes the `delete_session` audit line with outcome `refused`. The check is in the route, because it is an access rule of the shell, like the role check.
 
 ### 3.7 Audit log
 
@@ -137,7 +138,7 @@ class SummaryOut(WireModel):
     process_name: str | None; cluster_name: str | None; status: SessionStatus; phase: Phase
     fields_filled: int; fields_total: int; steps_started: int; steps_expected: int
     completeness: float; filled_points: int; total_points: int; message_count: int; document_count: int
-class GridCellOut(WireModel): value: Any; source: str | None; status: str | None
+class GridCellOut(WireModel): value: str; source: str | None; status: str | None   # value = display text built by the server
 class GridRowOut(WireModel): key: str; id: str; label: str; cells: list[GridCellOut]   # one cell per step
 class StepGridOut(WireModel): step_names: list[str]; rows: list[GridRowOut]
 class DocumentMetaOut(WireModel): name: str; kind: str; bytes: int; uploaded_at: str; outcome: str
@@ -156,7 +157,7 @@ async def scan_sessions(self, limit: int = 1000) -> tuple[list[Session], bool]
     # newest updatedAt first; documents[].text blanked; truncated flag. Read-only results.
 ```
 
-Delete uses the existing `delete_session(owner_id, session_id)` with the owner from `find_session`, after the etag check.
+Delete uses `delete_session(owner_id, session_id, etag)` (conditional, see §10 D4) with the owner and etag from `find_session`, after the `If-Match` check.
 
 ### 4.4 Engine (`admin/`, pure: no I/O, no clock)
 
@@ -200,6 +201,7 @@ Service use cases: `review_list`, `review_session`, `review_conversation`, `revi
 | AC-21.18 | No route here changes a stored session (except delete) or calls the model (FakeLLM records no call) |
 | AC-21.19 | Every wire model serialises camelCase keys only |
 | AC-21.20 | `find_session` and `scan_sessions` behave the same on the memory store and the fake Cosmos container; `scan_sessions` never returns document text |
+| AC-21.21 | *(amended 2026-11-20 (open workspace))* With `WORKSPACE_OPEN=true`, `DELETE /api/review/sessions/{id}` with a valid specialist token returns 403 `forbidden` with "Deleting is switched off on this open demo." for an existing session (with or without `If-Match`) and an unknown id alike; the session still exists, the store is not called, and one `delete_session` audit line with outcome `refused` is written |
 
 ## 7. Test plan
 
@@ -209,6 +211,7 @@ Service use cases: `review_list`, `review_session`, `review_conversation`, `revi
 | `tests/unit/process_discovery/admin/test_view.py` | AC-21.8–21.10 |
 | `tests/unit/store/test_workspace_queries.py` | AC-21.20 |
 | `tests/api/test_workspace_routes.py` | AC-21.1, 21.11–21.19 |
+| `tests/api/test_open_workspace.py` | AC-21.21 (amended 2026-11-20 (open workspace)) |
 | `tests/unit/process_discovery/test_architecture.py` | `admin` imports no peer; routes import only the façade |
 
 ## 8. Out of scope (later)
@@ -232,3 +235,19 @@ Service use cases: `review_list`, `review_session`, `review_conversation`, `revi
 | Q1 | Should opening a session (not only its conversation) be audited? | No: only conversation, PDF and delete |
 | Q2 | Should the conversation hide the expert's first name in the greeting? | No: shown as stored; the expert is told the team may read it |
 | Q3 | Should deleting a session also delete the expert's ideas from it? | No: ideas belong to the expert |
+
+## 10. As built: deviations
+
+| # | Spec said | Built | Why |
+|---|---|---|---|
+| D1 | `admin` returns its own `ReviewRow` / `ReviewSessionView` types | `review_rows` and `session_view` return the wire models of §4.2 directly; `session_view` also takes `cell_text` (the report's cell rule) and `etag` | Minimum code; `admin` may not import `artifacts`, so the service hands the cell rule in |
+| D2 | A stored document that fails validation raises (spec 15) | `scan_sessions` logs it by id (`store_corrupt_document`) and leaves it out of the list; `find_session` still raises | One old document must not take the whole workspace list down |
+| D3 | `etag` in body and `ETag` header | Both carry the quoted form (`"00004100-…"`); `If-Match` is compared ignoring quotes and a `W/` prefix | Cosmos etags already contain quotes; the memory store's do not |
+| D4 | `delete_session(owner_id, session_id)` (§4.3) | `delete_session(owner_id, session_id, etag=None)`: with an etag, a conditional delete (Cosmos `delete_item` with `etag` + `IfNotModified`; memory compares) that raises `ConflictError` (409) on a mismatch; the workspace always passes it | Lead decision 2026-11-20: no write between the check and the delete can be lost |
+| D5 | `completeness` "as %" | The score value, 0 to 1, as `SessionOut.score.value`; the screen shows it as a percent | One number format on the wire |
+| D6 | `cluster` filter | 1–8 characters (else 422), matched case-insensitively | Same limit as the cluster picker |
+| D7 | PDF "same bytes" (AC-21.13) | Same bytes except the creation time and document id reportlab stamps on every render; the test masks those | Two renders of one report always differ there |
+| D8 | — | An unknown session is 404 on every route; delete of one is audited `outcome=not_found`; any other failure `outcome=error` | Completes §3.7 |
+| D9 | — | The fake Cosmos container accepts queries without `partition_key` (cross-partition, as the async SDK does) and records each query's partition; a test checks only the two workspace reads cross partitions | The expert's reads stay scoped |
+| D10 | Architecture names `workspace_schemas.py` | `app/models/workspace_wire.py`, as this spec says | Spec 21 is the more specific level |
+

@@ -30,10 +30,10 @@
 | 18 | [`18-opportunities-and-map.md`](18-opportunities-and-map.md) | F-12, F-13 | approved |
 | 19 | [`19-value-and-readiness.md`](19-value-and-readiness.md): hours (euro parts parked, R5), labels, readiness, path | F-14, F-15 | approved · hours-only amendment approved |
 | 20 | [`20-report.md`](20-report.md): report assembly, screen model, PDF | F-16 | approved (v3: 11 parts) |
-| 21 | [`21-admin.md`](21-admin.md): workspace backend: session list, read-only session view, conversation, report PDF, delete, audit line | F-17 (read-only) | draft |
+| 21 | [`21-admin.md`](21-admin.md): workspace backend: session list, read-only session view, conversation, report PDF, delete, audit line | F-17 (read-only) | approved |
 | 22 | `22-exports.md`: BPMN XML, Excel | F-20 | to write |
-| 23 | [`23-frontend.md`](23-frontend.md): app shell, home, interview (part 1); report, documents (part 2); admin (part 3) | screens of all features | part 1 + part 2 built · part 3 draft |
-| 24 | `24-evaluation.md`: simulated experts, runner, metrics, seed data | F-25 | to write |
+| 23 | [`23-frontend.md`](23-frontend.md): app shell, home, interview (part 1); report, documents (part 2); admin (part 3) | screens of all features | part 1 + part 2 built · part 3 approved |
+| 24 | [`24-evaluation.md`](24-evaluation.md): simulated experts, runner, scoring, judge, scorecard, seed data | F-25 | approved |
 | 25 | [`25-deployment.md`](25-deployment.md): Dockerfile, Bicep/azd, CI, stages | arch §7 | approved |
 | 26 | [`26-step-assessment.md`](26-step-assessment.md): ASSESS_STEPS, solution catalogue, recommended route | F-26 | approved |
 

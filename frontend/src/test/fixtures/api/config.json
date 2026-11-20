@@ -29,5 +29,6 @@
     "maxFiles": 10,
     "maxFileMb": 10.0,
     "maxImageMb": 5.0
-  }
+  },
+  "workspaceOpen": false
 }

@@ -16,7 +16,10 @@ In `find` EXTRACT also feeds steering (§3.15): candidates and their signals are
 a yes to the recommendation writes P04 through `apply_changes`, and the guide counts the steering
 and recommendation questions it asks. The ranking itself is code in `steering.py`.
 Spec 14 §3.4, §3.10, §3.15; AC-14.2 to AC-14.7, AC-14.37, AC-14.49, AC-14.52, AC-14.53, AC-14.55,
-AC-14.66, AC-14.72, AC-14.74, AC-14.75, AC-14.78.
+AC-14.66, AC-14.72, AC-14.74, AC-14.75, AC-14.78. Amendment §3.17: a conflict reply is read by code
+(step 2), a clear choice drops EXTRACT's writes to the group's fields and is written by
+`resolve_conflicts` (step 8b), the asks are charged and a conflict at its limit is left (10, 10b),
+and a conflict turn's question is built by code without GUIDE (AC-14.92, AC-14.97 to AC-14.99).
 """
 
 from __future__ import annotations
@@ -44,6 +47,7 @@ from ..domain.scope import (
 )
 from ..llm import LLM, CallType, ChatMessage, LLMBudgetExceededError, LLMError
 from ..profile.coercion import coerce_text
+from ..profile.conflicts import ConflictView, mark_conflicts_left, open_conflicts, resolve_conflicts
 from ..profile.mutate import (
     UnknownClusterError,
     allowed_changes,
@@ -58,12 +62,14 @@ from ..profile.proposals import confirm_proposals, proposed_keys, reject_proposa
 from ..profile.scoring import finish_check, score
 from ..profile.shapes import as_list, as_mapping, normalized_profile, process_of, resolve_key, rows_of, stored_value
 from ..profile.verdicts import P16_KEY, field_counts
+from .conflict_question import both_offered, conflict_question
 from .gates import apply_scope_verdict, classification_subject, current_name, needs_placement, needs_scope
 from .phases import (
     advance_phase,
     ask_count,
     cell_escapes,
     charge_asks,
+    charge_conflicts,
     deferred_keys,
     given_up_keys,
     last_question_for,
@@ -78,8 +84,10 @@ from .prompts.extractor import extractor_system, extractor_user
 from .prompts.guide import from_image, guide_messages, image_documents
 from .prompts.steering_text import pick_fallback, recommend_fallback, steer_fallback
 from .replies import (
+    Choice,
     last_agent_message,
     read_cluster_reply,
+    read_conflict_reply,
     read_proposal_reply,
     read_recommendation_reply,
     read_rollup_reply,
@@ -234,6 +242,9 @@ async def extract_node(state: TurnState, llm: LLM, ctx: InterviewContext) -> dic
         read_recommendation_reply(state, text, vocab=vocab, lexicon=ctx.lexicon) if text else (None, None)
     )
     steering_in = read_steering(state.get("steering"))
+    conflict_keys = [k for k in as_list(question.get("conflicts")) or [] if isinstance(k, str)]
+    group = [v for v in open_conflicts(profile, status="open") if v.conflict_key in conflict_keys]
+    choice = _conflict_choice(state, text, profile, group) if text and group else None
 
     # 3. the model call
     raw: dict[str, Any] = {}
@@ -275,7 +286,9 @@ async def extract_node(state: TurnState, llm: LLM, ctx: InterviewContext) -> dic
     side_keys = ("candidates", "candidate_signals")
     dropped = [*unknown_change_keys(raw), *(k for k in raw if k not in allowed and k not in side_keys)]
 
-    # 5. apply
+    # 5. apply (a clear conflict choice is the answer: EXTRACT's writes to those fields are dropped, §3.17)
+    if choice is not None:
+        screened = _without_fields(screened, {v.key for v in group})
     result = apply_changes(profile, screened, vocab=vocab, at=now)
     profile = result.profile
     dropped += [f"{k}({r})" for k, r in result.refused] + [f"{k}(injection)" for k in injected]
@@ -323,6 +336,10 @@ async def extract_node(state: TurnState, llm: LLM, ctx: InterviewContext) -> dic
         done = reject_proposals(profile, waiting, vocab=vocab, at=now)
         profile, rejected = done.profile, done.written
 
+    # 8b. conflict choice (§3.17 item 5)
+    if choice is not None:
+        profile = resolve_conflicts(profile, [v.conflict_key for v in group], choice, vocab=vocab, at=now).profile
+
     # 9. roll-up reply
     targets = read_rollup_reply(
         state, text, lexicon=ctx.lexicon, steps_written=result.touched_steps, profile_after=profile
@@ -330,9 +347,14 @@ async def extract_node(state: TurnState, llm: LLM, ctx: InterviewContext) -> dic
     for target in targets:
         profile = confirm_rollup(profile, target, vocab=vocab)
 
-    # 10. charge the asks
+    # 10. charge the asks; 10b. a conflict asked to its limit is left as it is (§3.17 item 5)
+    left: list[str] = []
     if text:
         counters = charge_asks(counters, question, prior_phase, find_turns_before=counters["find_turns"])
+        still_open = {v.conflict_key for v in open_conflicts(profile, status="open")}
+        counters, left = charge_conflicts(counters, conflict_keys, still_open)
+        if left:
+            profile = mark_conflicts_left(profile, left)
 
     # 11. step-cell limits
     none_rows, skips = cell_escapes(profile, counters, vocab=vocab)
@@ -384,6 +406,11 @@ async def extract_node(state: TurnState, llm: LLM, ctx: InterviewContext) -> dic
         given_up=given_up_keys(profile, counters, vocab=vocab),
         substep_count_assumed=assumed,
         ideas=len(ideas),
+        conflicts=len(conflict_keys),
+        choice=(choice or ("own_words" if set(result.conflicts_closed) & set(conflict_keys) else "none"))
+        if conflict_keys
+        else None,
+        left=len(left),
     )
     return {
         "profile": profile,
@@ -396,6 +423,36 @@ async def extract_node(state: TurnState, llm: LLM, ctx: InterviewContext) -> dic
         "steering": steering,
         "log": log,
     }
+
+
+def _conflict_choice(
+    state: Mapping[str, Any], text: str, profile: Mapping[str, Any], group: list[ConflictView]
+) -> Choice | None:
+    names = {str(d.get("id")): str(d.get("name")) for d in state.get("documents") or []}
+    first = group[0]
+    return read_conflict_reply(
+        text,
+        kind=first.kind,
+        both_offered=both_offered(profile, group),
+        holder_name=names.get(first.holder_document_id or "") if first.kind == "document" else None,
+        offered_name=names.get(first.document_id, ""),
+    )
+
+
+def _without_fields(changes: Mapping[str, Any], fields: set[str]) -> dict[str, Any]:
+    """The changes without those that land on `fields` (canonical keys), nested `process` form included."""
+    out: dict[str, Any] = {}
+    for key, value in changes.items():
+        nested = as_mapping(value) if key == "process" else None
+        if nested is not None:
+            kept = {leaf: v for leaf, v in nested.items() if f"process.{leaf}" not in fields}
+            if kept:
+                out[key] = kept
+            continue
+        address = resolve_key(key)
+        if address is None or address.key not in fields:
+            out[key] = value
+    return out
 
 
 # --- CLASSIFY -------------------------------------------------------------------------------------
@@ -578,6 +635,20 @@ async def guide_node(state: TurnState, llm: LLM, ctx: InterviewContext) -> dict[
     ask = next_ask(state, vocab=vocab, steering=ctx.steering)
     finish = finish_check(profile, vocab=vocab, scope=state.get("scope"))
     log = _log(state)
+    if ask.kind == "conflict":  # §3.17 Q4: the code-built question, no GUIDE call
+        names = {str(d.get("id")): str(d.get("name")) for d in state.get("documents") or []}
+        group = [v for v in open_conflicts(profile, status="open") if v.conflict_key in ask.keys]
+        reply = conflict_question(profile, group, vocab=vocab, names=names)
+        log.update(ask_kind=ask.kind, focus=[], focus_asks=ask_count(ask, read_counters(state.get("counters"))),
+                   finish_blocked_by=finish.blocked_by, fallback_used=False,
+                   proposals_waiting=len(proposed_keys(profile)))  # fmt: skip
+        message = {"id": str(uuid.uuid4()), "role": "agent", "text": reply, "at": state.get("now", "")}
+        return {
+            "messages": [*(state.get("messages") or []), message],
+            "reply": reply,
+            "last_question": last_question_for(ask),
+            "log": log,
+        }
     messages = cast(
         "list[ChatMessage]",
         guide_messages(state, ask, finish, vocab=vocab, history_turns=ctx.settings.guide_history_turns),

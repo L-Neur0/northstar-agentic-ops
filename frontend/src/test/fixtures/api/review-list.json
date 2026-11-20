@@ -1,0 +1,46 @@
+{
+  "counts": {
+    "total": 2,
+    "active": 1,
+    "finished": 1,
+    "noCandidate": 0
+  },
+  "rows": [
+    {
+      "id": "ed69c526-8b72-40a9-a0ec-f941e62f7e80",
+      "createdAt": "2026-11-20T10:00:00+00:00",
+      "updatedAt": "2026-11-20T10:00:00+00:00",
+      "processName": "Monthly cost review",
+      "department": "Finance",
+      "clusterCode": "FIN",
+      "clusterName": "Finance",
+      "region": "Europe",
+      "status": "finished",
+      "phase": "finished",
+      "fieldsFilled": 76,
+      "fieldsTotal": 76,
+      "steps": 5,
+      "messageCount": 2,
+      "documentCount": 1
+    },
+    {
+      "id": "37360ca0-f57a-4602-8667-6448437946df",
+      "createdAt": "2026-11-19T10:00:00+00:00",
+      "updatedAt": "2026-11-19T11:00:00+00:00",
+      "processName": null,
+      "department": null,
+      "clusterCode": null,
+      "clusterName": null,
+      "region": null,
+      "status": "active",
+      "phase": "context",
+      "fieldsFilled": 0,
+      "fieldsTotal": 16,
+      "steps": 0,
+      "messageCount": 1,
+      "documentCount": 0
+    }
+  ],
+  "matching": 2,
+  "truncated": false
+}

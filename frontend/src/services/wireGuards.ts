@@ -8,6 +8,8 @@
  * with the path of every wrong field. Must not: repair data, decide anything about the interview,
  * or be called on the hot path of the app (the server is trusted; this is a test aid). The one
 exception is `loadReport`, which the report page uses to treat a broken part as missing.
+ * Part 3 (spec 23 §20): `checkReviewListOut`, `checkReviewSessionOut` and `checkConversationOut`
+ * mirror spec 21 §4.2, checked against the recorded `review-*.json` samples.
  */
 import { PHASE_ORDER } from '../types/process-discovery'
 import { PART_KEYS, type LoadedReport } from '../types/report'
@@ -333,6 +335,7 @@ export const checkPublicConfig = run(
     regions: arrayOf(str),
     languages: arrayOf(str),
     documents: shape({ allowedTypes: arrayOf(str), maxFiles: num, maxFileMb: num, maxImageMb: num }),
+    workspaceOpen: bool,
   }),
 )
 export const checkApiErrorBody = run(errorBody)
@@ -347,6 +350,64 @@ export const checkDiscoveryReport = run(report)
  * when they pass their guard; a part that is absent, null or of the wrong shape becomes null and
  * is shown as "could not be generated", never as a page error.
  */
+const reviewRow = shape({
+  id: str,
+  createdAt: str,
+  updatedAt: str,
+  processName: nullable(str),
+  department: nullable(str),
+  clusterCode: nullable(str),
+  clusterName: nullable(str),
+  region: nullable(str),
+  status: oneOf(STATUSES),
+  phase: oneOf(PHASES),
+  fieldsFilled: num,
+  fieldsTotal: num,
+  steps: num,
+  messageCount: num,
+  documentCount: num,
+})
+const reviewList = shape({
+  counts: shape({ total: num, active: num, finished: num, noCandidate: num }),
+  rows: arrayOf(reviewRow),
+  matching: num,
+  truncated: bool,
+})
+const stepGrid = shape({
+  stepNames: arrayOf(str),
+  rows: arrayOf(shape({ key: str, id: str, label: str, cells: arrayOf(shape({ value: str, source: nullable(str), status: nullable(str) })) })),
+})
+const reviewSession = shape({
+  id: str,
+  etag: str,
+  summary: shape({
+    department: nullable(str),
+    function: nullable(str),
+    region: nullable(str),
+    processName: nullable(str),
+    clusterName: nullable(str),
+    status: oneOf(STATUSES),
+    phase: oneOf(PHASES),
+    fieldsFilled: num,
+    fieldsTotal: num,
+    stepsStarted: num,
+    stepsExpected: num,
+    completeness: num,
+    filledPoints: num,
+    totalPoints: num,
+    messageCount: num,
+    documentCount: num,
+  }),
+  steps: stepGrid,
+  rawSteps: nullable(stepGrid),
+  documents: arrayOf(shape({ name: str, kind: str, bytes: num, uploadedAt: str, outcome: oneOf(['read', 'failed']) })),
+  report: nullable(report),
+})
+
+export const checkReviewListOut = run(reviewList)
+export const checkReviewSessionOut = run(reviewSession)
+export const checkConversationOut = run(shape({ sessionId: str, messages: arrayOf(message) }))
+
 export function loadReport(value: unknown): LoadedReport {
   const data = isObject(value) ? value : {}
   const keep = (key: string, check: Check) => {

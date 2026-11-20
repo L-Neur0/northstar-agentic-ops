@@ -28,6 +28,9 @@ if TYPE_CHECKING:
         DocumentRejected as DocumentRejected,
     )
     from .service import (
+        EtagRequired as EtagRequired,
+    )
+    from .service import (
         IdeaAlreadyStarted as IdeaAlreadyStarted,
     )
     from .service import (

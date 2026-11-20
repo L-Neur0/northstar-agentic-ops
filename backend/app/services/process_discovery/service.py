@@ -11,7 +11,10 @@ What: `DiscoveryService` (create, list, get, delete, turn, confirm, cluster pick
 re-tries once on a conflict without a second set of calls, spec 20 §3.2), the report and its PDF
 (built on request from the stored session, spec 20 §3.3–3.5), ideas (a steered idea keeps its
 signals and is updated when heard again, spec 14 §3.15), delete my data, the document use cases: upload, list, remove, confirm and reject proposals
-(spec 17 §3.1, §3.13), and `view` / `upload_view`, which build the wire models), its errors,
+(spec 17 §3.1, §3.13), and `view` / `upload_view`, which build the wire models), the workspace
+use cases (`review_list`, `review_session`, `review_conversation`, `review_report_pdf`,
+`review_delete`: read across every partition, compose the `admin` views with the report and its
+cell rule, one `workspace_action` audit line for conversation, PDF and delete; spec 21), its errors,
 `build_context` (the interview context from the company config and settings, built once in the
 lifespan), and the LLM names the shell needs (`create_llm`, `build_graph`, the errors), so routes
 and the lifespan import only the facade. One `service_call` log line per use case: use case,
@@ -20,7 +23,7 @@ Must not: call the model outside `process_turn`, `upload_document` (one READ_DOC
 (the four assessment calls; the report and the PDF never call it), keep
 an uploaded file's bytes beyond the upload call, decide anything the profile or interview layers
 decide, or log message, profile or document text. Spec 15 AC-15.27 to AC-15.45; spec 20 AC-20.13
-to AC-20.17, AC-20.44.
+to AC-20.17, AC-20.44; spec 21 AC-21.12 to AC-21.18.
 """
 
 from __future__ import annotations
@@ -37,6 +40,7 @@ from uuid import uuid4
 
 from langgraph.graph.state import CompiledStateGraph
 
+from app.core.access import WorkspaceUser
 from app.core.config import CompanyConfig, DocumentsConfig
 from app.core.logging import log_event
 from app.core.rate_limit import usage_scope
@@ -67,7 +71,9 @@ from app.models.process_discovery_wire import (
     ScoreOut,
     SessionOut,
 )
+from app.models.workspace_wire import ConversationOut, ReviewListOut, ReviewSessionOut
 from app.services.store.repository import (
+    SCAN_LIMIT,
     ConflictError,
     DeletedCounts,
     SessionRepository,
@@ -76,9 +82,11 @@ from app.services.store.repository import (
 )
 from app.utils.prompt_safety import contains_injection_pattern
 
+from .admin.listing import review_rows
+from .admin.view import session_view
 from .artifacts.assess import assess
 from .artifacts.fingerprint import ai_input_fingerprint, map_fingerprint
-from .artifacts.report import build_report
+from .artifacts.report import build_report, cell_text
 from .documents import (
     DocumentNotFound,
     DocumentRejected,
@@ -88,7 +96,7 @@ from .documents import (
     reading_context,
     remove_document,
 )
-from .domain.field_spec import META_KEY, SKIPPED_KEY, Vocabulary
+from .domain.field_spec import CONFLICTS_KEY, META_KEY, SKIPPED_KEY, Vocabulary
 from .export.branding import Brand
 from .export.report_pdf import write_pdf
 from .interview.doc_question import document_question
@@ -108,6 +116,7 @@ __all__ = [
     "DiscoveryService",
     "DocumentNotFound",
     "DocumentRejected",
+    "EtagRequired",
     "IdeaAlreadyStarted",
     "IdeaNotFound",
     "LLMBudgetExceededError",
@@ -126,6 +135,7 @@ __all__ = [
 ]
 
 logger = logging.getLogger("app.service")
+audit = logging.getLogger("app.audit")
 
 #: Wire confirmation targets → the profile's roll-up targets (spec 13 names the systems list `systems`).
 ROLLUP_TARGET = {"roles": "roles", "tools": "systems"}
@@ -166,6 +176,10 @@ class ReportNotReady(Exception):
     """The report exists only after *Finish*."""
 
 
+class EtagRequired(Exception):
+    """A workspace delete came without `If-Match` (spec 21 §3.6)."""
+
+
 class UnknownCluster(Exception):
     """The picker sent a code the company taxonomy does not declare."""
 
@@ -200,6 +214,16 @@ def _slug(name: str) -> str:
     return slug or "process"
 
 
+def _bare_etag(value: str) -> str:
+    """An etag without a weak prefix or quotes, so `"e7"`, `W/"e7"` and `e7` compare equal."""
+    return value.strip().removeprefix("W/").strip('"')
+
+
+def quoted_etag(etag: str | None) -> str:
+    """The session etag as an HTTP `ETag` value (one pair of quotes)."""
+    return f'"{_bare_etag(etag or "")}"'
+
+
 def _idea_fields(item: dict[str, Any]) -> dict[str, Any]:
     """The stored fields of one idea heard in a turn: the expert's words and the steering signals (spec 14 §3.15)."""
     signals = item.get("signals")
@@ -216,9 +240,9 @@ def _idea_fields(item: dict[str, Any]) -> dict[str, Any]:
 
 
 def _strip_internals(value: Any) -> Any:
-    """The profile as the client sees it: registry keys only, no `__meta` / `__skipped` sidecars."""
+    """The profile as the client sees it: registry keys only, no `__meta` / `__skipped` / `__conflicts` sidecars."""
     if isinstance(value, dict):
-        return {k: _strip_internals(v) for k, v in value.items() if k not in (META_KEY, SKIPPED_KEY)}  # pyright: ignore[reportUnknownVariableType]
+        return {k: _strip_internals(v) for k, v in value.items() if k not in (META_KEY, SKIPPED_KEY, CONFLICTS_KEY)}  # pyright: ignore[reportUnknownVariableType]
     if isinstance(value, list):
         return [_strip_internals(v) for v in value]  # pyright: ignore[reportUnknownVariableType]
     return value
@@ -256,9 +280,11 @@ async def upload_into(
     result = apply_proposals(profile, read.diff, vocab=ctx.vocab, at=now)
     record = read.record.model_copy(update={"proposals": len(result.applied)})
     cost = session.cost
+    asks = {k: v for k, v in session.counters.conflict_asks.items() if k not in result.conflicts}  # §3.17 R2
     new = session.model_copy(
         update={
             "documents": [*session.documents, record],
+            "counters": session.counters.model_copy(update={"conflict_asks": asks}),
             "profile": Profile.model_validate(result.profile),
             "cost": cost.model_copy(
                 update={"tokens_in": cost.tokens_in + usage.tokens_in, "tokens_out": cost.tokens_out + usage.tokens_out}
@@ -592,17 +618,99 @@ class DiscoveryService:
     async def report_pdf(self, owner: str, session_id: str) -> tuple[bytes, str]:
         """The report as PDF bytes (rendered in a worker thread) and its file name."""
         async with self._track("report_pdf", owner, session_id):
-            report = self._report(await self._load(owner, session_id))
-            company = self.company
-            assert company is not None  # `_report` checked it
-            brand = Brand.from_config(company.organisation, self.config_dir)
-            pdf = await asyncio.to_thread(write_pdf, report, brand)
-            return pdf, f"discovery-report-{_slug(report.cover.process_name)}.pdf"
+            return await self._pdf(await self._load(owner, session_id))
 
     def _report(self, session: Session) -> DiscoveryReport:
         if session.status != SessionStatus.FINISHED or self.company is None:
             raise ReportNotReady(session.id)
         return build_report(session, self.company.organisation, self.ctx.vocab, self.company.solutions)
+
+    async def _pdf(self, session: Session) -> tuple[bytes, str]:
+        report = self._report(session)
+        company = self.company
+        assert company is not None  # `_report` checked it
+        brand = Brand.from_config(company.organisation, self.config_dir)
+        pdf = await asyncio.to_thread(write_pdf, report, brand)
+        return pdf, f"discovery-report-{_slug(report.cover.process_name)}.pdf"
+
+    # --- the workspace (spec 21; read-only except delete, no model call) ---
+
+    REVIEW_LIMIT = SCAN_LIMIT
+
+    @asynccontextmanager
+    async def _audit(self, user: WorkspaceUser, action: str, session_id: str) -> AsyncIterator[None]:
+        """One `workspace_action` line per audited action, also when refused (spec 21 §3.7); never text."""
+        outcome = "ok"
+        try:
+            yield
+        except BaseException as exc:
+            outcome = {
+                SessionNotFound: "not_found",
+                ReportNotReady: "report_not_ready",
+                EtagRequired: "etag_required",
+                ConflictError: "conflict",
+            }.get(type(exc), "error")
+            raise
+        finally:
+            log_event(audit, "workspace_action", role=user.role, user_name=user.name, action=action,
+                      session_id=session_id, outcome=outcome)  # fmt: skip
+
+    async def _find(self, session_id: str) -> Session:
+        session = await self.repo.find_session(session_id)
+        if session is None:
+            raise SessionNotFound(session_id)
+        return session
+
+    async def review_list(
+        self, user: WorkspaceUser, *, status: str | None = None, cluster: str | None = None, q: str | None = None
+    ) -> ReviewListOut:
+        """Every session (the newest `REVIEW_LIMIT`), filtered; the counts are taken before the filters."""
+        async with self._track("review_list", "workspace"):
+            sessions, truncated = await self.repo.scan_sessions(self.REVIEW_LIMIT)
+            rows, counts, matching = review_rows(sessions, status=status, cluster=cluster, q=q, vocab=self.ctx.vocab)
+            return ReviewListOut(counts=counts, rows=rows, matching=matching, truncated=truncated)
+
+    async def review_session(self, user: WorkspaceUser, session_id: str) -> ReviewSessionOut:
+        """The read-only view of any session, with the report once finished. Not audited (spec 21 Q1)."""
+        async with self._track("review_session", "workspace", session_id):
+            session = await self._find(session_id)
+            report = self._report(session) if session.status == SessionStatus.FINISHED and self.company else None
+            return session_view(
+                session, report, vocab=self.ctx.vocab, cell_text=cell_text, etag=quoted_etag(session.etag)
+            )
+
+    async def review_conversation(self, user: WorkspaceUser, session_id: str) -> ConversationOut:
+        """Every stored message in order, as stored (the first name too, spec 21 Q2). Audited."""
+        async with (
+            self._track("review_conversation", "workspace", session_id),
+            self._audit(user, "view_conversation", session_id),
+        ):
+            session = await self._find(session_id)
+            messages = [MessageOut(id=m.id, role=m.role.value, text=m.text, at=m.at) for m in session.messages]
+            return ConversationOut(session_id=session.id, messages=messages)
+
+    async def review_report_pdf(self, user: WorkspaceUser, session_id: str) -> tuple[bytes, str]:
+        """The expert's PDF, for any session once finished. Audited."""
+        async with (
+            self._track("review_report_pdf", "workspace", session_id),
+            self._audit(user, "download_report", session_id),
+        ):
+            return await self._pdf(await self._find(session_id))
+
+    async def review_delete(self, user: WorkspaceUser, session_id: str, if_match: str | None) -> None:
+        """Hard-delete with the current etag; the expert's ideas stay (spec 21 Q3). Audited."""
+        async with (
+            self._track("review_delete", "workspace", session_id),
+            self._audit(user, "delete_session", session_id),
+        ):
+            session = await self._find(session_id)
+            if not if_match or not if_match.strip():
+                raise EtagRequired(session_id)
+            if _bare_etag(if_match) != _bare_etag(session.etag or ""):
+                raise ConflictError(f"session {session_id} changed since it was read")
+            # Conditional delete: a write between the read above and the delete is a conflict too.
+            if not await self.repo.delete_session(session.owner_id, session_id, etag=session.etag):
+                raise SessionNotFound(session_id)
 
     # --- ideas and data ---
 

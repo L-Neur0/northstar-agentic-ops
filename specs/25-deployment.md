@@ -1,6 +1,6 @@
 # 25 · Deployment: container image, Azure infrastructure, CI/CD
 
-> **Status:** built (not yet deployed) · **Implements:** architecture §2 (`Dockerfile`, `azure.yaml`, `infra/`), §5 (database resources), §6.5 (model deployments), §7 (deployment); implementation plan WS5 · **Depends on:** specs 10 (settings, stages, health route, frontend serving, CI), 11 (LLM settings and credentials)
+> **Status:** amended 2026-11-20 (open workspace: `WORKSPACE_OPEN`, product owner decision) · built (not yet deployed) · **Implements:** architecture §2 (`Dockerfile`, `azure.yaml`, `infra/`), §5 (database resources), §6.5 (model deployments), §7 (deployment); implementation plan WS5 · **Depends on:** specs 10 (settings, stages, health route, frontend serving, CI), 11 (LLM settings and credentials)
 > **Code:** `Dockerfile`, `.dockerignore`, `azure.yaml`, `infra/main.bicep`, `infra/main.parameters.json`, `infra/bicepconfig.json`, `infra/modules/*.bicep`, `infra/scripts/*.sh`, `.github/workflows/ci.yml` · **Tests:** `infra/tests/test_*.py`, `infra/scripts/check-image.sh`, `infra/scripts/smoke.sh`
 
 ## 1. Purpose
@@ -101,9 +101,11 @@ services:
         - APP_VERSION=${APP_VERSION}
 pipeline:
   provider: github
-  variables: [AZURE_RESOURCE_GROUP, MIN_REPLICAS, DEVELOPER_PRINCIPAL_ID]
+  variables: [AZURE_RESOURCE_GROUP, MIN_REPLICAS, DEVELOPER_PRINCIPAL_ID, WORKSPACE_OPEN]
   secrets: [WORKSPACE_CODE_SPECIALIST, WORKSPACE_CODE_ENGINEER, WORKSPACE_TOKEN_SECRET]
 ```
+
+*(Amended 2026-11-20 (open workspace).)* `WORKSPACE_OPEN` is a pipeline variable; the deploy job passes `${{ vars.WORKSPACE_OPEN || 'true' }}`, so an unset variable means open.
 
 ### 3.4 Bicep layout and resources
 
@@ -174,8 +176,9 @@ Environment variables (worked example, env `demo`):
 | `DAILY_TOKEN_BUDGET` | `2000000` | Parameter `dailyTokenBudget` |
 | `COMPANY_CONFIG_DIR` / `FRONTEND_DIST` | `/app/config/nig` / `/app/frontend/dist` | Fixed (explicit, same as the defaults) |
 | `APPLICATIONINSIGHTS_CONNECTION_STRING` | secret ref `appinsights-connection-string` | Monitoring module |
-| `WORKSPACE_CODE_SPECIALIST` | secret ref `workspace-code-specialist` | `@secure()` param ← azd env |
-| `WORKSPACE_CODE_ENGINEER` | secret ref `workspace-code-engineer` | `@secure()` param ← azd env |
+| `WORKSPACE_CODE_SPECIALIST` | secret ref `workspace-code-specialist` | `@secure()` param ← azd env; *(amended 2026-11-20 (open workspace))* the secret and the variable are set only when the value is not empty |
+| `WORKSPACE_CODE_ENGINEER` | secret ref `workspace-code-engineer` | `@secure()` param ← azd env; same rule |
+| `WORKSPACE_OPEN` *(amended 2026-11-20 (open workspace))* | `true` / `false` | Parameter `workspaceOpen` ← azd env `WORKSPACE_OPEN` (default `true` for the demo env) |
 | `WORKSPACE_TOKEN_SECRET` | secret ref `workspace-token-secret` | `@secure()` param (`@minLength(32)`) ← azd env |
 
 **Never set:** `AZURE_OPENAI_API_KEY` (the settings refuse it outside `local`; the account has keys disabled anyway), `LLM_CACHE_ENABLED`, `APP_VERSION`.
@@ -194,7 +197,8 @@ Environment variables (worked example, env `demo`):
 | `logDailyCapGb` | string (decimal) | `'0.5'` | — |
 | `dailyTokenBudget` | int | `2000000` | — |
 | `appExists` | bool | `false` | `SERVICE_APP_RESOURCE_EXISTS` (set by azd) |
-| `workspaceCodeSpecialist`, `workspaceCodeEngineer` | `@secure()` string | — | `WORKSPACE_CODE_SPECIALIST`, `WORKSPACE_CODE_ENGINEER` |
+| `workspaceCodeSpecialist`, `workspaceCodeEngineer` | `@secure()` string | `''` *(amended 2026-11-20 (open workspace): optional; needed only when the workspace is closed)* | `WORKSPACE_CODE_SPECIALIST=`, `WORKSPACE_CODE_ENGINEER=` |
+| `workspaceOpen` *(amended 2026-11-20 (open workspace))* | bool | `true` | `WORKSPACE_OPEN=true` |
 | `workspaceTokenSecret` | `@secure()` string, min 32 | — | `WORKSPACE_TOKEN_SECRET` |
 
 `DEVELOPER_PRINCIPAL_ID` is a dedicated variable on purpose: azd's `AZURE_PRINCIPAL_ID` is the CI principal when CI runs, which would grant Cosmos data access to the pipeline.
@@ -252,7 +256,7 @@ The agent never runs a command that creates, changes or deletes Azure resources.
 | 3 | `azd auth login` (and `az login` for read-only checks) | **User** |
 | 4 | `azd env new demo`; `azd env set AZURE_SUBSCRIPTION_ID <id>`; `azd env set AZURE_LOCATION swedencentral`; `azd env set AZURE_RESOURCE_GROUP rg-northstar-discovery` | **User** |
 | 5 | `azd env set DEVELOPER_PRINCIPAL_ID $(az ad signed-in-user show --query id -o tsv)`; `azd env set MIN_REPLICAS 1` | **User** |
-| 6 | `azd env set WORKSPACE_CODE_SPECIALIST …`, `WORKSPACE_CODE_ENGINEER …`, `WORKSPACE_TOKEN_SECRET "$(openssl rand -base64 48)"` (values chosen by the user, never pasted into chat or files in the repo) | **User** |
+| 6 | `azd env set WORKSPACE_CODE_SPECIALIST …`, `WORKSPACE_CODE_ENGINEER …`, `WORKSPACE_TOKEN_SECRET "$(openssl rand -base64 48)"` (values chosen by the user, never pasted into chat or files in the repo; *amended 2026-11-20 (open workspace)*: the two codes may be left unset while `WORKSPACE_OPEN` is `true`, the default; `azd env set WORKSPACE_OPEN false` closes the workspace and then needs both codes) | **User** |
 | 7 | `azd provision --preview` (what-if) and review against §3.11 | User runs; agent may read and compare the output |
 | 8 | `azd up` | **User** |
 | 9 | `azd provision` once more (sets probes now that the app exists, D7) | **User** |
@@ -379,6 +383,7 @@ param appExists bool = false
 | AC-25.27 | A deploy waits for the reviewer's approval in the `demo` environment, then `smoke.sh` passes with `version` equal to the commit's short SHA |
 | AC-25.28 | Rollback: updating the app to the previous image tag makes `/api/health` report the previous version within 3 minutes |
 | AC-25.29 | Re-running `azd provision` with no change keeps the running image and creates no new role assignment (what-if shows no create, modify or delete beyond a possible new revision) |
+| AC-25.30 | *(amended 2026-11-20 (open workspace))* The template has a bool parameter `workspaceOpen` (default `true`) mapped from `${WORKSPACE_OPEN=true}` and passed to the app as `WORKSPACE_OPEN` (`'true'`/`'false'`); the two code parameters default to `''` and map from `${WORKSPACE_CODE_SPECIALIST=}` / `${WORKSPACE_CODE_ENGINEER=}`; each code's secret and `secretRef` variable are added only when its value is not empty; the token secret stays required; `WORKSPACE_OPEN` is a pipeline variable and the deploy job defaults it to `true` |
 
 ## 7. Test plan
 
@@ -387,8 +392,8 @@ param appExists bool = false
 | `infra/scripts/check-image.sh` (`make image-check`) | AC-25.1–50.5, 50.7 | Agent locally; CI `image` job |
 | `infra/tests/test_dockerfile.py` (parses `Dockerfile`, `.dockerignore`; context listing via `docker build` with a listing stage or `tar` of the filtered context) | AC-25.4, 50.6, 50.7 | CI `checks` |
 | `make infra-lint` | AC-25.8 | Agent; CI `checks` |
-| `infra/tests/test_template.py` (compiles `main.bicep` to ARM JSON, asserts on resources, properties, outputs; builds variants for `appExists` and `developerPrincipalId`) | AC-25.9–50.20, 50.29 (static half) | CI `checks` |
-| `infra/tests/test_azd_and_workflow.py` (parses `azure.yaml`, `ci.yml`) | AC-25.21, 50.26 | CI `checks` |
+| `infra/tests/test_template.py` (compiles `main.bicep` to ARM JSON, asserts on resources, properties, outputs; builds variants for `appExists` and `developerPrincipalId`) | AC-25.9–50.20, 50.29 (static half), 25.30 | CI `checks` |
+| `infra/tests/test_azd_and_workflow.py` (parses `azure.yaml`, `ci.yml`) | AC-25.21, 50.26, 25.30 | CI `checks` |
 | `azd provision --preview`, reviewed against §3.11 | AC-25.22, 50.29 | User runs; agent compares |
 | `infra/scripts/smoke.sh` | AC-25.23, 50.24, 50.27, 50.28 | Agent after the user deploys; CI `deploy` |
 | App Insights query (`requests` table, last 10 min) | AC-25.25 | Agent with read-only `az monitor app-insights query` |
