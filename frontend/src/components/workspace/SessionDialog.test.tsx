@@ -276,3 +276,19 @@ describe('open workspace (AC-23.144, amended 2026-11-20)', () => {
     expect(await screen.findByRole('button', { name: 'Delete session' })).toBeInTheDocument()
   })
 })
+
+describe('simulated sessions (spec 24 §3.12)', () => {
+  it('the session view shows the Simulated tag when the server marks it', async () => {
+    const api = workspaceFake()
+    const real = await api.reviewSession(FINISHED.id)
+    vi.spyOn(api, 'reviewSession').mockResolvedValue({ ...real, simulated: true })
+    open(FINISHED, api)
+    expect(await screen.findByText('Simulated')).toBeInTheDocument()
+  })
+
+  it('a real session has no tag', async () => {
+    open(FINISHED)
+    await screen.findByRole('tab', { name: 'Session' })
+    expect(screen.queryByText('Simulated')).toBeNull()
+  })
+})

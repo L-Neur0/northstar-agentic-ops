@@ -155,6 +155,7 @@ describe('document actions (AC-23.80)', () => {
       targetStep: null,
       targetSource: 'none' as const,
       fromImage: false,
+      conflicts: 0,
     },
     reply: { id: 'm9', role: 'agent' as const, text: 'From "p.docx" I\'d fill: …', at: 'x' },
   }

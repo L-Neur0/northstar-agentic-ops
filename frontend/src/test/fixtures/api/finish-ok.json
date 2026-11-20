@@ -1,5 +1,5 @@
 {
-  "id": "aa2ee74c-066e-4f9d-8404-560ae9b8e6aa",
+  "id": "1d0c8768-5604-4638-ae45-5be829fe29fc",
   "status": "finished",
   "phase": "finished",
   "displayName": "Anna",
@@ -8,151 +8,151 @@
   "finishedAt": "2026-11-19T10:00:17+00:00",
   "messages": [
     {
-      "id": "4e92b8ce-c748-46ca-ba11-825bdee28877",
+      "id": "59a9aed2-1ab6-43c4-9120-64879cf6f883",
       "role": "agent",
       "text": "Hi Anna! I'm the Discovery Agent. Together we'll find a piece of recurring work in your week that is worth mapping, and map it step by step; it takes about 15–20 minutes. You don't need a process in mind, we'll find one by talking through your week. You can add a document (a procedure, a process map, an example report) at any time; I'll read it and you confirm what I found. The tool maps processes, not people: it never reports anyone's individual time. The transformation team may read this conversation to improve the tool. To start: Which department are you in?",
       "at": "2026-11-19T10:00:00+00:00"
     },
     {
-      "id": "735acc0e-cb5d-42d0-bfdb-7b114c836f36",
+      "id": "dd677227-7da5-4b0f-bc51-0d818c95cd80",
       "role": "expert",
       "text": "I work in Finance.",
       "at": "2026-11-19T10:00:01+00:00"
     },
     {
-      "id": "40dcda34-f6bf-489e-b013-58f9f67c07fb",
+      "id": "d7261c5b-fc88-42eb-9c3a-0bd3e065a233",
       "role": "agent",
       "text": "Could you tell me more?",
       "at": "2026-11-19T10:00:01+00:00"
     },
     {
-      "id": "a2721908-4ebf-4b1c-98b6-ba81d84aed9f",
+      "id": "dc958865-c15a-4e47-92d8-2025a4e56cda",
       "role": "expert",
       "text": "I am a cost controller.",
       "at": "2026-11-19T10:00:02+00:00"
     },
     {
-      "id": "9bd89793-50ce-4ee1-a60e-26d7e4db780d",
+      "id": "2c6c5537-d114-4c47-8fc0-34131b9ea8e6",
       "role": "agent",
       "text": "Could you tell me more?",
       "at": "2026-11-19T10:00:02+00:00"
     },
     {
-      "id": "5aef2d09-fb96-4e69-a017-e3fa5e95ee2b",
+      "id": "758e86b9-81e7-4567-9522-ae7c397e5101",
       "role": "expert",
       "text": "Europe.",
       "at": "2026-11-19T10:00:03+00:00"
     },
     {
-      "id": "d487d867-0226-4353-b1a0-67e69024022b",
+      "id": "2c33f91d-42fe-4c14-935c-348cfb05a6c4",
       "role": "agent",
       "text": "Could you tell me more?",
       "at": "2026-11-19T10:00:03+00:00"
     },
     {
-      "id": "fc5f7804-8d2c-4171-80ea-c8116248450f",
+      "id": "61a7e420-9e15-42fa-8da2-21cf72f587ee",
       "role": "expert",
       "text": "The monthly cost review. We also onboard suppliers, but that is another story.",
       "at": "2026-11-19T10:00:04+00:00"
     },
     {
-      "id": "38753e42-5867-4201-a5a2-50ac4fd7d955",
+      "id": "0d568082-1be6-4aa6-986a-dfaed6add3b5",
       "role": "agent",
       "text": "Could you tell me more?",
       "at": "2026-11-19T10:00:04+00:00"
     },
     {
-      "id": "3e787169-0c10-40e9-9f67-d028a80d497d",
+      "id": "446f0a20-115b-438d-a935-b20a989b41ec",
       "role": "expert",
       "text": "It starts when the month-end close is done in the ledger.",
       "at": "2026-11-19T10:00:05+00:00"
     },
     {
-      "id": "5bebb453-d639-4f0e-b34e-f921a4ed5e63",
+      "id": "a57559ab-ca1e-4404-b3e4-3810aee141a1",
       "role": "agent",
       "text": "Could you tell me more?",
       "at": "2026-11-19T10:00:05+00:00"
     },
     {
-      "id": "bbee128f-1c76-4b9d-82cd-a1f69d295ef0",
+      "id": "e056a55e-b85c-449c-b52c-aaa0b8601a93",
       "role": "expert",
       "text": "At the end there is the monthly cost report, and the CFO uses it.",
       "at": "2026-11-19T10:00:06+00:00"
     },
     {
-      "id": "4b5be73a-ec2b-4877-95a1-0237149718cc",
+      "id": "c760e25e-9425-451e-ac38-cae70d2c419d",
       "role": "agent",
       "text": "Could you tell me more?",
       "at": "2026-11-19T10:00:06+00:00"
     },
     {
-      "id": "2308d286-71cb-4d00-8681-dde31ca84b31",
+      "id": "8207cca4-bd58-4d55-a145-0efe863ff3e5",
       "role": "expert",
       "text": "Once a month; the Head of Controlling owns it; it takes about 4 days.",
       "at": "2026-11-19T10:00:07+00:00"
     },
     {
-      "id": "831b178f-2443-4bad-ba26-a6eee8a9e969",
+      "id": "14eb89ce-d983-4815-8b16-f4ea3a49de76",
       "role": "agent",
       "text": "Could you tell me more?",
       "at": "2026-11-19T10:00:07+00:00"
     },
     {
-      "id": "0ac92da6-f3bc-4635-b235-0ac911f0447d",
+      "id": "5322381a-57b8-4e79-93dd-1dc9d3562ad6",
       "role": "expert",
       "text": "We want 2 days. It is the same every month.",
       "at": "2026-11-19T10:00:08+00:00"
     },
     {
-      "id": "d75f71d7-13a2-4d5d-8ee0-5028a41efc4f",
+      "id": "c8e26249-2a13-48dd-9af8-aea324d88637",
       "role": "agent",
       "text": "Could you tell me more?",
       "at": "2026-11-19T10:00:08+00:00"
     },
     {
-      "id": "30de1c37-5af9-43b1-beea-a12f8d5145d2",
+      "id": "6e808322-1f1c-4f43-8d00-1ccfce4ec7a9",
       "role": "expert",
       "text": "Same everywhere; no personal data.",
       "at": "2026-11-19T10:00:09+00:00"
     },
     {
-      "id": "a3f22e3d-74b9-4bd7-a7e8-7941eb9f6c59",
+      "id": "f0213623-cbad-44ea-8ce5-85854b59d65e",
       "role": "agent",
       "text": "Could you tell me more?",
       "at": "2026-11-19T10:00:09+00:00"
     },
     {
-      "id": "d14d35a3-e33f-4c56-85fe-83912e2ccb57",
+      "id": "ca2405a2-258d-4cc0-af7d-66b43dcb9628",
       "role": "expert",
       "text": "Two steps.",
       "at": "2026-11-19T10:00:10+00:00"
     },
     {
-      "id": "2c0e32aa-017c-418e-b17c-b92c45c44b50",
+      "id": "cc7cb59c-a9df-4343-aead-b2857c59049e",
       "role": "agent",
       "text": "Could you tell me more?",
       "at": "2026-11-19T10:00:10+00:00"
     },
     {
-      "id": "5dac32b8-33f9-4285-9f61-4a2b22c3b725",
+      "id": "9344d784-dc50-4320-b427-b293eb64fa69",
       "role": "expert",
       "text": "First we export and check the actuals.",
       "at": "2026-11-19T10:00:11+00:00"
     },
     {
-      "id": "d86f0503-32af-4e79-941d-da10d85cdd31",
+      "id": "49b4d3ff-4f3d-4e55-be4b-094c7201a1e2",
       "role": "agent",
       "text": "Could you tell me more?",
       "at": "2026-11-19T10:00:11+00:00"
     },
     {
-      "id": "badb35cf-ce39-4ca7-9a34-dfa66dcce035",
+      "id": "2a946077-166d-4b10-aafb-4ae6a4223985",
       "role": "expert",
       "text": "Then we write and send the report.",
       "at": "2026-11-19T10:00:12+00:00"
     },
     {
-      "id": "204d45d1-1131-42ce-8456-849874fc0854",
+      "id": "a2bc891b-6ef2-43cf-916d-e760095aa11a",
       "role": "agent",
       "text": "Could you tell me more?",
       "at": "2026-11-19T10:00:12+00:00"
@@ -316,7 +316,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 1
+      "asks": 1,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "user_function",
@@ -329,7 +332,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 1
+      "asks": 1,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "region",
@@ -342,7 +348,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 1
+      "asks": 1,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.name",
@@ -355,7 +364,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.cluster",
@@ -368,7 +380,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 3
+      "asks": 3,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.trigger",
@@ -381,7 +396,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.end_result",
@@ -394,7 +412,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.value_at_end",
@@ -407,7 +428,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.business_pain",
@@ -420,7 +444,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.volume",
@@ -433,7 +460,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.process_owner",
@@ -446,7 +476,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.baseline_metric",
@@ -459,7 +492,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.target_metric",
@@ -472,7 +508,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.variation",
@@ -485,7 +524,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 1
+      "asks": 1,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.sensitive_data",
@@ -498,7 +540,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substep_count",
@@ -511,7 +556,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 1
+      "asks": 1,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[1].name",
@@ -524,7 +572,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 1
+      "asks": 1,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[1].goal",
@@ -537,7 +588,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[1].activities",
@@ -550,7 +604,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[1].roles",
@@ -563,7 +620,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[1].owner",
@@ -576,7 +636,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[1].systems",
@@ -589,7 +652,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[1].data",
@@ -602,7 +668,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[1].effort",
@@ -615,7 +684,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[1].pain_points",
@@ -628,7 +700,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[1].approvals",
@@ -641,7 +716,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[1].exceptions",
@@ -654,7 +732,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[1].handover",
@@ -667,7 +748,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[2].name",
@@ -680,7 +764,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 1
+      "asks": 1,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[2].goal",
@@ -693,7 +780,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[2].activities",
@@ -706,7 +796,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[2].roles",
@@ -719,7 +812,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[2].owner",
@@ -732,7 +828,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[2].systems",
@@ -745,7 +844,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[2].data",
@@ -758,7 +860,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[2].effort",
@@ -771,7 +876,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[2].pain_points",
@@ -784,7 +892,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[2].approvals",
@@ -797,7 +908,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[2].exceptions",
@@ -810,7 +924,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[2].handover",
@@ -823,7 +940,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     }
   ],
   "score": {

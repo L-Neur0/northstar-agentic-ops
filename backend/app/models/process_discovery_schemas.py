@@ -375,6 +375,8 @@ class Counters(StorageModel):
     confirm_turns: int = 0
     #: Asks per conflict key (spec 14 §3.17, AC-12.49).
     conflict_asks: dict[str, int] = Field(default_factory=dict)
+    #: Expert messages in the session; drives the *Finish* offer (spec 14 §3.18 L1).
+    expert_messages: int = 0
 
 
 class ScopeVerdict(StorageModel):
@@ -764,6 +766,9 @@ class Session(StorageModel):
     report: ReportState | None = None
     briefs: list[Brief] = Field(default_factory=list)
     cost: Cost = Field(default_factory=Cost)
+    #: A finished evaluation session seeded as demo data (spec 24 §3.12): storage only, set by the seeder,
+    #: never by an expert route; documents stored before the field load as false.
+    simulated: bool = False
     etag: str | None = Field(default=None, exclude=True)
 
 

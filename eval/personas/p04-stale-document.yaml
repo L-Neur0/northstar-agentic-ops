@@ -1,0 +1,113 @@
+# Persona p04 (spec 24 §3.3): starts the steps from an out-of-date procedure and corrects it. Synthetic.
+id: p04-stale-document
+version: 1
+quick: false
+seed: false
+kind: cooperative
+profile: >
+  You are a security analyst in the IT department of NIG, working in Europe. You run the user access
+  review with your team. You are precise and cooperative and write clear English.
+behaviour:
+  - Answer the context, boundaries and measures questions directly, with numbers.
+  - When the assistant reaches the steps, the team procedure has been uploaded; refer to it.
+  - The uploaded procedure is from 2023 and partly out of date; correct anything that differs from your sheet ("we moved that to the access review tool last year").
+  - When asked which value is right, yours or the document's, answer "mine" when your sheet differs.
+  - Give roles, never people's names.
+truth:
+  fields:
+    department: IT
+    user_function: Security analyst
+    region: Europe
+    process.name: Quarterly user access review
+    process.cluster: IT
+    process.trigger: The start of a new quarter
+    process.end_result: Every application's user access is confirmed or removed, with evidence filed for the audit
+    process.value_at_end: The internal auditors use the evidence for the ISO 27001 audit
+    process.business_pain: Reviews run late, owners rubber-stamp lists, and leavers keep access for weeks
+    process.volume: {count: 1, period: quarter}
+    process.process_owner: {role: Information security manager}
+    process.baseline_metric: {value: "3", unit: weeks}
+    process.target_metric: {value: "1", unit: week}
+    process.variation: {same: "yes"}
+    process.sensitive_data: [{item: personal data of employees, detail: names and user ids}, {item: ISO 27001}]
+    process.substep_count: 5
+  steps:
+    - name: Export the user lists
+      goal: Each application has a current list of users and rights
+      activities: [export users and rights per application, load the lists into the access review tool]
+      roles: [{role: Security analyst, contribution: exports}]
+      owner: Security analyst
+      systems: [Identity directory, Access review tool]
+      data: {inputs: [user accounts and rights], outputs: [user lists per application]}
+      effort: {duration: 1 day, frequency: quarterly}
+      pain_points: [some applications can only export to CSV by hand]
+      approvals: [{none: true}]
+      exceptions: [{none: true}]
+    - name: Send the lists to the application owners
+      goal: Every application owner has a review task
+      activities: [create the review campaign, assign each list to its owner]
+      roles: [{role: Security analyst, contribution: launches}]
+      owner: Security analyst
+      systems: [Access review tool]
+      data: {inputs: [user lists per application], outputs: [review tasks]}
+      effort: {duration: 2 hours, frequency: quarterly}
+      pain_points: [owner names in the tool are out of date]
+      approvals: [{none: true}]
+      exceptions: [{description: an application has no owner and the task goes to the security manager}]
+    - name: Review and mark access to remove
+      goal: Each owner has confirmed or marked every user
+      activities: [owners check each user, mark access to remove, chase owners who have not started]
+      roles: [{role: Application owner, contribution: reviews}, {role: Security analyst, contribution: chases}]
+      owner: Application owner
+      systems: [Access review tool]
+      data: {inputs: [review tasks], outputs: [marked user lists]}
+      effort: {duration: 2 days, frequency: quarterly}
+      pain_points: [owners approve whole lists without checking]
+      approvals: [{none: true}]
+      exceptions: [{none: true}]
+    - name: Approve the removals
+      goal: Every removal is approved before it is done
+      activities: [collect the marked removals, get the approval in the tool]
+      roles: [{role: Application owner, contribution: approves}, {role: Security analyst, contribution: collects}]
+      owner: Security analyst
+      systems: [Access review tool]
+      data: {inputs: [marked user lists], outputs: [approved removals]}
+      effort: {duration: 4 hours, frequency: quarterly}
+      pain_points: [approvals wait for owners on holiday]
+      approvals: [{approver_role: Application owner}]
+      exceptions: [{none: true}]
+    - name: Remove access and file the evidence
+      goal: Removed access is gone and the evidence is filed for the audit
+      activities: [remove the access, export the review report, file it in the audit folder]
+      roles: [{role: Security analyst, contribution: removes and files}, {role: Service desk agent, contribution: removes access in old applications}]
+      owner: Security analyst
+      systems: [Identity directory, Audit evidence folder]
+      data: {inputs: [approved removals], outputs: [review evidence]}
+      effort: {duration: 1 day, frequency: quarterly}
+      pain_points: [old applications need a ticket for every removal]
+      approvals: [{none: true}]
+      exceptions: [{description: a removal fails and is redone through a ticket}]
+  aliases:
+    Access review tool: [access tool, the access tool, review tool, IAM review tool, access review system]
+    Identity directory: [directory, active directory, AD, entra id]
+    Audit evidence folder: [audit folder, evidence folder, audit share]
+    Application owner: [app owner, application owners, owners, owner]
+    Security analyst: [analyst, me, security analysts]
+    Information security manager: [security manager, ISM, head of information security]
+  week: []
+documents:
+  - file: access_review_procedure_2023.md
+    at: {phase: steps}
+    stale:
+      - {key: process.volume, doc_value: twice a year}
+      - {key: "process.substeps[3].systems", doc_value: Excel}
+      - {key: "process.substeps[4].approvals", doc_value: line manager}
+expected:
+  cluster: IT
+  scope: process
+  steering: null
+  routes:
+    1: {fit: [automate, assist], route: [it-integration-rpa, low-code-flow, fix-first]}
+    3: {fit: [assist, human], route: [low-code-agent, custom-ai-app, stays-with-people, m365-copilot]}
+    5: {fit: [automate, assist], route: [it-integration-rpa, low-code-flow, ticket-routing]}
+  min_conflicts: 1

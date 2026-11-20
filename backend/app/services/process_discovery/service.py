@@ -202,6 +202,8 @@ def build_context(company: CompanyConfig, settings: Settings) -> InterviewContex
             turn_timeout_seconds=settings.turn_timeout_seconds,
             placement_min_confidence=settings.placement_min_confidence,
             placement_min_margin=settings.placement_min_margin,
+            finish_offer_first=settings.finish_offer_first,
+            finish_offer_every=settings.finish_offer_every,
         ),
         product_name=company.organisation.product_name,
         steering=company.steering,

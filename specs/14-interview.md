@@ -1,6 +1,6 @@
 # 14 · Interview: the turn, phases, limits, replies, prompts
 
-> **Status:** approved (built) · **§3.15 amendment: draft, 2026-11-19** · **§3.16 amendment (document proposals in the chat): built 2026-11-20** (deviations at the end of §3.16) · **§3.17 amendment (conflict questions in the chat): approved and built 2026-11-20** (deviations at the end of §3.17) · **Implements:** F-02, F-03, F-06, F-07, F-08, F-09, F-10, F-24 (product); the chat side of F-04.5 (confirming proposals) and F-11 (*Finish* state in the conversation); architecture §3.3 (one turn), §6.2 (EXTRACT, CLASSIFY, GUIDE), §6.3 (prompt conventions), AD-1 · **Depends on:** specs 10, 11, 12, 13
+> **Status:** approved (built) · **§3.15 amendment: draft, 2026-11-19** · **§3.16 amendment (document proposals in the chat): built 2026-11-20** (deviations at the end of §3.16) · **§3.17 amendment (conflict questions in the chat): approved and built 2026-11-20** (deviations at the end of §3.17) · **§3.18 amendment (offering *Finish* in long sessions): approved and built 2026-11-20** · **Implements:** F-02, F-03, F-06, F-07, F-08, F-09, F-10, F-24 (product); the chat side of F-04.5 (confirming proposals) and F-11 (*Finish* state in the conversation); architecture §3.3 (one turn), §6.2 (EXTRACT, CLASSIFY, GUIDE), §6.3 (prompt conventions), AD-1 · **Depends on:** specs 10, 11, 12, 13
 > **Code:** `backend/app/services/process_discovery/interview/{types,phases,gates,replies,nodes,graph,turn}.py`, `interview/prompts/{common,extractor,classifier,guide,phase_text,posture}.py`, `backend/scripts/chat.py`
 > **Tests:** `backend/tests/unit/process_discovery/interview/`
 
@@ -1012,7 +1012,7 @@ LLM calls use `FakeLLM` (spec 11) with scripted replies per call type. Profiles 
 | Q10 | §3.17: `CONFLICT_ASK_LIMIT` = 2 and `CONFLICT_GROUP_MAX` = 3 (a conflict leaves a value that already counts, so fewer asks than a field) | **Decided 2026-11-20:** 2 asks per conflict, 3 conflicts per question, 6 per reading (spec 17 CF1); constants in `phases.py`, tuned later with the evaluation set |
 | Q11 | §3.17 Q4: a conflict turn skips GUIDE, so the expert's previous answer is not acknowledged in that message | **Decided 2026-11-20:** a conflict turn asks only the conflict question and skips GUIDE; revisit if the evaluation shows it reads abruptly |
 
-### 3.18 Amendment (approved 2026-11-20, to build): offering *Finish* in long sessions
+### 3.18 Amendment (approved and built 2026-11-20): offering *Finish* in long sessions
 
 | # | Rule |
 |---|---|
@@ -1027,3 +1027,4 @@ LLM calls use `FakeLLM` (spec 11) with scripted replies per call type. Profiles 
 | AC-14.103 | The offer does not change the phase, the counters other than `expert_messages`, or block a 61st message |
 | AC-14.104 | Below the gate the line names what is missing to reach it instead of offering *Finish* |
 
+**As built (§3.18).** Code: `interview/finish_offer.py` (pure; on the AC-14.59 purity list). `charge_asks` adds 1 to `expert_messages` on every turn with expert text. The two numbers are settings next to the other interview settings: `FINISH_OFFER_FIRST` (40) and `FINISH_OFFER_EVERY` (10), carried by `InterviewSettings`. The line is appended in one place, `nodes._agent_reply`, so a GUIDE reply, a fallback and a code-built conflict question all end with it; it is added only when the turn answered an expert message, and it is stored in the agent's message as shown. Gaps = scored fields that do not count yet, by label: process fields in registry order, then step cells as "<label> (step n)", at most 3. Below the gate the line reads "We have covered a lot. Before you can press Finish, we still need: <up to 3 labels>."; locked for another reason it names that reason (steps not described to the end, roles or systems not confirmed). With *Finish* open and no gaps it reads "You can press Finish now. Or we can keep going." Tests: `backend/tests/unit/process_discovery/interview/test_finish_offer.py` (AC-14.102 to AC-14.104).

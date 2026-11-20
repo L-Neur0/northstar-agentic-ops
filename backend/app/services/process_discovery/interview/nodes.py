@@ -59,10 +59,11 @@ from ..profile.mutate import (
     unknown_change_keys,
 )
 from ..profile.proposals import confirm_proposals, proposed_keys, reject_proposals
-from ..profile.scoring import finish_check, score
+from ..profile.scoring import FinishCheck, finish_check, score
 from ..profile.shapes import as_list, as_mapping, normalized_profile, process_of, resolve_key, rows_of, stored_value
 from ..profile.verdicts import P16_KEY, field_counts
 from .conflict_question import both_offered, conflict_question
+from .finish_offer import with_finish_offer
 from .gates import apply_scope_verdict, classification_subject, current_name, needs_placement, needs_scope
 from .phases import (
     advance_phase,
@@ -628,6 +629,20 @@ def _fallback(state: Mapping[str, Any], ask: Ask, vocab: Vocabulary) -> str:
     return fallback_question(ask, profile, vocab=vocab, process_name=name, images=image_documents(state))
 
 
+def _agent_reply(state: TurnState, reply: str, finish: FinishCheck, ctx: InterviewContext) -> dict[str, Any]:
+    """The one place a turn's reply is finished: the *Finish* offer line (§3.18) is appended by code here."""
+    text = with_finish_offer(
+        reply,
+        state,
+        finish,
+        vocab=ctx.vocab,
+        first=ctx.settings.finish_offer_first,
+        every=ctx.settings.finish_offer_every,
+    )
+    message = {"id": str(uuid.uuid4()), "role": "agent", "text": text, "at": state.get("now", "")}
+    return {"messages": [*(state.get("messages") or []), message], "reply": text}
+
+
 async def guide_node(state: TurnState, llm: LLM, ctx: InterviewContext) -> dict[str, Any]:
     """Write the one question of this turn; on any failure, the code-built fallback for the same ask target."""
     vocab = ctx.vocab
@@ -642,13 +657,7 @@ async def guide_node(state: TurnState, llm: LLM, ctx: InterviewContext) -> dict[
         log.update(ask_kind=ask.kind, focus=[], focus_asks=ask_count(ask, read_counters(state.get("counters"))),
                    finish_blocked_by=finish.blocked_by, fallback_used=False,
                    proposals_waiting=len(proposed_keys(profile)))  # fmt: skip
-        message = {"id": str(uuid.uuid4()), "role": "agent", "text": reply, "at": state.get("now", "")}
-        return {
-            "messages": [*(state.get("messages") or []), message],
-            "reply": reply,
-            "last_question": last_question_for(ask),
-            "log": log,
-        }
+        return {**_agent_reply(state, reply, finish, ctx), "last_question": last_question_for(ask), "log": log}
     messages = cast(
         "list[ChatMessage]",
         guide_messages(state, ask, finish, vocab=vocab, history_turns=ctx.settings.guide_history_turns),
@@ -681,10 +690,8 @@ async def guide_node(state: TurnState, llm: LLM, ctx: InterviewContext) -> dict[
         steering["questions"] += 1
     elif ask.kind == "recommend":
         steering["recommend_asks"] += 1
-    message = {"id": str(uuid.uuid4()), "role": "agent", "text": reply, "at": state.get("now", "")}
     return {
-        "messages": [*(state.get("messages") or []), message],
-        "reply": reply,
+        **_agent_reply(state, reply, finish, ctx),
         "last_question": last_question_for(ask),
         "steering": steering,
         "log": log,

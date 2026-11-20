@@ -69,6 +69,7 @@ def _row(session: Session, *, vocab: Vocabulary) -> ReviewRowOut:
         cluster_code=context["cluster_code"], cluster_name=context["cluster_name"], region=context["region"],
         status=session.status, phase=session.phase, fields_filled=filled, fields_total=total,
         steps=len(rows_of(profile)), message_count=len(session.messages), document_count=len(session.documents),
+        simulated=session.simulated,
     )  # fmt: skip
 
 

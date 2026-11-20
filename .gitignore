@@ -35,3 +35,7 @@ build/
 
 # Local model reply cache (spec 11)
 .cache/
+
+# Evaluation runs and the evaluation's model cache (spec 24 §3.1)
+eval/runs/
+eval/.cache/

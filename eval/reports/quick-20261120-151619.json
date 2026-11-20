@@ -1,0 +1,1784 @@
+{
+  "run_id": "20261120-151619",
+  "commit": "",
+  "mode": "in-process",
+  "cache": "on",
+  "deployments": {
+    "app": "app-chat",
+    "expert": "eval-expert",
+    "judge": "app-chat"
+  },
+  "judge_prompt_version": "judge-v1",
+  "calibration": {
+    "pairs": 30,
+    "agreed": 30,
+    "agreement": 1.0,
+    "passed": true,
+    "results": [
+      {
+        "field": "Trigger",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "Both describe the process starting when the monthly books/close are completed in the ledger system."
+      },
+      {
+        "field": "End result",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "Both describe a monthly cost report in which variances are explained for each cost centre."
+      },
+      {
+        "field": "Who uses the result",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "The same roles use the result for the same purpose; “adjust” and “correct” are equivalent here."
+      },
+      {
+        "field": "Business pain",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "Both state that tickets remain unassigned, causing urgent incidents to be noticed late."
+      },
+      {
+        "field": "Department",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "“Finance department” names the same organizational unit as “Finance.”"
+      },
+      {
+        "field": "Role",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "Both describe the expert as the team lead of the service desk."
+      },
+      {
+        "field": "Process name",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "Both name the same quarterly user access review process; only the word order and formatting differ."
+      },
+      {
+        "field": "Goal",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "Both state that every/all flagged variances have explanations."
+      },
+      {
+        "field": "Activities",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "All three activities match: emailing questions to site managers, following up for answers, and recording the explanations."
+      },
+      {
+        "field": "Pain points",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "Both say site managers are slow to respond and often require multiple reminders; 'three' versus 'several' preserves the main pain point."
+      },
+      {
+        "field": "Data in and out",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "Both specify cost data as input and a single consolidated cost workbook as output; 'exported' versus 'raw' does not materially change the process."
+      },
+      {
+        "field": "Exceptions",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "Both state that a site's cost report is missing because it was not submitted by the deadline."
+      },
+      {
+        "field": "Time today",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "A working week commonly means 5 working days; “about” only adds minor approximation."
+      },
+      {
+        "field": "Step owner",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "Both refer to the same single role: the application owner."
+      },
+      {
+        "field": "Same way everywhere",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "Both state that the Manila night shift uses a simpler list for routing."
+      },
+      {
+        "field": "Trigger",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "CAPTURED gives only a schedule, while HIDDEN specifies the concrete trigger: completion of month-end close in the ledger system."
+      },
+      {
+        "field": "End result",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "CAPTURED omits the key result that variances for each cost centre are explained in the monthly report."
+      },
+      {
+        "field": "Who uses the result",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "Different users and purpose: CFO/regional directors correct budgets and forecasts, while site managers plan crews."
+      },
+      {
+        "field": "Business pain",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "Captured contradicts the pain: it says reviews are timely and thorough, while hidden says reviews are late, rubber-stamped, and leavers retain access."
+      },
+      {
+        "field": "Time today",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "The durations differ: HIDDEN says 5 working days, while CAPTURED says 4 working days."
+      },
+      {
+        "field": "Target",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "The unit differs: HIDDEN is 2 hours, while CAPTURED is 2 days."
+      },
+      {
+        "field": "Activities",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "CAPTURED omits two key activities: mapping site cost lines to cost centres and checking totals against the ledger."
+      },
+      {
+        "field": "Pain points",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "CAPTURED contradicts HIDDEN: it says owners carefully check every line, while HIDDEN says they approve whole lists without checking."
+      },
+      {
+        "field": "Goal",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "The captured goal concerns ordering PPE, while the hidden goal requires the starter's pass and documents to be ready on day one."
+      },
+      {
+        "field": "Step owner",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "Different roles: the hidden step owner is Application owner, while the captured owner is Security analyst."
+      },
+      {
+        "field": "Data in and out",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "The input matches, but the output differs: approved removals are not the same as access already removed, and filed evidence is an additional output."
+      },
+      {
+        "field": "Exceptions",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "CAPTURED says there are no exceptions, but HIDDEN specifies that the pass waits when the visa copy is missing."
+      },
+      {
+        "field": "Department",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "Different departments: HIDDEN is HR, while CAPTURED is Finance."
+      },
+      {
+        "field": "Process name",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "The process names describe different activities: onboarding new site staff versus filing a timesheet."
+      },
+      {
+        "field": "Same way everywhere",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "HIDDEN says the process differs: Manila's night shift uses a simpler routing list. CAPTURED says all sites operate exactly the same way."
+      }
+    ]
+  },
+  "judge_trusted": true,
+  "passed": false,
+  "reasons": [
+    "p01-cooperative: session failed (never_finished)",
+    "p02-vague: session failed (never_finished)",
+    "p01-cooperative: report quality 76% (target ≥ 85%)",
+    "p01-cooperative: scope False (target hit)",
+    "p01-cooperative: step fit 0% (target ≥ 70%)",
+    "p01-cooperative: step route 0% (target ≥ 70%)",
+    "p02-vague: scope False (target hit)",
+    "p02-vague: step fit 0% (target ≥ 70%)",
+    "p02-vague: step route 0% (target ≥ 70%)"
+  ],
+  "personas": [
+    {
+      "id": "p01-cooperative",
+      "version": 1,
+      "kind": "cooperative",
+      "status": "never_finished",
+      "error": "",
+      "quality": 0.7605633802816901,
+      "quality_code": 0.7464788732394366,
+      "correct": 54,
+      "total": 71,
+      "judged": 3,
+      "judge_errors": 0,
+      "invented_values": 0,
+      "proposed_at_finish": 0,
+      "min_conflicts": 0,
+      "labels": {
+        "cluster": true,
+        "scope": false,
+        "steering": true,
+        "fit_hits": 0,
+        "route_hits": 0,
+        "routed_steps": 5
+      },
+      "behaviour": {
+        "loops": 0,
+        "loop_keys": [],
+        "repeats": 0,
+        "turn_median_s": 2.36,
+        "turn_max_s": 12.03,
+        "finish_s": null,
+        "fallbacks": 0,
+        "proposals_confirmed": 0,
+        "proposals_rejected": 0,
+        "conflicts": 0,
+        "stale_kept": 0,
+        "app": {
+          "tokens_in": 248254,
+          "tokens_out": 6571,
+          "calls": 121,
+          "cache_hits": 0,
+          "euros": 0.376,
+          "deployments": [
+            "app-chat"
+          ]
+        },
+        "expert": {
+          "tokens_in": 165755,
+          "tokens_out": 736,
+          "calls": 59,
+          "cache_hits": 0,
+          "euros": 0.0429,
+          "deployments": [
+            "eval-expert"
+          ]
+        },
+        "judge": {
+          "tokens_in": 861,
+          "tokens_out": 330,
+          "calls": 3,
+          "cache_hits": 0,
+          "euros": 0.0044,
+          "deployments": [
+            "app-chat"
+          ]
+        }
+      },
+      "efficiency": {
+        "messages": 60,
+        "messages_to_finish": null,
+        "message_target": 30,
+        "failed": true,
+        "efficiency": null,
+        "wasted": 2,
+        "wasted_at": [
+          39,
+          40
+        ],
+        "plateaus": []
+      },
+      "curve": [
+        {
+          "n": 1,
+          "quality": 0.0141,
+          "score": 0.0556,
+          "phase": "context"
+        },
+        {
+          "n": 2,
+          "quality": 0.0282,
+          "score": 0.1111,
+          "phase": "context"
+        },
+        {
+          "n": 3,
+          "quality": 0.0423,
+          "score": 0.1667,
+          "phase": "find"
+        },
+        {
+          "n": 4,
+          "quality": 0.0704,
+          "score": 0.2778,
+          "phase": "find"
+        },
+        {
+          "n": 5,
+          "quality": 0.0845,
+          "score": 0.3333,
+          "phase": "boundaries"
+        },
+        {
+          "n": 6,
+          "quality": 0.0986,
+          "score": 0.3889,
+          "phase": "boundaries"
+        },
+        {
+          "n": 7,
+          "quality": 0.1127,
+          "score": 0.4444,
+          "phase": "boundaries"
+        },
+        {
+          "n": 8,
+          "quality": 0.1268,
+          "score": 0.5,
+          "phase": "boundaries"
+        },
+        {
+          "n": 9,
+          "quality": 0.1408,
+          "score": 0.6667,
+          "phase": "measure"
+        },
+        {
+          "n": 10,
+          "quality": 0.1549,
+          "score": 0.7222,
+          "phase": "measure"
+        },
+        {
+          "n": 11,
+          "quality": 0.169,
+          "score": 0.8333,
+          "phase": "measure"
+        },
+        {
+          "n": 12,
+          "quality": 0.169,
+          "score": 0.8333,
+          "phase": "measure"
+        },
+        {
+          "n": 13,
+          "quality": 0.169,
+          "score": 0.8333,
+          "phase": "measure"
+        },
+        {
+          "n": 14,
+          "quality": 0.169,
+          "score": 0.8333,
+          "phase": "measure"
+        },
+        {
+          "n": 15,
+          "quality": 0.1831,
+          "score": 0.8889,
+          "phase": "step_count"
+        },
+        {
+          "n": 16,
+          "quality": 0.1972,
+          "score": 0.2329,
+          "phase": "steps"
+        },
+        {
+          "n": 17,
+          "quality": 0.2113,
+          "score": 0.2466,
+          "phase": "steps"
+        },
+        {
+          "n": 18,
+          "quality": 0.2254,
+          "score": 0.2603,
+          "phase": "steps"
+        },
+        {
+          "n": 19,
+          "quality": 0.2394,
+          "score": 0.274,
+          "phase": "steps"
+        },
+        {
+          "n": 20,
+          "quality": 0.2535,
+          "score": 0.2877,
+          "phase": "steps"
+        },
+        {
+          "n": 21,
+          "quality": 0.2676,
+          "score": 0.3014,
+          "phase": "steps"
+        },
+        {
+          "n": 22,
+          "quality": 0.2817,
+          "score": 0.3151,
+          "phase": "steps"
+        },
+        {
+          "n": 23,
+          "quality": 0.2958,
+          "score": 0.3288,
+          "phase": "steps"
+        },
+        {
+          "n": 24,
+          "quality": 0.3099,
+          "score": 0.3425,
+          "phase": "steps"
+        },
+        {
+          "n": 25,
+          "quality": 0.3239,
+          "score": 0.3562,
+          "phase": "steps"
+        },
+        {
+          "n": 26,
+          "quality": 0.338,
+          "score": 0.3699,
+          "phase": "steps"
+        },
+        {
+          "n": 27,
+          "quality": 0.3521,
+          "score": 0.3836,
+          "phase": "steps"
+        },
+        {
+          "n": 28,
+          "quality": 0.3521,
+          "score": 0.3836,
+          "phase": "steps"
+        },
+        {
+          "n": 29,
+          "quality": 0.3662,
+          "score": 0.3973,
+          "phase": "steps"
+        },
+        {
+          "n": 30,
+          "quality": 0.3803,
+          "score": 0.411,
+          "phase": "steps"
+        },
+        {
+          "n": 31,
+          "quality": 0.3944,
+          "score": 0.4247,
+          "phase": "steps"
+        },
+        {
+          "n": 32,
+          "quality": 0.3944,
+          "score": 0.4384,
+          "phase": "steps"
+        },
+        {
+          "n": 33,
+          "quality": 0.4085,
+          "score": 0.4521,
+          "phase": "steps"
+        },
+        {
+          "n": 34,
+          "quality": 0.4225,
+          "score": 0.4658,
+          "phase": "steps"
+        },
+        {
+          "n": 35,
+          "quality": 0.4366,
+          "score": 0.4795,
+          "phase": "steps"
+        },
+        {
+          "n": 36,
+          "quality": 0.4507,
+          "score": 0.4932,
+          "phase": "steps"
+        },
+        {
+          "n": 37,
+          "quality": 0.4648,
+          "score": 0.5068,
+          "phase": "steps"
+        },
+        {
+          "n": 38,
+          "quality": 0.4789,
+          "score": 0.5205,
+          "phase": "steps"
+        },
+        {
+          "n": 39,
+          "quality": 0.4789,
+          "score": 0.5205,
+          "phase": "steps"
+        },
+        {
+          "n": 40,
+          "quality": 0.4789,
+          "score": 0.5205,
+          "phase": "steps"
+        },
+        {
+          "n": 41,
+          "quality": 0.507,
+          "score": 0.5479,
+          "phase": "steps"
+        },
+        {
+          "n": 42,
+          "quality": 0.5211,
+          "score": 0.5616,
+          "phase": "steps"
+        },
+        {
+          "n": 43,
+          "quality": 0.5352,
+          "score": 0.5753,
+          "phase": "steps"
+        },
+        {
+          "n": 44,
+          "quality": 0.5493,
+          "score": 0.589,
+          "phase": "steps"
+        },
+        {
+          "n": 45,
+          "quality": 0.5634,
+          "score": 0.6027,
+          "phase": "steps"
+        },
+        {
+          "n": 46,
+          "quality": 0.5775,
+          "score": 0.6164,
+          "phase": "steps"
+        },
+        {
+          "n": 47,
+          "quality": 0.5915,
+          "score": 0.6301,
+          "phase": "steps"
+        },
+        {
+          "n": 48,
+          "quality": 0.6056,
+          "score": 0.6438,
+          "phase": "steps"
+        },
+        {
+          "n": 49,
+          "quality": 0.6197,
+          "score": 0.6575,
+          "phase": "steps"
+        },
+        {
+          "n": 50,
+          "quality": 0.6338,
+          "score": 0.6712,
+          "phase": "steps"
+        },
+        {
+          "n": 51,
+          "quality": 0.662,
+          "score": 0.6986,
+          "phase": "steps"
+        },
+        {
+          "n": 52,
+          "quality": 0.662,
+          "score": 0.6986,
+          "phase": "steps"
+        },
+        {
+          "n": 53,
+          "quality": 0.6761,
+          "score": 0.7123,
+          "phase": "steps"
+        },
+        {
+          "n": 54,
+          "quality": 0.6901,
+          "score": 0.726,
+          "phase": "steps"
+        },
+        {
+          "n": 55,
+          "quality": 0.7042,
+          "score": 0.7397,
+          "phase": "steps"
+        },
+        {
+          "n": 56,
+          "quality": 0.7183,
+          "score": 0.7534,
+          "phase": "steps"
+        },
+        {
+          "n": 57,
+          "quality": 0.7324,
+          "score": 0.7671,
+          "phase": "steps"
+        },
+        {
+          "n": 58,
+          "quality": 0.7465,
+          "score": 0.7808,
+          "phase": "steps"
+        },
+        {
+          "n": 59,
+          "quality": 0.7606,
+          "score": 0.7945,
+          "phase": "steps"
+        },
+        {
+          "n": 60,
+          "quality": 0.7606,
+          "score": 0.8082,
+          "phase": "steps"
+        }
+      ],
+      "wrong": [
+        {
+          "key": "process.business_pain",
+          "id": "P09",
+          "hidden": "It takes five working days, so budget decisions come late, and most of the time goes into chasing explanations",
+          "captured": "Mostly chasing explanations takes the time, and the manual data gathering is slow too. Budget decisions come late.",
+          "method": "judge",
+          "correct": false,
+          "reason": "CAPTURED omits the specific five-working-day duration and adds manual data gathering as another cause of delay.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.variation",
+          "id": "P14",
+          "hidden": "yes",
+          "captured": "",
+          "method": "missing",
+          "correct": false,
+          "reason": "not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[2].roles",
+          "id": "S04",
+          "hidden": "Cost controller - consolidates",
+          "captured": "none",
+          "method": "code",
+          "correct": false,
+          "reason": "none row on one side only",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[4].pain_points",
+          "id": "S09",
+          "hidden": "some site managers answer only after three reminders",
+          "captured": "Some site managers answer only after three reminders.; A site manager may not answer at all, and then the variance stays unexplained.",
+          "method": "judge",
+          "correct": false,
+          "reason": "CAPTURED adds a distinct pain point: some managers never answer, leaving variances unexplained. This is not stated in HIDDEN.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[4].approvals",
+          "id": "S10",
+          "hidden": "none",
+          "captured": "",
+          "method": "missing",
+          "correct": false,
+          "reason": "not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[4].exceptions",
+          "id": "S11",
+          "hidden": "a site manager does not answer and the variance stays unexplained",
+          "captured": "",
+          "method": "missing",
+          "correct": false,
+          "reason": "not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[5].name",
+          "id": "S01",
+          "hidden": "Write and send the report",
+          "captured": "",
+          "method": "missing",
+          "correct": false,
+          "reason": "not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[5].goal",
+          "id": "S02",
+          "hidden": "The CFO and the regional directors have the cost report",
+          "captured": "",
+          "method": "missing",
+          "correct": false,
+          "reason": "not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[5].activities",
+          "id": "S03",
+          "hidden": "write the summary; build the charts; send the report",
+          "captured": "",
+          "method": "missing",
+          "correct": false,
+          "reason": "not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[5].roles",
+          "id": "S04",
+          "hidden": "Cost controller - writes; Head of Controlling - approves",
+          "captured": "",
+          "method": "missing",
+          "correct": false,
+          "reason": "not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[5].owner",
+          "id": "S05",
+          "hidden": "Cost controller",
+          "captured": "",
+          "method": "missing",
+          "correct": false,
+          "reason": "not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[5].systems",
+          "id": "S06",
+          "hidden": "PowerPoint; E-mail",
+          "captured": "",
+          "method": "missing",
+          "correct": false,
+          "reason": "not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[5].data",
+          "id": "S07",
+          "hidden": "in: explained variances; out: monthly cost report",
+          "captured": "in: ; out: ",
+          "method": "missing",
+          "correct": false,
+          "reason": "not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[5].effort",
+          "id": "S08",
+          "hidden": "4 hours, monthly",
+          "captured": "",
+          "method": "missing",
+          "correct": false,
+          "reason": "not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[5].pain_points",
+          "id": "S09",
+          "hidden": "the charts are rebuilt by hand every month",
+          "captured": "",
+          "method": "missing",
+          "correct": false,
+          "reason": "not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[5].approvals",
+          "id": "S10",
+          "hidden": "Head of Controlling",
+          "captured": "",
+          "method": "missing",
+          "correct": false,
+          "reason": "not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[5].exceptions",
+          "id": "S11",
+          "hidden": "none",
+          "captured": "",
+          "method": "missing",
+          "correct": false,
+          "reason": "not captured",
+          "judge_error": false,
+          "invented": false
+        }
+      ]
+    },
+    {
+      "id": "p02-vague",
+      "version": 1,
+      "kind": "difficult",
+      "status": "never_finished",
+      "error": "",
+      "quality": 0.95,
+      "quality_code": 0.7333333333333333,
+      "correct": 57,
+      "total": 60,
+      "judged": 13,
+      "judge_errors": 0,
+      "invented_values": 0,
+      "proposed_at_finish": 0,
+      "min_conflicts": 0,
+      "labels": {
+        "cluster": true,
+        "scope": false,
+        "steering": true,
+        "fit_hits": 0,
+        "route_hits": 0,
+        "routed_steps": 2
+      },
+      "behaviour": {
+        "loops": 0,
+        "loop_keys": [],
+        "repeats": 0,
+        "turn_median_s": 2.64,
+        "turn_max_s": 9.71,
+        "finish_s": null,
+        "fallbacks": 0,
+        "proposals_confirmed": 0,
+        "proposals_rejected": 0,
+        "conflicts": 0,
+        "stale_kept": 0,
+        "app": {
+          "tokens_in": 248789,
+          "tokens_out": 8736,
+          "calls": 121,
+          "cache_hits": 0,
+          "euros": 0.3983,
+          "deployments": [
+            "app-chat"
+          ]
+        },
+        "expert": {
+          "tokens_in": 176444,
+          "tokens_out": 1060,
+          "calls": 59,
+          "cache_hits": 0,
+          "euros": 0.0462,
+          "deployments": [
+            "eval-expert"
+          ]
+        },
+        "judge": {
+          "tokens_in": 3673,
+          "tokens_out": 473,
+          "calls": 13,
+          "cache_hits": 0,
+          "euros": 0.0093,
+          "deployments": [
+            "app-chat"
+          ]
+        }
+      },
+      "efficiency": {
+        "messages": 60,
+        "messages_to_finish": null,
+        "message_target": 40,
+        "failed": true,
+        "efficiency": null,
+        "wasted": 3,
+        "wasted_at": [
+          13,
+          14,
+          17
+        ],
+        "plateaus": [
+          [
+            13,
+            14,
+            15,
+            16,
+            17
+          ]
+        ]
+      },
+      "curve": [
+        {
+          "n": 1,
+          "quality": 0.1333,
+          "score": 0.0556,
+          "phase": "context"
+        },
+        {
+          "n": 2,
+          "quality": 0.15,
+          "score": 0.1111,
+          "phase": "context"
+        },
+        {
+          "n": 3,
+          "quality": 0.1667,
+          "score": 0.1667,
+          "phase": "find"
+        },
+        {
+          "n": 4,
+          "quality": 0.1833,
+          "score": 0.2222,
+          "phase": "find"
+        },
+        {
+          "n": 5,
+          "quality": 0.2,
+          "score": 0.2778,
+          "phase": "boundaries"
+        },
+        {
+          "n": 6,
+          "quality": 0.2167,
+          "score": 0.3333,
+          "phase": "boundaries"
+        },
+        {
+          "n": 7,
+          "quality": 0.2333,
+          "score": 0.3889,
+          "phase": "boundaries"
+        },
+        {
+          "n": 8,
+          "quality": 0.25,
+          "score": 0.4444,
+          "phase": "boundaries"
+        },
+        {
+          "n": 9,
+          "quality": 0.2667,
+          "score": 0.5,
+          "phase": "measure"
+        },
+        {
+          "n": 10,
+          "quality": 0.2667,
+          "score": 0.5556,
+          "phase": "measure"
+        },
+        {
+          "n": 11,
+          "quality": 0.2833,
+          "score": 0.6111,
+          "phase": "measure"
+        },
+        {
+          "n": 12,
+          "quality": 0.2833,
+          "score": 0.7222,
+          "phase": "measure"
+        },
+        {
+          "n": 13,
+          "quality": 0.2833,
+          "score": 0.7222,
+          "phase": "measure"
+        },
+        {
+          "n": 14,
+          "quality": 0.2833,
+          "score": 0.7222,
+          "phase": "measure"
+        },
+        {
+          "n": 15,
+          "quality": 0.2833,
+          "score": 0.7222,
+          "phase": "measure"
+        },
+        {
+          "n": 16,
+          "quality": 0.3,
+          "score": 0.7222,
+          "phase": "measure"
+        },
+        {
+          "n": 17,
+          "quality": 0.3,
+          "score": 0.7222,
+          "phase": "measure"
+        },
+        {
+          "n": 18,
+          "quality": 0.3,
+          "score": 0.7778,
+          "phase": "measure"
+        },
+        {
+          "n": 19,
+          "quality": 0.3167,
+          "score": 0.8333,
+          "phase": "step_count"
+        },
+        {
+          "n": 20,
+          "quality": 0.3333,
+          "score": 0.2581,
+          "phase": "steps"
+        },
+        {
+          "n": 21,
+          "quality": 0.35,
+          "score": 0.2742,
+          "phase": "steps"
+        },
+        {
+          "n": 22,
+          "quality": 0.3833,
+          "score": 0.3065,
+          "phase": "steps"
+        },
+        {
+          "n": 23,
+          "quality": 0.4,
+          "score": 0.3226,
+          "phase": "steps"
+        },
+        {
+          "n": 24,
+          "quality": 0.4167,
+          "score": 0.3387,
+          "phase": "steps"
+        },
+        {
+          "n": 25,
+          "quality": 0.4333,
+          "score": 0.3548,
+          "phase": "steps"
+        },
+        {
+          "n": 26,
+          "quality": 0.45,
+          "score": 0.371,
+          "phase": "steps"
+        },
+        {
+          "n": 27,
+          "quality": 0.45,
+          "score": 0.3871,
+          "phase": "steps"
+        },
+        {
+          "n": 28,
+          "quality": 0.4667,
+          "score": 0.4032,
+          "phase": "steps"
+        },
+        {
+          "n": 29,
+          "quality": 0.4833,
+          "score": 0.4194,
+          "phase": "steps"
+        },
+        {
+          "n": 30,
+          "quality": 0.5,
+          "score": 0.4355,
+          "phase": "steps"
+        },
+        {
+          "n": 31,
+          "quality": 0.5,
+          "score": 0.4355,
+          "phase": "steps"
+        },
+        {
+          "n": 32,
+          "quality": 0.5167,
+          "score": 0.4516,
+          "phase": "steps"
+        },
+        {
+          "n": 33,
+          "quality": 0.5333,
+          "score": 0.4677,
+          "phase": "steps"
+        },
+        {
+          "n": 34,
+          "quality": 0.55,
+          "score": 0.4839,
+          "phase": "steps"
+        },
+        {
+          "n": 35,
+          "quality": 0.5667,
+          "score": 0.5,
+          "phase": "steps"
+        },
+        {
+          "n": 36,
+          "quality": 0.5833,
+          "score": 0.5161,
+          "phase": "steps"
+        },
+        {
+          "n": 37,
+          "quality": 0.6,
+          "score": 0.5323,
+          "phase": "steps"
+        },
+        {
+          "n": 38,
+          "quality": 0.6167,
+          "score": 0.5484,
+          "phase": "steps"
+        },
+        {
+          "n": 39,
+          "quality": 0.6167,
+          "score": 0.5645,
+          "phase": "steps"
+        },
+        {
+          "n": 40,
+          "quality": 0.6333,
+          "score": 0.5806,
+          "phase": "steps"
+        },
+        {
+          "n": 41,
+          "quality": 0.6667,
+          "score": 0.6129,
+          "phase": "steps"
+        },
+        {
+          "n": 42,
+          "quality": 0.6833,
+          "score": 0.629,
+          "phase": "steps"
+        },
+        {
+          "n": 43,
+          "quality": 0.7,
+          "score": 0.6452,
+          "phase": "steps"
+        },
+        {
+          "n": 44,
+          "quality": 0.7167,
+          "score": 0.6613,
+          "phase": "steps"
+        },
+        {
+          "n": 45,
+          "quality": 0.7333,
+          "score": 0.6774,
+          "phase": "steps"
+        },
+        {
+          "n": 46,
+          "quality": 0.75,
+          "score": 0.6935,
+          "phase": "steps"
+        },
+        {
+          "n": 47,
+          "quality": 0.7667,
+          "score": 0.7097,
+          "phase": "steps"
+        },
+        {
+          "n": 48,
+          "quality": 0.7833,
+          "score": 0.7258,
+          "phase": "steps"
+        },
+        {
+          "n": 49,
+          "quality": 0.7833,
+          "score": 0.7419,
+          "phase": "steps"
+        },
+        {
+          "n": 50,
+          "quality": 0.8,
+          "score": 0.7581,
+          "phase": "steps"
+        },
+        {
+          "n": 51,
+          "quality": 0.8167,
+          "score": 0.7742,
+          "phase": "steps"
+        },
+        {
+          "n": 52,
+          "quality": 0.8333,
+          "score": 0.7903,
+          "phase": "steps"
+        },
+        {
+          "n": 53,
+          "quality": 0.8333,
+          "score": 0.7903,
+          "phase": "steps"
+        },
+        {
+          "n": 54,
+          "quality": 0.85,
+          "score": 0.8065,
+          "phase": "steps"
+        },
+        {
+          "n": 55,
+          "quality": 0.8667,
+          "score": 0.8226,
+          "phase": "steps"
+        },
+        {
+          "n": 56,
+          "quality": 0.8833,
+          "score": 0.8387,
+          "phase": "steps"
+        },
+        {
+          "n": 57,
+          "quality": 0.9,
+          "score": 0.8548,
+          "phase": "steps"
+        },
+        {
+          "n": 58,
+          "quality": 0.9167,
+          "score": 0.871,
+          "phase": "steps"
+        },
+        {
+          "n": 59,
+          "quality": 0.9333,
+          "score": 0.8871,
+          "phase": "steps"
+        },
+        {
+          "n": 60,
+          "quality": 0.95,
+          "score": 0.9032,
+          "phase": "steps"
+        }
+      ],
+      "wrong": [
+        {
+          "key": "process.substeps[4].pain_points",
+          "id": "S09",
+          "hidden": "urgent tickets are found only at the end of the shift",
+          "captured": "",
+          "method": "missing",
+          "correct": false,
+          "reason": "not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[4].approvals",
+          "id": "S10",
+          "hidden": "none",
+          "captured": "",
+          "method": "missing",
+          "correct": false,
+          "reason": "not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[4].exceptions",
+          "id": "S11",
+          "hidden": "none",
+          "captured": "",
+          "method": "missing",
+          "correct": false,
+          "reason": "not captured",
+          "judge_error": false,
+          "invented": false
+        }
+      ]
+    }
+  ],
+  "pooled_quality": 0.8473282442748091,
+  "pooled_quality_code": 0.7404580152671756,
+  "pooled_messages": 120,
+  "app_euros_per_finished": null,
+  "targets": [
+    {
+      "persona": "p01-cooperative",
+      "name": "session finished (hard cap 60)",
+      "value": "never_finished",
+      "target": "finished",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "report quality",
+      "value": "76%",
+      "target": "≥ 85%",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "messages to Finish",
+      "value": "n/a",
+      "target": "≤ 30",
+      "status": "n/a",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "wasted turns",
+      "value": "2",
+      "target": "≤ 3",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "plateaus",
+      "value": "0",
+      "target": "0 (flag)",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "loops",
+      "value": "0",
+      "target": "0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "repeated questions",
+      "value": "0",
+      "target": "≤ 2",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "invented values",
+      "value": "0",
+      "target": "0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "stale kept",
+      "value": "0",
+      "target": "0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "conflicts",
+      "value": "0",
+      "target": "≥ 0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "turn time median (s)",
+      "value": "2.36",
+      "target": "< 10",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "turn time max (s)",
+      "value": "12.03",
+      "target": "< 150",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "Finish time (s)",
+      "value": "n/a",
+      "target": "< 30",
+      "status": "n/a",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "app cost per session (€)",
+      "value": "n/a",
+      "target": "< 0.50",
+      "status": "n/a",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "cluster",
+      "value": "True",
+      "target": "hit",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "scope",
+      "value": "False",
+      "target": "hit",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "steering",
+      "value": "True",
+      "target": "hit",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "step fit",
+      "value": "0%",
+      "target": "≥ 70%",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "step route",
+      "value": "0%",
+      "target": "≥ 70%",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "session finished (hard cap 60)",
+      "value": "never_finished",
+      "target": "finished",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "messages to Finish",
+      "value": "n/a",
+      "target": "≤ 40",
+      "status": "n/a",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "wasted turns",
+      "value": "3",
+      "target": "≤ 3",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "plateaus",
+      "value": "1",
+      "target": "0 (flag)",
+      "status": "flag",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "loops",
+      "value": "0",
+      "target": "0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "repeated questions",
+      "value": "0",
+      "target": "≤ 2",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "invented values",
+      "value": "0",
+      "target": "0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "stale kept",
+      "value": "0",
+      "target": "0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "conflicts",
+      "value": "0",
+      "target": "≥ 0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "turn time median (s)",
+      "value": "2.64",
+      "target": "< 10",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "turn time max (s)",
+      "value": "9.71",
+      "target": "< 150",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "Finish time (s)",
+      "value": "n/a",
+      "target": "< 30",
+      "status": "n/a",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "app cost per session (€)",
+      "value": "n/a",
+      "target": "< 0.50",
+      "status": "n/a",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "cluster",
+      "value": "True",
+      "target": "hit",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "scope",
+      "value": "False",
+      "target": "hit",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "steering",
+      "value": "True",
+      "target": "hit",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "step fit",
+      "value": "0%",
+      "target": "≥ 70%",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "step route",
+      "value": "0%",
+      "target": "≥ 70%",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    }
+  ],
+  "worst": [
+    {
+      "persona": "p01-cooperative",
+      "key": "process.business_pain",
+      "hidden": "It takes five working days, so budget decisions come late, and most of the time goes into chasing explanations",
+      "captured": "Mostly chasing explanations takes the time, and the manual data gathering is slow too. Budget decisions come late.",
+      "method": "judge",
+      "reason": "CAPTURED omits the specific five-working-day duration and adds manual data gathering as another cause of delay."
+    },
+    {
+      "persona": "p01-cooperative",
+      "key": "process.substeps[2].roles",
+      "hidden": "Cost controller - consolidates",
+      "captured": "none",
+      "method": "code",
+      "reason": "none row on one side only"
+    },
+    {
+      "persona": "p01-cooperative",
+      "key": "process.substeps[4].pain_points",
+      "hidden": "some site managers answer only after three reminders",
+      "captured": "Some site managers answer only after three reminders.; A site manager may not answer at all, and then the variance stays unexplained.",
+      "method": "judge",
+      "reason": "CAPTURED adds a distinct pain point: some managers never answer, leaving variances unexplained. This is not stated in HIDDEN."
+    },
+    {
+      "persona": "p01-cooperative",
+      "key": "process.variation",
+      "hidden": "yes",
+      "captured": "",
+      "method": "missing",
+      "reason": "not captured"
+    },
+    {
+      "persona": "p01-cooperative",
+      "key": "process.substeps[4].approvals",
+      "hidden": "none",
+      "captured": "",
+      "method": "missing",
+      "reason": "not captured"
+    },
+    {
+      "persona": "p01-cooperative",
+      "key": "process.substeps[4].exceptions",
+      "hidden": "a site manager does not answer and the variance stays unexplained",
+      "captured": "",
+      "method": "missing",
+      "reason": "not captured"
+    },
+    {
+      "persona": "p01-cooperative",
+      "key": "process.substeps[5].name",
+      "hidden": "Write and send the report",
+      "captured": "",
+      "method": "missing",
+      "reason": "not captured"
+    },
+    {
+      "persona": "p01-cooperative",
+      "key": "process.substeps[5].goal",
+      "hidden": "The CFO and the regional directors have the cost report",
+      "captured": "",
+      "method": "missing",
+      "reason": "not captured"
+    },
+    {
+      "persona": "p01-cooperative",
+      "key": "process.substeps[5].activities",
+      "hidden": "write the summary; build the charts; send the report",
+      "captured": "",
+      "method": "missing",
+      "reason": "not captured"
+    },
+    {
+      "persona": "p01-cooperative",
+      "key": "process.substeps[5].roles",
+      "hidden": "Cost controller - writes; Head of Controlling - approves",
+      "captured": "",
+      "method": "missing",
+      "reason": "not captured"
+    }
+  ],
+  "deltas": {}
+}

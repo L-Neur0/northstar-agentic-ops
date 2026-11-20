@@ -103,7 +103,7 @@ export interface ProcessDiagram {
   dataObjects: DiagramDataObject[]
   dataStores: DiagramDataStore[]
   simplified: boolean
-  stepsHash?: string
+  stepsHash: string
 }
 
 export interface StepColumn {

@@ -9,6 +9,7 @@
  * sends the loaded etag, and on 409 reloads the view; any 401 / 403 hands the error to the page
  * (`onSessionEnded`). With `canDelete={false}` (open demo workspace, spec 23 §19.7 rule 8,
  * AC-23.144, amended 2026-11-20) the Delete button is not rendered. Must not: edit anything — delete is the only write (AC-23.138).
+ * A seeded evaluation session shows a "Simulated" tag (spec 24 §3.12).
  * Colours are theme tokens only, never raw palette classes (spec 23 §3.13.2; AC-23.141).
  */
 import { useId, useRef, useState, type ReactNode } from 'react'
@@ -18,6 +19,7 @@ import { Modal } from '../ui/Modal'
 import { Tabs } from '../ui/Tabs'
 import { Button } from '../ui/Button'
 import { Spinner } from '../ui/Spinner'
+import { Pill } from '../ui/Pill'
 import { ReportNoteBox } from '../report/ReportNote'
 import { ReportPartBoundary } from '../report/ReportPartBoundary'
 import { OpportunityList, RecommendedRoute, StepAssessmentTable } from '../report/ReportParts'
@@ -227,6 +229,11 @@ export function SessionDialog({
           )}
           {tab === 0 ? (
             <>
+              {data.simulated && (
+                <p className="mb-3">
+                  <Pill tone="info">Simulated</Pill> <span className="text-sm text-muted">Demo data from the evaluation, not a real interview.</span>
+                </p>
+              )}
               <SummaryCards summary={data.summary} />
               <div className="mt-6">
                 <StepGrid steps={data.steps} rawSteps={data.rawSteps} />

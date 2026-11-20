@@ -92,3 +92,12 @@ describe('opening a row (AC-23.121)', () => {
     expect(screen.getByRole('button', { name: 'Open session s2' })).toHaveTextContent('Not named yet')
   })
 })
+
+describe('simulated sessions (spec 24 §3.12)', () => {
+  it('a seeded evaluation session carries a Simulated tag; a real one does not', () => {
+    table(reviewList([reviewRow({ id: 'eval-p01', simulated: true }), reviewRow({ id: 'real' })]))
+    const rows = screen.getAllByRole('row').slice(1)
+    expect(within(rows[0]).getByText('Simulated')).toBeInTheDocument()
+    expect(within(rows[1]).queryByText('Simulated')).toBeNull()
+  })
+})

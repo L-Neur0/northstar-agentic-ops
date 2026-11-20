@@ -287,6 +287,7 @@ The Verdict is `complete`, the display status is `proposed`, and it adds 0 point
 | `Part` | `{sub: str \| null, item: str \| null, source, documentId, quote, fromImage, at}`: one per list item (`item` = the item text, or a row's required sub-field) or per single sub-field (`item: null`). The source of an item is its part, else the field meta. Written only when a value mixes sources |
 | Sidecar `__conflicts` (§3.3) | On the profile (process fields, keyed by registry key) and on each step row (keyed by leaf): a list of `{sub, kind: expert \| document, holderDocumentId, value, documentId, quote, fromImage, list, status: open \| left, at}` |
 | `Counters` | Gains `conflict_asks: dict[str, int]`, keyed by conflict key (`"process.substeps[3].data.outputs"`) |
+| `Counters` (2026-11-20, spec 14 §3.18) | Gains `expert_messages: int` (default 0): expert messages in the session, for the *Finish* offer |
 | `LastQuestion` | Gains `conflicts: list[str]` (conflict keys), default `[]` |
 | Transitions | A document offer that differs from a stored value records a conflict; the value and meta are unchanged until the expert chooses (spec 13 §3.13) |
 

@@ -7,6 +7,7 @@
  * rows), never colour alone; the table has a caption and header scopes and scrolls sideways in a
  * focusable labelled region with a sticky Process column; a click elsewhere on a row also opens
  * it (mouse convenience; the row is not focusable). Must not: delete or edit from a row.
+ * A seeded evaluation session carries a "Simulated" tag next to its name (spec 24 §3.12).
  * Colours are theme tokens only, never raw palette classes (spec 23 §3.13.2; AC-23.141).
  */
 import type { Ref } from 'react'
@@ -53,6 +54,11 @@ function Row({ row, striped, onOpen }: { row: ReviewRow; striped: boolean; onOpe
         >
           {name}
         </button>
+        {row.simulated && (
+          <span className="ml-1.5">
+            <Pill tone="info">Simulated</Pill>
+          </span>
+        )}
       </td>
       <td className={TD}>
         <Pill tone={STATUS_TONES[row.status] ?? 'neutral'}>{statusWord(row.status)}</Pill>

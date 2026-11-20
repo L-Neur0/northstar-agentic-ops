@@ -351,3 +351,27 @@ def test_ac_21_19_wire_models_are_camel_case(api: ApiHarness):
     for model in models:
         schema = model.model_json_schema(by_alias=True)
         assert not [k for k in schema.get("properties", {}) if "_" in k], model.__name__
+
+
+# --- spec 24 §3.12: seeded evaluation sessions are marked simulated ----------------------------------
+
+
+def test_spec_24_simulated_sessions_are_tagged_in_the_list_and_the_view(api: ApiHarness):
+    real = _active(api)
+    seeded = asyncio.run(
+        api.repo.create_session(eu_session(owner_id=OWNER, id="eval-p01-cooperative", simulated=True, updated_at=AT))
+    )
+    rows = {r["id"]: r for r in api.client.get("/api/review/sessions", headers=token(api)).json()["rows"]}
+    assert rows[seeded.id]["simulated"] is True and rows[real.id]["simulated"] is False
+    view = api.client.get(f"/api/review/sessions/{seeded.id}", headers=token(api)).json()
+    assert view["simulated"] is True
+
+
+def test_spec_24_old_documents_load_as_not_simulated_and_experts_cannot_set_it(api: ApiHarness):
+    stored = Session.model_validate({"ownerId": OWNER, "createdAt": AT, "updatedAt": AT})
+    assert stored.simulated is False
+    created = api.client.post("/api/sessions", json={"displayName": "x", "simulated": True}, headers=visitor())
+    assert created.status_code in (201, 422)
+    if created.status_code == 201:
+        stored_session = asyncio.run(api.repo.get_session(OWNER, created.json()["id"]))
+        assert stored_session is not None and stored_session.simulated is False

@@ -107,6 +107,7 @@ def read_counters(counters: Mapping[str, Any] | None) -> dict[str, Any]:
         "widening_count": coerce_count(source.get("widening_count")),
         "confirm_turns": coerce_count(source.get("confirm_turns")),
         "conflict_asks": _asks(source, "conflict_asks"),
+        "expert_messages": coerce_count(source.get("expert_messages")),
     }
 
 
@@ -517,6 +518,7 @@ def charge_asks(
         out["find_turns"] += 1
     if prior_phase == PHASE_CONFIRM:
         out["confirm_turns"] += 1
+    out["expert_messages"] += 1  # §3.18 L1: every answered question is one expert message
     return out
 
 

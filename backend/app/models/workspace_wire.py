@@ -33,6 +33,7 @@ class ReviewRowOut(WireModel):
     steps: int
     message_count: int
     document_count: int
+    simulated: bool = False  # spec 24 §3.12: the workspace shows a "Simulated" tag
 
 
 class ReviewCountsOut(WireModel):
@@ -102,6 +103,7 @@ class ReviewSessionOut(WireModel):
     raw_steps: StepGridOut | None
     documents: list[DocumentMetaOut]
     report: DiscoveryReport | None
+    simulated: bool = False  # spec 24 §3.12
 
 
 class ConversationOut(WireModel):

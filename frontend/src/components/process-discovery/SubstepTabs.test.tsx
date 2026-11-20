@@ -10,7 +10,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { SubstepTabs } from './SubstepTabs'
-import { emptyProfile, emptyStep, fullStep, stepViews, stepsSession, withProposals } from '../../test/fixtures/sessions'
+import { emptyProfile, emptyStep, fullStep, stepViews, stepsSession, view, withProposals } from '../../test/fixtures/sessions'
 import type { ProposalControls } from './ProposalActions'
 import type { SessionOut } from '../../types/process-discovery'
 
@@ -149,5 +149,18 @@ describe('proposals in steps (AC-23.77, AC-23.78)', () => {
     tabs(controls({ disabled: true }))
     expect(screen.getByRole('button', { name: 'Confirm all 3 proposals in step 2' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Confirm Goal' })).toBeDisabled()
+  })
+})
+
+describe('SubstepTabs open-conflict marker (AC-23.146)', () => {
+  it('marks a step cell with an open conflict in the step panel', () => {
+    const session = stepsSession()
+    session.fieldViews = session.fieldViews.map((v) =>
+      v.key === 'process.substeps[2].goal' ? view(v.key, 'complete', { conflict: 'open' }) : v,
+    )
+    render(<Harness session={session} />)
+    const panel = screen.getByRole('tabpanel')
+    expect(panel).toHaveTextContent('Conflict – answer in the chat')
+    expect(screen.getAllByText('Conflict – answer in the chat')).toHaveLength(1)
   })
 })

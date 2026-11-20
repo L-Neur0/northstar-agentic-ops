@@ -1,0 +1,36 @@
+# Hand-labelled judge pairs (spec 24 §3.8 J6). label: does CAPTURED mean the same as HIDDEN?
+# At least 12 true and 12 false, with hard cases: a number off by one, a negation, a partial list,
+# a synonym, a different unit. Labels are decided by a person; never change one to fit the judge.
+pairs:
+  # --- true -------------------------------------------------------------------------------------
+  - {field: Trigger, rule: "A concrete event that starts the process, not only a schedule.", hidden: "The month-end close is finished in the ledger system", captured: "When the books are closed for the month in the ledger", label: true, note: synonym}
+  - {field: End result, rule: "A tangible result or change of state, phrased as a result.", hidden: "A monthly cost report with the variances per cost centre explained", captured: "The monthly cost report, with each cost centre's variances explained", label: true, note: reworded}
+  - {field: Who uses the result, rule: "Who uses the end result and what for, not a restatement of the result.", hidden: "The CFO and the regional directors use it to correct budgets and forecasts", captured: "CFO and regional directors, to adjust budgets and forecasts", label: true, note: short form}
+  - {field: Business pain, rule: "If the real pain is in another process, offer to switch to that one before measuring.", hidden: "Tickets wait unassigned and urgent incidents are noticed too late", captured: "Urgent incidents get spotted late because tickets sit without an owner", label: true, note: reordered}
+  - {field: Department, rule: "A unit or department name, not a job title.", hidden: "Finance", captured: "Finance department", label: true, note: extra word}
+  - {field: Role, rule: "The expert's own role in the department, never a person's name.", hidden: "Service desk team lead", captured: "Team lead of the service desk", label: true, note: reordered}
+  - {field: Process name, rule: "A process name.", hidden: "Quarterly user access review", captured: "User access review (quarterly)", label: true, note: reordered}
+  - {field: Goal, rule: "One sentence, phrased as a result rather than an activity.", hidden: "Every flagged variance has an explanation", captured: "All flagged variances are explained", label: true, note: synonym}
+  - {field: Activities, rule: "Two to five activities.", hidden: "e-mail the questions to the site managers; chase answers; record the explanations", captured: "send questions to site managers by email; follow up on answers; write down the explanations", label: true, note: synonyms}
+  - {field: Pain points, rule: "Keep the expert's own words.", hidden: "some site managers answer only after three reminders", captured: "waiting for site managers, who often need several reminders", label: true, note: worked example}
+  - {field: Data in and out, rule: "Both the inputs and the outputs are needed.", hidden: "in: raw cost data; out: consolidated cost workbook", captured: "in: the exported cost data; out: one consolidated workbook of costs", label: true, note: reworded}
+  - {field: Exceptions, rule: "loops_back_to is a step number, never text.", hidden: "a site cost report is still missing at the deadline", captured: "a site has not sent its cost report by the deadline", label: true, note: reworded}
+  - {field: Time today, rule: "A value with a unit if they have one, else their own description.", hidden: "5 working days", captured: "about a working week", label: true, note: "different unit, same amount"}
+  - {field: Step owner, rule: "Exactly one role, never a name.", hidden: "Application owner", captured: "the owner of the application", label: true, note: synonym}
+  - {field: Same way everywhere, rule: "same is yes, no or partly; for no or partly, say what differs.", hidden: "The night shift in Manila routes by a simpler list", captured: "Manila night shift uses a simpler routing list", label: true, note: reworded}
+  # --- false ------------------------------------------------------------------------------------
+  - {field: Trigger, rule: "A concrete event that starts the process, not only a schedule.", hidden: "The month-end close is finished in the ledger system", captured: "The first working day of the month", label: false, note: schedule instead of event}
+  - {field: End result, rule: "A tangible result or change of state, phrased as a result.", hidden: "A monthly cost report with the variances per cost centre explained", captured: "A monthly cost report", label: false, note: key fact missing}
+  - {field: Who uses the result, rule: "Who uses the end result and what for, not a restatement of the result.", hidden: "The CFO and the regional directors use it to correct budgets and forecasts", captured: "The site managers use it to plan their crews", label: false, note: different users}
+  - {field: Business pain, rule: "If the real pain is in another process, offer to switch to that one before measuring.", hidden: "Reviews run late, owners rubber-stamp lists, and leavers keep access for weeks", captured: "Reviews are on time and owners check every user carefully", label: false, note: negation}
+  - {field: Time today, rule: "A value with a unit if they have one, else their own description.", hidden: "5 working days", captured: "4 working days", label: false, note: number off by one}
+  - {field: Target, rule: "A value and a unit, in the same unit as the time today.", hidden: "2 hours", captured: "2 days", label: false, note: different unit}
+  - {field: Activities, rule: "Two to five activities.", hidden: "copy the data into the consolidation workbook; map site cost lines to cost centres; check the totals against the ledger", captured: "copy the data into the workbook", label: false, note: partial list}
+  - {field: Pain points, rule: "Keep the expert's own words.", hidden: "owners approve whole lists without checking", captured: "owners check every line carefully", label: false, note: negation}
+  - {field: Goal, rule: "One sentence, phrased as a result rather than an activity.", hidden: "The starter's pass and documents are ready on day one", captured: "The starter's PPE is ordered", label: false, note: different fact}
+  - {field: Step owner, rule: "Exactly one role, never a name.", hidden: "Application owner", captured: "Security analyst", label: false, note: different role}
+  - {field: Data in and out, rule: "Both the inputs and the outputs are needed.", hidden: "in: marked user lists; out: approved removals", captured: "in: marked user lists; out: removed access and filed evidence", label: false, note: different output}
+  - {field: Exceptions, rule: "loops_back_to is a step number, never text.", hidden: "the visa copy is missing and the pass waits", captured: "none", label: false, note: missing exception}
+  - {field: Department, rule: "A unit or department name, not a job title.", hidden: "HR", captured: "Finance", label: false, note: different department}
+  - {field: Process name, rule: "A process name.", hidden: "Onboarding new site staff", captured: "Filing my timesheet", label: false, note: different process}
+  - {field: Same way everywhere, rule: "same is yes, no or partly; for no or partly, say what differs.", hidden: "The night shift in Manila routes by a simpler list", captured: "Every site does it exactly the same way", label: false, note: negation}

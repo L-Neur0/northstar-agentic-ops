@@ -1,5 +1,5 @@
 {
-  "id": "aa2ee74c-066e-4f9d-8404-560ae9b8e6aa",
+  "id": "1d0c8768-5604-4638-ae45-5be829fe29fc",
   "status": "active",
   "phase": "context",
   "displayName": "Anna",
@@ -8,7 +8,7 @@
   "finishedAt": null,
   "messages": [
     {
-      "id": "4e92b8ce-c748-46ca-ba11-825bdee28877",
+      "id": "59a9aed2-1ab6-43c4-9120-64879cf6f883",
       "role": "agent",
       "text": "Hi Anna! I'm the Discovery Agent. Together we'll find a piece of recurring work in your week that is worth mapping, and map it step by step; it takes about 15–20 minutes. You don't need a process in mind, we'll find one by talking through your week. You can add a document (a procedure, a process map, an example report) at any time; I'll read it and you confirm what I found. The tool maps processes, not people: it never reports anyone's individual time. The transformation team may read this conversation to improve the tool. To start: Which department are you in?",
       "at": "2026-11-19T10:00:00+00:00"
@@ -77,7 +77,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "user_function",
@@ -92,7 +95,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "region",
@@ -107,7 +113,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.name",
@@ -122,7 +131,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.cluster",
@@ -137,7 +149,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.trigger",
@@ -152,7 +167,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.end_result",
@@ -167,7 +185,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.value_at_end",
@@ -182,7 +203,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.business_pain",
@@ -197,7 +221,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.volume",
@@ -213,7 +240,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.process_owner",
@@ -228,7 +258,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.baseline_metric",
@@ -244,7 +277,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.target_metric",
@@ -260,7 +296,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.variation",
@@ -275,7 +314,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.sensitive_data",
@@ -290,7 +332,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substep_count",
@@ -305,7 +350,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     }
   ],
   "score": {

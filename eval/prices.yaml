@@ -1,0 +1,5 @@
+# Euros per million tokens, per Azure OpenAI deployment (spec 24 §3.10).
+# ASSUMPTION: list prices to be confirmed from the Azure price list; the scorecard says so.
+deployments:
+  app-chat: {in: 1.25, out: 10.0}
+  eval-expert: {in: 0.25, out: 2.0}

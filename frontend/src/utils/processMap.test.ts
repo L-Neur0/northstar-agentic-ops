@@ -77,6 +77,7 @@ describe('labels are cleaned and ids generated (AC-23.89)', () => {
     dataObjects: [],
     dataStores: [],
     simplified: false,
+    stepsHash: '',
   }
   const text = toMermaid(hostile)
 

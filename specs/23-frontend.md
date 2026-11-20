@@ -1,6 +1,6 @@
 # 23 · Frontend, part 1: the interview side
 
-> **Status:** amended 2026-11-20 (open workspace: `WORKSPACE_OPEN`, product owner decision) · part 1 approved · §3.13 theme approved · part 2 (§10–§17: documents, report) built · part 3 (§18–§25: workspace) approved 2026-11-20 (Q14 server names win; Q15 cells as display text from the server; Q16–Q20 defaults) · **Implements:** the screens of F-01, F-02, F-03 (honest exit), F-07 (cluster picker), F-08 (step tabs), F-10, F-11, F-21.1–2 (visitor key, resume link), F-23.4 (delete my data) (product); architecture §1 (two sides), §4 (frontend) · **Depends on:** specs 10 (toolchain), 12 (wire models), 13 (field views, *Finish*), 14 (turn), 15 part 2 (routes), 16 (visitor key)
+> **Status:** amended 2026-11-20 (open workspace: `WORKSPACE_OPEN`, product owner decision) · amended 2026-11-20 (§11.7 open-conflict marker, AC-23.146: built) · part 1 approved · §3.13 theme approved · part 2 (§10–§17: documents, report) built · part 3 (§18–§25: workspace) approved 2026-11-20 (Q14 server names win; Q15 cells as display text from the server; Q16–Q20 defaults) · **Implements:** the screens of F-01, F-02, F-03 (honest exit), F-07 (cluster picker), F-08 (step tabs), F-10, F-11, F-21.1–2 (visitor key, resume link), F-23.4 (delete my data) (product); architecture §1 (two sides), §4 (frontend) · **Depends on:** specs 10 (toolchain), 12 (wire models), 13 (field views, *Finish*), 14 (turn), 15 part 2 (routes), 16 (visitor key)
 > **Code:** `frontend/src/{main.tsx,App.tsx,pages,components,services,types,utils,hooks,access}` · **Tests:** next to each file (`*.test.ts[x]`), setup `frontend/src/test/setup.ts`
 > **Part 2** (§10–§17 of this file): document upload and proposals (✓ / ✎), the report screen. **Part 3** (§18–§25): the workspace: access-code login, session list, read-only session popup, conversation, PDF, delete. Overview, edits, validation and briefs come later.
 
@@ -690,6 +690,8 @@ One new `where` value, `documents`: the message goes to the panel's inline alert
 | 8 | ✓ / ✎ appear on process fields (ProcessCard) and step cells (SubstepTabs). Roles and systems are roll-ups and are never proposals |
 | 9 | Proposals are never counted by the client (part 1 rule: counts come from `complete` views only) |
 
+**Amended 2026-11-20 (open conflicts on the panel; spec 17 §3.21, §3.22 row 7).** A field view with `conflict === "open"` (a process field in `ProcessCard` or a step cell in `SubstepTabs`, both through `FieldRow`) shows a small warning chip **"Conflict – answer in the chat"** (text, not colour alone; theme tokens only). There are no buttons: the expert settles a conflict by answering the agent's question in the chat (spec 14 §3.17). `conflict: "left"` and `null` show nothing (a left conflict is listed in the report's gaps, spec 20). The chip sits with the row's other chips and never replaces the value, the status or ✓ / ✎.
+
 ### 11.8 Batch confirm
 
 | Where | Shown when | Button | Call |
@@ -1048,6 +1050,7 @@ utils/{documentLimits,processMap,downloadFile}.ts · types/report.ts
 | AC-23.103 | The chat input bar shows a "+" button to the LEFT of the message box with `aria-label="Add a document"`; pressing it (or Enter/Space on it) opens the file picker; choosing a file uploads it exactly like the panel's control |
 | AC-23.104 | The "+" button is disabled while a turn is sending, while an upload runs (spinner shown), when the session is closed, and when the document limit is reached; the tooltip states the reason |
 | AC-23.105 | Dropping a file on the chat area uploads it; the upload result sentence appears in the chat as a system note, and the Documents section in the panel updates from the returned session |
+| AC-23.146 | *(amended 2026-11-20)* A process field or a step cell whose view has `conflict: "open"` shows the text "Conflict – answer in the chat" in its row and no extra button; with `conflict: "left"` or `null` the text is absent |
 
 ## 15. Test plan (part 2)
 
@@ -1060,6 +1063,7 @@ utils/{documentLimits,processMap,downloadFile}.ts · types/report.ts
 | `src/hooks/useDiscoveryState.test.ts` | AC-23.66 (`isWriting`), 23.80 |
 | `src/components/process-discovery/DocumentPanel.test.tsx` | AC-23.61–23.65, 23.67, 23.70, 23.71, 23.74 |
 | `src/components/process-discovery/FileDrop.test.tsx` | AC-23.64 (drop events, keyboard) |
+| `src/components/process-discovery/FieldRow.test.tsx`, `SubstepTabs.test.tsx` | AC-23.146 |
 | `src/components/process-discovery/ProcessCard.test.tsx` | AC-23.75, 23.76 (✓ / ✎ on process fields; replaces part 1's read-only chip case of AC-23.31 for the hint text) |
 | `src/components/process-discovery/SubstepTabs.test.tsx` | AC-23.77–23.79 |
 | `src/pages/ProcessDiscovery.test.tsx` | AC-23.66, 23.67, 23.69, 23.72, 23.73 (fake API through `ApiProvider`: upload a `procedure` file, confirm a step batch, remove the document) |

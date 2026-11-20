@@ -1,0 +1,62 @@
+# A two-step persona for the evaluation's own tests (spec 24 AC-24.28). Synthetic.
+id: tiny
+version: 1
+quick: true
+seed: true
+kind: cooperative
+profile: A cost controller in Finance, Europe. Short answers.
+behaviour:
+  - Answer what is asked.
+  - Say yes to confirmations.
+truth:
+  fields:
+    department: Finance
+    user_function: Cost controller
+    region: Europe
+    process.name: Monthly cost review
+    process.cluster: FIN
+    process.trigger: Month-end close is completed in the ledger
+    process.end_result: The monthly cost report
+    process.value_at_end: The CFO uses it to decide on budget corrections
+    process.business_pain: Chasing explanations takes days
+    process.volume: {count: 1, period: month}
+    process.process_owner: {role: Head of Controlling}
+    process.baseline_metric: {value: "4", unit: days}
+    process.target_metric: {value: "2", unit: days}
+    process.variation: {same: "yes"}
+    process.sensitive_data: [{none: true}]
+    process.substep_count: 2
+  steps:
+    - name: Step 1
+      goal: Step 1 is done
+      activities: [export, check]
+      roles: [{role: Controller, contribution: checks}]
+      owner: Controller
+      systems: [SAP]
+      data: {inputs: [actuals], outputs: [report]}
+      effort: {duration: 2 hours, frequency: monthly}
+      pain_points: [slow]
+      approvals: [{none: true}]
+      exceptions: [{none: true}]
+    - name: Step 2
+      goal: Step 2 is done
+      activities: [export, check]
+      roles: [{role: Controller, contribution: checks}]
+      owner: Controller
+      systems: [SAP]
+      data: {inputs: [actuals], outputs: [report]}
+      effort: {duration: 2 hours, frequency: monthly}
+      pain_points: [slow]
+      approvals: [{none: true}]
+      exceptions: [{none: true}]
+  aliases:
+    SAP: [the ledger, ledger system]
+  week: []
+documents: []
+expected:
+  cluster: FIN
+  scope: process
+  steering: null
+  routes:
+    1: {fit: [assist, automate], route: [fix-first]}
+  min_conflicts: 0

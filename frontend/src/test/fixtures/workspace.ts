@@ -44,6 +44,7 @@ export function reviewRow(overrides: Partial<ReviewRow> = {}): ReviewRow {
     steps: 4,
     messageCount: 52,
     documentCount: 1,
+    simulated: false,
     ...overrides,
   }
 }

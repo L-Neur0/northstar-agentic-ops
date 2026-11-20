@@ -215,6 +215,9 @@ function makeView(
         quote: fromDoc.quote,
         documentName: s.documents?.find((d) => d.id === fromDoc.docId)?.name ?? null,
         asks: 0,
+        fromImage: false,
+        conflict: null,
+        items: [],
       }
     }
   }
@@ -238,6 +241,9 @@ function makeView(
     quote: status === 'proposed' ? (proposalQuote ?? null) : null,
     documentName: null,
     asks: 0,
+    fromImage: false,
+    conflict: null,
+    items: [],
   }
 }
 
@@ -541,6 +547,7 @@ function reviewRow(s: FakeSession): ReviewRow {
     steps: p.process.substeps.length,
     messageCount: s.messages.length,
     documentCount: (s.documents ?? []).length,
+    simulated: false,
   }
 }
 
@@ -574,6 +581,7 @@ function reviewSessionOut(s: FakeSession): ReviewSessionOut {
     rawSteps: s.rawSteps ? stepGrid(s, s.rawSteps) : null,
     documents: (s.documents ?? []).map((d) => ({ name: d.name, kind: d.kind, bytes: d.bytes, uploadedAt: d.uploadedAt, outcome: d.outcome })),
     report: s.status === 'finished' ? structuredClone(euReport) : null,
+    simulated: row.simulated,
   })
 }
 
@@ -954,6 +962,7 @@ export function createFakeApi(options: FakeApiOptions = {}): DiscoveryApi {
             targetStep: null,
             targetSource: 'none',
             fromImage: ['png', 'jpg', 'jpeg'].includes(extOf(file.name)),
+            conflicts: 0,
           },
           reply: structuredClone(reply),
         }

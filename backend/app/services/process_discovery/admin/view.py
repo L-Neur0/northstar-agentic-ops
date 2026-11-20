@@ -96,4 +96,5 @@ def session_view(
             for d in session.documents
         ],
         report=report,
+        simulated=session.simulated,
     )

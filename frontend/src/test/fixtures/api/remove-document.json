@@ -1,5 +1,5 @@
 {
-  "id": "7184ad3f-493b-47d7-8f90-61d50b702905",
+  "id": "d4c047e2-d9d4-47c7-9fef-9ab3f9cd142b",
   "status": "active",
   "phase": "boundaries",
   "displayName": null,
@@ -8,13 +8,13 @@
   "finishedAt": null,
   "messages": [
     {
-      "id": "d9b31026-b201-43fa-9425-b5d3ce06ee59",
+      "id": "af6417ac-8078-483f-ba2e-4f9433cb5be6",
       "role": "agent",
       "text": "Welcome",
       "at": "2026-11-19T10:00:00+00:00"
     },
     {
-      "id": "e4b7d0e4-e846-4935-98df-e1af1508ab2d",
+      "id": "0f2a10a9-291d-4b63-b72a-5c139b5d8687",
       "role": "agent",
       "text": "From \"Monthly cost review procedure.docx\" I'd fill:\n- Trigger: Month-end close is completed in the ledger\n- End result: The monthly cost report\n- Who uses the result: The CFO uses it to decide on budget corrections\n- Volume: count: 1; period: month; raw: every month for 14 cost centres\nThere is more in it (25 other values); I'll ask about those next.\nShould I fill it like this, or is something wrong?",
       "at": "2026-11-19T10:00:01+00:00"
@@ -81,7 +81,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "user_function",
@@ -94,7 +97,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "region",
@@ -107,7 +113,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.name",
@@ -120,7 +129,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.cluster",
@@ -133,7 +145,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.trigger",
@@ -146,7 +161,10 @@
       "source": "document",
       "quote": "The review starts once month-end close is completed in the ledger",
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.end_result",
@@ -161,7 +179,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.value_at_end",
@@ -176,7 +197,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.business_pain",
@@ -191,7 +215,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.volume",
@@ -207,7 +234,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.process_owner",
@@ -222,7 +252,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.baseline_metric",
@@ -238,7 +271,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.target_metric",
@@ -254,7 +290,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.variation",
@@ -269,7 +308,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.sensitive_data",
@@ -284,7 +326,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substep_count",
@@ -299,7 +344,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     }
   ],
   "score": {

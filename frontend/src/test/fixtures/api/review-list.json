@@ -7,7 +7,7 @@
   },
   "rows": [
     {
-      "id": "ed69c526-8b72-40a9-a0ec-f941e62f7e80",
+      "id": "85bf78a3-4d53-4019-85db-63502070e4d5",
       "createdAt": "2026-11-20T10:00:00+00:00",
       "updatedAt": "2026-11-20T10:00:00+00:00",
       "processName": "Monthly cost review",
@@ -21,10 +21,11 @@
       "fieldsTotal": 76,
       "steps": 5,
       "messageCount": 2,
-      "documentCount": 1
+      "documentCount": 1,
+      "simulated": false
     },
     {
-      "id": "37360ca0-f57a-4602-8667-6448437946df",
+      "id": "2d2131a3-7b42-4ebe-a71b-6c8a72b85c6c",
       "createdAt": "2026-11-19T10:00:00+00:00",
       "updatedAt": "2026-11-19T11:00:00+00:00",
       "processName": null,
@@ -38,7 +39,8 @@
       "fieldsTotal": 16,
       "steps": 0,
       "messageCount": 1,
-      "documentCount": 0
+      "documentCount": 0,
+      "simulated": false
     }
   ],
   "matching": 2,

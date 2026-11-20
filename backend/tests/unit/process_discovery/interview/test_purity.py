@@ -17,7 +17,9 @@ from app.services.process_discovery.profile.scoring import FinishCheck
 from ..profile.builders import cost_review_profile
 
 INTERVIEW = Path(__file__).resolve().parents[4] / "app" / "services" / "process_discovery" / "interview"
-PURE = [INTERVIEW / n for n in ("phases.py", "gates.py", "replies.py")] + sorted((INTERVIEW / "prompts").glob("*.py"))
+PURE = [INTERVIEW / n for n in ("phases.py", "gates.py", "replies.py", "finish_offer.py")] + sorted(
+    (INTERVIEW / "prompts").glob("*.py")
+)
 FORBIDDEN = {
     "time",
     "datetime",

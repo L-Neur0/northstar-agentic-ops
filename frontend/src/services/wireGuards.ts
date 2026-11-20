@@ -78,6 +78,17 @@ const fieldView = shape({
   quote: nullable(str),
   documentName: nullable(str),
   asks: num,
+  fromImage: bool,
+  conflict: nullable(oneOf(['open', 'left'])),
+  items: arrayOf(
+    shape({
+      sub: nullable(str),
+      item: nullable(str),
+      source: nullable(oneOf(['expert', 'document', 'specialist'])),
+      documentName: nullable(str),
+      fromImage: bool,
+    }),
+  ),
 })
 
 const process = shape({
@@ -166,6 +177,7 @@ const documentReport = shape({
   targetStep: nullable(num),
   targetSource: oneOf(['document', 'expert', 'focus', 'none']),
   fromImage: bool,
+  conflicts: num,
 })
 
 /* ---- the discovery report (types/report.ts) ---- */
@@ -181,6 +193,7 @@ const diagram = shape({
   dataObjects: arrayOf(shape({ id: str, stepIndex: num, direction: oneOf(['input', 'output']), label: str })),
   dataStores: arrayOf(shape({ id: str, label: str, steps: arrayOf(num) })),
   simplified: bool,
+  stepsHash: str,
 })
 
 const REPORT_PARTS: Record<string, Check> = {
@@ -366,6 +379,7 @@ const reviewRow = shape({
   steps: num,
   messageCount: num,
   documentCount: num,
+  simulated: bool,
 })
 const reviewList = shape({
   counts: shape({ total: num, active: num, finished: num, noCandidate: num }),
@@ -402,6 +416,7 @@ const reviewSession = shape({
   rawSteps: nullable(stepGrid),
   documents: arrayOf(shape({ name: str, kind: str, bytes: num, uploadedAt: str, outcome: oneOf(['read', 'failed']) })),
   report: nullable(report),
+  simulated: bool,
 })
 
 export const checkReviewListOut = run(reviewList)

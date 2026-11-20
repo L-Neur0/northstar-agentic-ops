@@ -5,7 +5,9 @@
  * lucide icon with an accessible name and words, so status is never shown by colour alone.
  * Rules: the status comes from the field view and the value from `formatValue`; this row never
  * decides whether something is answered. Proposals show their source, the quote on request and
- * ✓ / ✎ (`ProposalActions`, part 2). Must not render a document's full text.
+ * ✓ / ✎ (`ProposalActions`, part 2). A field (or step cell) with an open conflict shows the chip
+ * "Conflict – answer in the chat" and no button: the expert settles it in the chat (spec 23 §11.7,
+ * amended 2026-11-20; AC-23.146). Must not render a document's full text.
  * Colours are theme tokens only, never raw palette classes (spec 23 §3.13.2; AC-23.57).
  */
 import type { ReactNode } from 'react'
@@ -70,6 +72,7 @@ export function FieldRow({
         )}
         <div className="mt-0.5 flex flex-wrap gap-1 empty:hidden">
           {view.status === 'deferred' && <Chip tone="warning">Asked again later</Chip>}
+          {view.conflict === 'open' && <Chip tone="warning">Conflict – answer in the chat</Chip>}
           {view.status === 'complete' && view.source === 'document' && <Chip>from {view.documentName ?? 'a removed document'}</Chip>}
           {view.status === 'complete' && view.source === 'specialist' && <Chip>edited by IT</Chip>}
         </div>

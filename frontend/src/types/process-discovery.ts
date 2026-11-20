@@ -57,11 +57,11 @@ export interface FieldView {
   documentName: string | null
   asks: number
   /** Spec 13 §3.13 item 5: the value was read from an image (meta `fromImage`). */
-  fromImage?: boolean
+  fromImage: boolean
   /** Spec 13 §3.13 item 5: an open or left conflict with a document on this field. */
-  conflict?: 'open' | 'left' | null
+  conflict: 'open' | 'left' | null
   /** Spec 17 §3.21 P4: one source per item when the value mixes sources (else empty). */
-  items?: FieldItemView[]
+  items: FieldItemView[]
 }
 
 /** The source of one item of a value read from several files (spec 17 §3.21 P2–P4). */
@@ -219,7 +219,7 @@ export interface DocumentReportOut {
   targetSource: 'document' | 'expert' | 'focus' | 'none'
   fromImage: boolean
   /** Spec 17 §3.21 item 6: conflicts the reading recorded (asked in the chat). */
-  conflicts?: number
+  conflicts: number
 }
 
 export interface DocumentUploadOut {

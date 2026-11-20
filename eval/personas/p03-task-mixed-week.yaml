@@ -1,0 +1,104 @@
+# Persona p03 (spec 24 §3.3): opens with a task, then names a mixed week; steering must find onboarding. Synthetic.
+id: p03-task-mixed-week
+version: 1
+quick: false
+seed: false
+kind: difficult
+profile: >
+  You are a site office coordinator in the HR team of NIG, working on a construction site in the
+  Middle East. You are helpful but not sure what counts as a "process". You write plain, friendly
+  English.
+behaviour:
+  - When first asked which process or work to talk about, say "mostly I file my timesheet".
+  - When asked what else fills your week, name in this order - filing my timesheet, onboarding new site staff, safety training records, ordering PPE.
+  - Answer questions about how often, how long, how many people and what inputs only in rough words, as in your week list.
+  - When the assistant recommends one piece of work to map, say yes.
+  - Then describe onboarding new site staff as in your sheet.
+  - Give roles, never people's names.
+truth:
+  fields:
+    department: HR
+    user_function: Site office coordinator
+    region: Middle East
+    process.name: Onboarding new site staff
+    process.cluster: HR
+    process.trigger: HR sends the notice that a new person starts on site
+    process.end_result: The new starter is inducted, has a site pass and PPE, and is recorded as ready to work
+    process.value_at_end: The site manager uses it to put the new person to work safely on the first day
+    process.business_pain: New staff wait on their first day and induction records go missing before audits
+    process.volume: {count: 1, period: week}
+    process.process_owner: {role: Site HR officer}
+    process.baseline_metric: {value: "4", unit: hours}
+    process.target_metric: {value: "2", unit: hours}
+    process.variation: {same: "yes"}
+    process.sensitive_data: [{item: personal data of new starters, detail: passport and visa copies}]
+    process.substep_count: 4
+  steps:
+    - name: Receive the starter notice
+      goal: The site office knows who starts and when
+      activities: [read the notice from HR, check the start date, open a starter checklist]
+      roles: [{role: Site office coordinator, contribution: receives}, {role: HR officer, contribution: sends the notice}]
+      owner: Site office coordinator
+      systems: [HR system, E-mail]
+      data: {inputs: [starter notice], outputs: [starter checklist]}
+      effort: {duration: 30 minutes, frequency: each time}
+      pain_points: [notices come one day before the start]
+      approvals: [{none: true}]
+      exceptions: [{description: the start date changes after the notice}]
+    - name: Prepare the site pass and documents
+      goal: The starter's pass and documents are ready on day one
+      activities: [request the site pass, collect passport and visa copies, file the forms]
+      roles: [{role: Site office coordinator, contribution: prepares}, {role: Security officer, contribution: issues the pass}]
+      owner: Site office coordinator
+      systems: [Access card system, HR system]
+      data: {inputs: [starter checklist, passport and visa copies], outputs: [site pass, filed forms]}
+      effort: {duration: 1 hour, frequency: each time}
+      pain_points: [the same data is typed into two systems]
+      approvals: [{approver_role: Site manager}]
+      exceptions: [{description: the visa copy is missing and the pass waits}]
+    - name: Arrange PPE and the induction
+      goal: The starter has PPE and a slot in the safety induction
+      activities: [order the PPE from the store, book the induction slot]
+      roles: [{role: Site office coordinator, contribution: arranges}, {role: Storekeeper, contribution: issues PPE}]
+      owner: Site office coordinator
+      systems: [PPE request form, Induction calendar]
+      data: {inputs: [starter checklist], outputs: [PPE issued, induction booking]}
+      effort: {duration: 1 hour, frequency: each time}
+      pain_points: [sizes are not known in advance]
+      approvals: [{none: true}]
+      exceptions: [{none: true}]
+    - name: Record the induction and close onboarding
+      goal: The starter is recorded as inducted and ready to work
+      activities: [collect the signed induction sheet, update the HR system, close the checklist]
+      roles: [{role: Site office coordinator, contribution: records}]
+      owner: Site office coordinator
+      systems: [HR system]
+      data: {inputs: [signed induction sheet], outputs: [onboarding record]}
+      effort: {duration: 1 hour, frequency: each time}
+      pain_points: [paper sheets get lost before they are typed in]
+      approvals: [{none: true}]
+      exceptions: [{none: true}]
+  aliases:
+    HR system: [the HR tool, hr system, HRIS]
+    E-mail: [email, mail]
+    Access card system: [badge system, site pass system, access system]
+    PPE request form: [PPE form, store form]
+    Induction calendar: [induction schedule, calendar]
+    Site office coordinator: [coordinator, me, site coordinator]
+  week:
+    - {name: filing my timesheet, runs: every week, time: about 15 minutes, people: just me, inputs: the time system}
+    - {name: onboarding new site staff, runs: every week, time: about 4 hours, people: 5 of us, inputs: forms in the HR system}
+    - {name: safety training records, runs: every month, time: about 2 days, people: 3 of us, inputs: paper sign-in sheets}
+    - {name: ordering PPE}
+documents: []
+expected:
+  cluster: HR
+  scope: process
+  steering:
+    recommended: onboarding new site staff
+    chosen: onboarding new site staff
+    ideas: [timesheet, safety training records, ordering PPE]
+  routes:
+    2: {fit: [assist, automate], route: [low-code-flow, it-integration-rpa, fix-first]}
+    4: {fit: [assist, automate], route: [low-code-flow, fix-first, it-integration-rpa]}
+  min_conflicts: 0

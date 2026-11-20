@@ -1,6 +1,6 @@
 # 24 · Evaluation: simulated experts, runner, scoring, seed data
 
-> **Status:** approved 2026-11-20 (judge app-chat at default temperature; efficiency metrics; seeded sessions tagged Simulated; Q8 offer-never-force) · **Implements:** F-25 and the quality targets of §8 (product), §3.9 and §6.6 (architecture) · **Depends on:** specs 11, 12, 13, 14, 15, 16, 17, 20, 26
+> **Status:** built 2026-11-20 with deviations (§10); approved 2026-11-20 (judge app-chat at default temperature; efficiency metrics; seeded sessions tagged Simulated; Q8 offer-never-force) · **Implements:** F-25 and the quality targets of §8 (product), §3.9 and §6.6 (architecture) · **Depends on:** specs 11, 12, 13, 14, 15, 16, 17, 20, 26
 > **Code:** `eval/run.py`, `eval/evalkit/` · **Data:** `eval/personas/`, `eval/documents/`, `eval/judge_calibration.yaml`, `eval/prices.yaml` · **Tests:** `eval/tests/`
 
 ## 1. Purpose
@@ -444,3 +444,25 @@ The first real run (`make eval QUICK=1`, then `make eval`) is the verification s
 | Q6 | Press *Finish* as soon as ready, or let the review phase run? | **Decided:** up to 3 review answers, then *Finish* |
 | Q7 | Persona documents as `.md` or `.docx`? | **Decided:** `.md`; one `.docx` comes with the later personas |
 | Q8 | *(decided 2026-11-20, product owner)* Session-wide length | **Offer, never force:** at 40 expert messages the agent offers *Finish* and lists what is missing, and offers again every 10 messages; the employee may keep going. Product change recorded in spec 14 §3.18 (to build). The eval keeps its own hard cap of 60 expert messages (session counted as failed) |
+
+## 10. Built: deviations and first run
+
+| # | Deviation | Why |
+|---|---|---|
+| D1 | `score_fields`, `progress_curve` and `calibrate` are `async` | The judge is an async model call |
+| D2 | `load_personas(folder, *, quick, company, documents_dir, only)`: one `Company` (codes, routes, regions, file types, yes / no words) read from `config/<company>/*.yaml` | `app.core.config` is not on the AC-24.29 import list |
+| D3 | Judge rows whose two values are equal after normalising are decided by code (no judge call) | Code first; saves calls, same result |
+| D4 | Stale check by code only (normalised equality or containment), no judge for text | Every `stale` value in the four personas is a short name or phrase |
+| D5 | *Finish* rule: in the review phase, *Finish* after 3 review answers, or earlier when the agent's last message holds no question mark | Reading of Q6 "up to 3 review answers": the review may end before 3 |
+| D6 | `create_app(settings, *, llm=None)` gains an optional client (shell change in `app/main.py`) | The scripted end-to-end test (AC-24.28) needs a fake model without importing the engine |
+| D7 | `snapshots.jsonl` starts with one `start` snapshot (n = 0) | The first message's wasted-turn and plateau checks need a "before" state |
+| D8 | `Driver` also has `get`, `ideas` and `last_call`; the in-process driver has `stored_model` (seeding) | Snapshots, the ideas check and per-call log lines |
+| D9 | URL mode's `--max-tokens` guard uses an estimate of 1 M tokens per persona (§3.13) | App tokens are not on the wire |
+| D10 | `run.json` commit comes from `GIT_COMMIT` (empty when unset) | The runner does not shell out to git |
+| D11 | Plateaus show as "flag" and never fail the run | §3.9a: target "0 (flag)" |
+| D12 | Scope, fit and route are `n/a` (not ✗) for a session that never reached *Finish* | There is no verdict or report to score; the failed session already fails the run |
+| D13 | EXPERT and JUDGE replies are cached in `eval/.cache/llm` (git-ignored); the app's cache stays `backend/.cache/llm` | Keeps evaluation text out of the app cache |
+| D14 | The "Simulated" tag is also shown inside the workspace session popup (Session tab) | §3.12 item 4: "on that row and on the session view" |
+
+**First run** (`make eval QUICK=1`, in process, real Azure, 2026-11-20, `eval/reports/quick-20261120-151619.*`): judge agreement 100 % (30/30). Both personas hit the hard cap of 60 messages without *Finish* (FAIL): the interview asks one step cell per message (about 11 messages per step), so a 5-step process needs more than 60. p01 report quality 76 % at message 60 (54/71), 2 wasted turns, 0 plateaus; p02 95 % (57/60), 3 wasted turns, 1 plateau, 0 invented values. Median turn 2.4-2.6 s, max 12 s; app cost about €0.38-0.40 per persona at the assumed prices. That run's scorecard was written before D12, so it shows scope, fit and route as ✗ for the unfinished sessions; a cached re-run gives the same numbers with them as n/a.
+

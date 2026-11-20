@@ -1,6 +1,6 @@
 {
-  "id": "ed69c526-8b72-40a9-a0ec-f941e62f7e80",
-  "etag": "\"905d4102398a4fe3845d9221ef609523\"",
+  "id": "85bf78a3-4d53-4019-85db-63502070e4d5",
+  "etag": "\"f826a453dd9948438dfcdc6d3c418e12\"",
   "summary": {
     "department": "Finance",
     "function": "Cost controlling",
@@ -2178,5 +2178,6 @@
       "closingNote": "This is a first assessment from one expert's account in a short interview, with 1 document. Numbers are hours estimated from the expert's answers; the specialist review checks them."
     },
     "generatedAt": "2026-11-20T10:00:00+00:00"
-  }
+  },
+  "simulated": false
 }

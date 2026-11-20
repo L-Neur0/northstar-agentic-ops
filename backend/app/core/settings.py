@@ -91,6 +91,8 @@ class Settings(BaseSettings):
     guide_history_turns: Annotated[int, Field(ge=2, le=200)] = 30
     placement_min_confidence: Annotated[float, Field(ge=0, le=1)] = 0.60
     placement_min_margin: Annotated[float, Field(ge=0, le=1)] = 0.15
+    finish_offer_first: Annotated[int, Field(ge=1, le=1000)] = 40  # spec 14 §3.18 L2
+    finish_offer_every: Annotated[int, Field(ge=1, le=1000)] = 10
     llm_cache_dir: Path = BACKEND_DIR / ".cache" / "llm"
 
     # Assessment at Finish (spec 20 §3.1): each of the four parallel calls gets this long

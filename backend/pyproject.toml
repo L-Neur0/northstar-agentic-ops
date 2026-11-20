@@ -51,6 +51,7 @@ markers = [
 
 [tool.ruff]
 line-length = 120
+src = [".", ".."]  # `app` from here, `eval` (spec 24) from the repository root
 target-version = "py312"
 extend-exclude = [".venv"]
 
@@ -59,7 +60,8 @@ select = ["E", "F", "B", "I", "UP"]
 ignore = ["B008", "E501"]
 
 [tool.pyright]
-include = ["app", "tests"]
+include = ["app", "tests", "../eval"]
+extraPaths = [".."]
 pythonVersion = "3.12"
 typeCheckingMode = "basic"
 venvPath = "."

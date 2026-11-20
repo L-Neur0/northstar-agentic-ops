@@ -51,12 +51,14 @@ class TurnState(TypedDict, total=False):
 
 @dataclass(frozen=True)
 class InterviewSettings:
-    """The four interview settings (spec 14 §4); the lifespan builds them from `Settings`."""
+    """The interview settings (spec 14 §4, §3.18); the lifespan builds them from `Settings`."""
 
     guide_history_turns: int = 30
     turn_timeout_seconds: float = 150.0
     placement_min_confidence: float = 0.60
     placement_min_margin: float = 0.15
+    finish_offer_first: int = 40
+    finish_offer_every: int = 10
 
 
 @dataclass(frozen=True)

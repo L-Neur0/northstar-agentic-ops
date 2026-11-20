@@ -1,5 +1,5 @@
 {
-  "id": "7184ad3f-493b-47d7-8f90-61d50b702905",
+  "id": "d4c047e2-d9d4-47c7-9fef-9ab3f9cd142b",
   "status": "active",
   "phase": "boundaries",
   "displayName": null,
@@ -8,13 +8,13 @@
   "finishedAt": null,
   "messages": [
     {
-      "id": "d9b31026-b201-43fa-9425-b5d3ce06ee59",
+      "id": "af6417ac-8078-483f-ba2e-4f9433cb5be6",
       "role": "agent",
       "text": "Welcome",
       "at": "2026-11-19T10:00:00+00:00"
     },
     {
-      "id": "e4b7d0e4-e846-4935-98df-e1af1508ab2d",
+      "id": "0f2a10a9-291d-4b63-b72a-5c139b5d8687",
       "role": "agent",
       "text": "From \"Monthly cost review procedure.docx\" I'd fill:\n- Trigger: Month-end close is completed in the ledger\n- End result: The monthly cost report\n- Who uses the result: The CFO uses it to decide on budget corrections\n- Volume: count: 1; period: month; raw: every month for 14 cost centres\nThere is more in it (25 other values); I'll ask about those next.\nShould I fill it like this, or is something wrong?",
       "at": "2026-11-19T10:00:01+00:00"
@@ -247,7 +247,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "user_function",
@@ -260,7 +263,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "region",
@@ -273,7 +279,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.name",
@@ -286,7 +295,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.cluster",
@@ -299,7 +311,10 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.trigger",
@@ -312,7 +327,10 @@
       "source": "document",
       "quote": "The review starts once month-end close is completed in the ledger",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.end_result",
@@ -325,7 +343,10 @@
       "source": "document",
       "quote": "The process ends with the monthly cost report",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.value_at_end",
@@ -338,7 +359,10 @@
       "source": "document",
       "quote": "which the CFO uses to decide on budget corrections",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.business_pain",
@@ -353,7 +377,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.volume",
@@ -366,7 +393,10 @@
       "source": "document",
       "quote": "It runs every month for 14 cost centres",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.process_owner",
@@ -379,7 +409,10 @@
       "source": "document",
       "quote": "Owner: Head of Controlling",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.baseline_metric",
@@ -395,7 +428,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.target_metric",
@@ -411,7 +447,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.variation",
@@ -426,7 +465,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.sensitive_data",
@@ -441,7 +483,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substep_count",
@@ -456,7 +501,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[1].name",
@@ -469,7 +517,10 @@
       "source": "document",
       "quote": "Export actuals",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[1].goal",
@@ -484,7 +535,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[1].activities",
@@ -497,7 +551,10 @@
       "source": "document",
       "quote": "exports actual costs per cost centre from SAP S/4HANA",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[1].roles",
@@ -510,7 +567,10 @@
       "source": "document",
       "quote": "The cost controller exports actual costs",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[1].owner",
@@ -523,7 +583,10 @@
       "source": "document",
       "quote": "The cost controller exports actual costs",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[1].systems",
@@ -536,7 +599,10 @@
       "source": "document",
       "quote": "from SAP S/4HANA",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[1].data",
@@ -549,7 +615,10 @@
       "source": "document",
       "quote": "exports actual costs per cost centre … into the review workbook",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[1].effort",
@@ -565,7 +634,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[1].pain_points",
@@ -580,7 +652,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[1].approvals",
@@ -595,7 +670,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[1].exceptions",
@@ -610,7 +688,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[1].handover",
@@ -625,7 +706,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[2].name",
@@ -638,7 +722,10 @@
       "source": "document",
       "quote": "Compare with budget",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[2].goal",
@@ -653,7 +740,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[2].activities",
@@ -666,7 +756,10 @@
       "source": "document",
       "quote": "compares actuals with the budget in Excel … flags every variance above 5%",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[2].roles",
@@ -679,7 +772,10 @@
       "source": "document",
       "quote": "The cost controller compares actuals with the budget",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[2].owner",
@@ -694,7 +790,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[2].systems",
@@ -707,7 +806,10 @@
       "source": "document",
       "quote": "the budget in Excel",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[2].data",
@@ -723,7 +825,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[2].effort",
@@ -739,7 +844,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[2].pain_points",
@@ -754,7 +862,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[2].approvals",
@@ -769,7 +880,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[2].exceptions",
@@ -784,7 +898,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[2].handover",
@@ -799,7 +916,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[3].name",
@@ -812,7 +932,10 @@
       "source": "document",
       "quote": "Collect explanations",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[3].goal",
@@ -827,7 +950,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[3].activities",
@@ -842,7 +968,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[3].roles",
@@ -855,7 +984,10 @@
       "source": "document",
       "quote": "Cost centre managers explain flagged variances",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[3].owner",
@@ -870,7 +1002,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[3].systems",
@@ -883,7 +1018,10 @@
       "source": "document",
       "quote": "by e-mail",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[3].data",
@@ -898,7 +1036,10 @@
       "source": "document",
       "quote": "explain flagged variances",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[3].effort",
@@ -913,7 +1054,10 @@
       "source": "document",
       "quote": "within three working days",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[3].pain_points",
@@ -928,7 +1072,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[3].approvals",
@@ -943,7 +1090,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[3].exceptions",
@@ -956,7 +1106,10 @@
       "source": "document",
       "quote": "If an explanation is missing after three working days",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[3].handover",
@@ -971,7 +1124,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[4].name",
@@ -984,7 +1140,10 @@
       "source": "document",
       "quote": "Step 4 | Review",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[4].goal",
@@ -999,7 +1158,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[4].activities",
@@ -1014,7 +1176,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[4].roles",
@@ -1027,7 +1192,10 @@
       "source": "document",
       "quote": "The Head of Controlling reviews variances and explanations",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[4].owner",
@@ -1040,7 +1208,10 @@
       "source": "document",
       "quote": "The Head of Controlling reviews variances",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[4].systems",
@@ -1055,7 +1226,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[4].data",
@@ -1071,7 +1245,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[4].effort",
@@ -1087,7 +1264,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[4].pain_points",
@@ -1102,7 +1282,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[4].approvals",
@@ -1115,7 +1298,10 @@
       "source": "document",
       "quote": "approves the commentary",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[4].exceptions",
@@ -1130,7 +1316,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[4].handover",
@@ -1145,7 +1334,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[5].name",
@@ -1158,7 +1350,10 @@
       "source": "document",
       "quote": "Send the cost report",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[5].goal",
@@ -1173,7 +1368,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[5].activities",
@@ -1188,7 +1386,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[5].roles",
@@ -1201,7 +1402,10 @@
       "source": "document",
       "quote": "The cost controller publishes the cost report",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[5].owner",
@@ -1216,7 +1420,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[5].systems",
@@ -1229,7 +1436,10 @@
       "source": "document",
       "quote": "in Power BI",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[5].data",
@@ -1244,7 +1454,10 @@
       "source": "document",
       "quote": "publishes the cost report for the CFO",
       "documentName": "Monthly cost review procedure.docx",
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[5].effort",
@@ -1260,7 +1473,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[5].pain_points",
@@ -1275,7 +1491,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[5].approvals",
@@ -1290,7 +1509,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[5].exceptions",
@@ -1305,7 +1527,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     },
     {
       "key": "process.substeps[5].handover",
@@ -1320,7 +1545,10 @@
       "source": null,
       "quote": null,
       "documentName": null,
-      "asks": 0
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     }
   ],
   "score": {
@@ -1338,7 +1566,7 @@
   "reportStatus": null,
   "documents": [
     {
-      "id": "d26e89827",
+      "id": "d395e63b2",
       "name": "Monthly cost review procedure.docx",
       "kind": "docx",
       "bytes": 38347,

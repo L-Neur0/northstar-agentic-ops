@@ -130,6 +130,9 @@ export function view(key: string, status: FieldStatus = 'empty', extra: Partial<
     quote: null,
     documentName: null,
     asks: 0,
+    fromImage: false,
+    conflict: null,
+    items: [],
     ...extra,
   }
 }

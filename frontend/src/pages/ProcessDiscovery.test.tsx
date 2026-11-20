@@ -565,7 +565,7 @@ describe('upload results and errors (AC-23.67–23.69)', () => {
     vi.spyOn(api, 'uploadDocument').mockResolvedValue({
       session: stepsSession({ documents: [{ id: 'd', name: 'a.docx', kind: 'docx', bytes: 1, chars: 1, truncated: false, uploadedAt: 'x', outcome: 'read', proposals: 0, pending: 0 }] }),
       document: { id: 'd', name: 'a.docx', kind: 'docx', bytes: 1, chars: 1, truncated: false, uploadedAt: 'x', outcome: 'read', proposals: 0, pending: 0 },
-      report: { documentId: 'd', outcome: 'read', reader: 'model', truncated: false, offered: { fields: 0, steps: 0, cells: 0 }, kept: { fields: 0, steps: 0, cells: 0 }, dropped: 0, skipped: [], stepList: 0, message: 'I read "a.docx" but found nothing new for the form.', documentRole: 'whole_process', targetStep: null, targetSource: 'none', fromImage: false },
+      report: { documentId: 'd', outcome: 'read', reader: 'model', truncated: false, offered: { fields: 0, steps: 0, cells: 0 }, kept: { fields: 0, steps: 0, cells: 0 }, dropped: 0, skipped: [], stepList: 0, message: 'I read "a.docx" but found nothing new for the form.', documentRole: 'whole_process', targetStep: null, targetSource: 'none', fromImage: false, conflicts: 0 },
       reply: { id: 'r', role: 'agent', text: 'I read "a.docx" but found nothing new for the form. Let\'s carry on where we left off.', at: 'x' },
     })
     renderPage(api, '/process-discovery/s-1')

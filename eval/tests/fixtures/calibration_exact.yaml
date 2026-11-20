@@ -1,0 +1,106 @@
+# Calibration pairs for the scripted end-to-end test: label true exactly when the texts are equal.
+pairs:
+- field: Goal
+  hidden: value 0
+  captured: value 0
+  label: true
+- field: Goal
+  hidden: value 1
+  captured: value 1
+  label: true
+- field: Goal
+  hidden: value 2
+  captured: value 2
+  label: true
+- field: Goal
+  hidden: value 3
+  captured: value 3
+  label: true
+- field: Goal
+  hidden: value 4
+  captured: value 4
+  label: true
+- field: Goal
+  hidden: value 5
+  captured: value 5
+  label: true
+- field: Goal
+  hidden: value 6
+  captured: value 6
+  label: true
+- field: Goal
+  hidden: value 7
+  captured: value 7
+  label: true
+- field: Goal
+  hidden: value 8
+  captured: value 8
+  label: true
+- field: Goal
+  hidden: value 9
+  captured: value 9
+  label: true
+- field: Goal
+  hidden: value 10
+  captured: value 10
+  label: true
+- field: Goal
+  hidden: value 11
+  captured: value 11
+  label: true
+- field: Goal
+  hidden: value 12
+  captured: value 12
+  label: true
+- field: Goal
+  hidden: value 0
+  captured: other 0
+  label: false
+- field: Goal
+  hidden: value 1
+  captured: other 1
+  label: false
+- field: Goal
+  hidden: value 2
+  captured: other 2
+  label: false
+- field: Goal
+  hidden: value 3
+  captured: other 3
+  label: false
+- field: Goal
+  hidden: value 4
+  captured: other 4
+  label: false
+- field: Goal
+  hidden: value 5
+  captured: other 5
+  label: false
+- field: Goal
+  hidden: value 6
+  captured: other 6
+  label: false
+- field: Goal
+  hidden: value 7
+  captured: other 7
+  label: false
+- field: Goal
+  hidden: value 8
+  captured: other 8
+  label: false
+- field: Goal
+  hidden: value 9
+  captured: other 9
+  label: false
+- field: Goal
+  hidden: value 10
+  captured: other 10
+  label: false
+- field: Goal
+  hidden: value 11
+  captured: other 11
+  label: false
+- field: Goal
+  hidden: value 12
+  captured: other 12
+  label: false

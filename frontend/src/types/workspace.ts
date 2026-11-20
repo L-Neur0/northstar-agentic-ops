@@ -36,6 +36,8 @@ export interface ReviewRow {
   steps: number
   messageCount: number
   documentCount: number
+  /** A seeded evaluation session (spec 24 §3.12): shown with a "Simulated" tag. */
+  simulated: boolean
 }
 
 export interface ReviewCounts {
@@ -111,6 +113,7 @@ export interface ReviewSessionOut {
   rawSteps: StepGrid | null
   documents: DocumentMeta[]
   report: DiscoveryReport | null
+  simulated: boolean
 }
 
 export interface ConversationOut {
