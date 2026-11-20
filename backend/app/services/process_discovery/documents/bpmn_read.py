@@ -150,7 +150,7 @@ def read_bpmn(data: bytes, budget: int) -> BpmnRead:
     text = clean_and_cap("\n".join(lines), budget)
     raw = read_document_model().model_validate(
         {
-            "document_kind": "process_map",
+            "document_role": "whole_process",
             "name": _q(name),
             "trigger": _q(start),
             "end_result": _q(end),

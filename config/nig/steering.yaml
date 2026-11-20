@@ -1,0 +1,13 @@
+# Steering toward value and ready data (spec 14 §3.15 item 11).
+# When the expert names several candidate processes in `find`, code asks a few quick questions,
+# scores each candidate with these weights and recommends the best one. The expert decides.
+weights: {hours: 0.5, people: 0.2, data: 0.3}   # each >= 0, sum = 1 (± 0.001)
+hours_full_score: 500        # > 0; hours a year that score 1.0
+people_full_score: 5         # >= 2; people that score 1.0
+min_known_signals: 2         # 1-3; fewer known signals on the top candidate = no recommendation
+max_candidates: 3            # 2-5; candidates steered, in mention order
+max_questions: 3             # 1-3; steering questions per session
+input_cues:                  # whole words after normalising; each list non-empty
+  digital: [excel, spreadsheet, spreadsheets, sap, system, systems, email, e-mail, form, forms, pdf, export, portal, database, csv, file, files]
+  paper_verbal: [paper, printed, handwritten, phone, call, calls, verbal, meeting, meetings, memory, fax]
+solo_phrases: ["just me", "only me", "myself", "on my own"]

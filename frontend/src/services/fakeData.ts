@@ -269,3 +269,50 @@ export const SCRIPT: ScriptTurn[] = [
     reply: () => 'Thank you. **Your map is complete.** Press *Finish and build my report* when you are happy with it.',
   },
 ]
+
+/* ---- Documents (spec 23 §11.15.3): what the fake "reads" from a procedure or a BPMN file ---- */
+
+export const FAKE_CONFIG = {
+  productName: 'Process Discovery',
+  regions: ['North America', 'Europe', 'Middle East', 'Asia-Pacific'],
+  languages: ['en', 'de'],
+  documents: { allowedTypes: ['pdf', 'docx', 'xlsx', 'csv', 'txt', 'md', 'bpmn', 'xml'], maxFiles: 5, maxFileMb: 10, maxImageMb: 5 },
+}
+
+/** Process fields a procedure proposes, with the value and the quote it was read from. */
+export const PROCEDURE_FIELDS: Array<{ key: 'trigger' | 'end_result'; value: string; quote: string }> = [
+  {
+    key: 'trigger',
+    value: 'Month-end close completed',
+    quote: 'The review starts once month-end close is completed.',
+  },
+  {
+    key: 'end_result',
+    value: 'Monthly cost report with variance comments',
+    quote: 'The process ends with the monthly cost report, including a comment for every variance.',
+  },
+]
+
+/** Step names a procedure (or a BPMN file) proposes, each with its quote. */
+export const PROCEDURE_STEPS: Array<{ name: string; quote: string }> = [
+  { name: 'Export actuals', quote: 'Step 1: export actual costs per cost centre from the ledger.' },
+  { name: 'Compare with budget', quote: 'Step 2: compare actuals with the budget in the workbook.' },
+  { name: 'Collect explanations', quote: 'Step 3: cost centre managers explain flagged variances.' },
+  { name: 'Review', quote: 'Step 4: the head of controlling reviews and approves the commentary.' },
+  { name: 'Send the cost report', quote: 'Step 5: publish the cost report for the management team.' },
+]
+
+/** Roles a BPMN file proposes from its lanes (on step 1 and step 2). */
+export const BPMN_LANES = ['Cost controller', 'Cost centre manager']
+
+/** Spec 17 §3.12 and §3.7 sentences, built by the fake like the server builds them. */
+export const DOCUMENT_SENTENCES = {
+  read: (name: string, values: number, steps: number) =>
+    `I read "${name}" and found ${values} values${steps > 0 ? ` and ${steps} steps` : ''} for your process. Nothing counts until you confirm it.`,
+  nothingNew: (name: string) => `I read "${name}" but found nothing new for the form.`,
+  truncated: 'It is long, so I read only the first part.',
+  failed: "I couldn't read this document just now. The interview continues without it; you can remove it and try again.",
+}
+
+/** A tiny valid PDF for the fake download. */
+export const FAKE_PDF = '%PDF-1.4\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n2 0 obj << /Type /Pages /Kids [] /Count 0 >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n'

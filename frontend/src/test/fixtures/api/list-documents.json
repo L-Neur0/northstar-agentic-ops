@@ -1,0 +1,16 @@
+{
+  "documents": [
+    {
+      "id": "d26e89827",
+      "name": "Monthly cost review procedure.docx",
+      "kind": "docx",
+      "bytes": 38347,
+      "chars": 987,
+      "truncated": false,
+      "uploadedAt": "2026-11-19T10:00:01+00:00",
+      "outcome": "read",
+      "proposals": 29,
+      "pending": 29
+    }
+  ]
+}

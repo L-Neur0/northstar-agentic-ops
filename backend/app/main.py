@@ -26,7 +26,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 
-from app.api import meta_routes, process_discovery_routes, workspace_routes
+from app.api import document_routes, meta_routes, process_discovery_routes, report_routes, workspace_routes
 from app.api.errors import install_error_handlers
 from app.core.config import load_company_config
 from app.core.logging import configure_logging
@@ -69,7 +69,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             llm = None
         ctx = engine.build_context(company, settings)
         graph = engine.build_graph(llm, ctx) if llm is not None else None
-        app.state.service = engine.DiscoveryService(store, llm, ctx, graph, clock=lambda: datetime.now(UTC).isoformat())
+        app.state.service = engine.DiscoveryService(
+            store, llm, ctx, graph, clock=lambda: datetime.now(UTC).isoformat(), company=company,
+            config_dir=settings.company_config_dir, budget_guard=budget.guard,
+            assessment_timeout=settings.assessment_call_timeout_seconds,
+        )  # fmt: skip
         try:
             yield
         finally:
@@ -99,6 +103,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(meta_routes.router)
     app.include_router(process_discovery_routes.router)
+    app.include_router(report_routes.router)
+    app.include_router(document_routes.router)
     app.include_router(workspace_routes.router)
     _serve_frontend(app, settings.frontend_dist)
     return app

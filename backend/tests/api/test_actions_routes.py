@@ -117,7 +117,8 @@ def test_ac_15_43_finish_on_a_complete_map(api: ApiHarness):
     stored = api.repo._documents[(OWNER_A, seeded.id)]  # pyright: ignore[reportPrivateUsage]
     assert '"ttl"' not in stored
     again = api.client.post(f"/api/sessions/{seeded.id}/finish", headers=visitor())
-    assert again.status_code == 400 and again.json()["code"] == "session_closed"
+    # Spec 20 §3.2 step 2 (AC-20.15): a second Finish returns the finished session, it is not an error.
+    assert again.status_code == 200 and again.json()["finishedAt"] == body["finishedAt"]
 
 
 @pytest.mark.parametrize(

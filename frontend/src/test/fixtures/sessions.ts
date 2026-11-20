@@ -164,6 +164,7 @@ export function buildSession(overrides: Partial<SessionOut> = {}): SessionOut {
     scope: null,
     clusterProposal: null,
     reportStatus: null,
+    documents: [],
     ...overrides,
   }
 }
@@ -204,6 +205,39 @@ export function readySession(overrides: Partial<SessionOut> = {}): SessionOut {
     fieldViews: [...processViews(ALL_P_COMPLETE), ...stepViews(1, 12), ...stepViews(2, 12)],
     score: { value: 1, filledPoints: 40, totalPoints: 40 },
     finish: { ready: true, blockedBy: null, looksLikeTask: false },
+    ...overrides,
+  })
+}
+
+const DOC = (k: number, quote: string): Partial<FieldView> => ({ source: 'document', documentName: 'procedure.docx', quote: `${quote} ${k}` })
+
+/**
+ * A session with proposals from documents (spec 23 §15): a proposed trigger, three rows whose step
+ * names are proposed, step 2 with two proposed cells (goal, systems), and two documents.
+ */
+export function withProposals(overrides: Partial<SessionOut> = {}): SessionOut {
+  const profile = emptyProfile()
+  profile.process.name = 'Monthly cost review'
+  profile.process.trigger = 'Month-end close completed'
+  profile.process.substep_count = 3
+  profile.process.substeps = [emptyStep('Export actuals'), { ...emptyStep('Compare with budget'), goal: 'See the variances', systems: ['Excel'] }, emptyStep('Review')]
+  const step = (k: number, extra: Record<string, FieldStatus> = {}) =>
+    stepViews(k, 0, { name: 'proposed', ...extra }).map((v) => (v.status === 'proposed' ? { ...v, ...DOC(k, `Quote for ${v.label}`) } : v))
+  return buildSession({
+    phase: 'steps',
+    profile,
+    fieldViews: [
+      ...processViews({ 'process.name': 'complete' }).map((v) =>
+        v.key === 'process.trigger' ? { ...v, status: 'proposed' as FieldStatus, source: 'document' as const, documentName: 'procedure.docx', quote: 'The review starts once month-end close is completed.' } : v,
+      ),
+      ...step(1),
+      ...step(2, { goal: 'proposed', systems: 'proposed' }),
+      ...step(3),
+    ],
+    documents: [
+      { id: 'd1', name: 'procedure.docx', kind: 'docx', bytes: 1, chars: 1, truncated: false, uploadedAt: '2026-11-19T08:00:00Z', outcome: 'read', proposals: 6, pending: 6 },
+      { id: 'd2', name: 'old-map.bpmn', kind: 'bpmn', bytes: 1, chars: 1, truncated: true, uploadedAt: '2026-11-19T08:01:00Z', outcome: 'read', proposals: 0, pending: 0 },
+    ],
     ...overrides,
   })
 }

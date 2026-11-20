@@ -1,0 +1,302 @@
+{
+  "department": "Finance",
+  "user_function": "Cost controlling",
+  "region": "North America",
+  "process": {
+    "name": "Monthly cost review",
+    "cluster": {
+      "code": "FIN",
+      "name": "Finance",
+      "decided_by": "expert"
+    },
+    "trigger": "Month-end close is completed in SAP",
+    "end_result": "A cost report with variance explanations",
+    "value_at_end": "The CFO uses it to steer the site budgets",
+    "business_pain": "I copy the numbers into the master file by hand",
+    "volume": {
+      "count": 1,
+      "period": "month",
+      "raw": "once a month"
+    },
+    "process_owner": {
+      "role": "Head of Controlling",
+      "none_identified": false
+    },
+    "baseline_metric": {
+      "value": "5",
+      "unit": "working days",
+      "qualitative": "",
+      "estimated": true
+    },
+    "target_metric": {
+      "value": "2",
+      "unit": "working days"
+    },
+    "variation": {
+      "same": "yes",
+      "differences": ""
+    },
+    "sensitive_data": [
+      {
+        "none": true
+      }
+    ],
+    "substep_count": 5,
+    "substep_count_rejected": null,
+    "substeps": [
+      {
+        "name": "Collect site spreadsheets",
+        "goal": "Have every site's cost file in one place",
+        "activities": [
+          "download the attachments",
+          "save each file in the month folder"
+        ],
+        "roles": [
+          {
+            "role": "Site controller",
+            "contribution": "sends the site cost spreadsheet"
+          }
+        ],
+        "owner": "Cost controller",
+        "systems": [
+          "Outlook",
+          "Excel"
+        ],
+        "data": {
+          "inputs": [
+            "site cost spreadsheets"
+          ],
+          "outputs": [
+            "set of site files"
+          ]
+        },
+        "effort": {
+          "duration": "6 hours",
+          "frequency": "every month"
+        },
+        "pain_points": [
+          "sites send late"
+        ],
+        "approvals": [
+          {
+            "none": true
+          }
+        ],
+        "exceptions": [
+          {
+            "none": true
+          }
+        ],
+        "handover": "the set of site files goes to consolidation",
+        "__meta": {},
+        "__skipped": []
+      },
+      {
+        "name": "Consolidate into the master file",
+        "goal": "One consolidated cost file that matches SAP",
+        "activities": [
+          "copy each site's numbers",
+          "reconcile totals with SAP"
+        ],
+        "roles": [
+          {
+            "none": true
+          }
+        ],
+        "owner": "Cost controller",
+        "systems": [
+          "Excel",
+          "SAP S/4HANA"
+        ],
+        "data": {
+          "inputs": [
+            "set of site files",
+            "SAP cost centre report"
+          ],
+          "outputs": [
+            "consolidated cost file"
+          ]
+        },
+        "effort": {
+          "duration": "1 day",
+          "frequency": "each time"
+        },
+        "pain_points": [
+          "I copy the numbers into the master file by hand"
+        ],
+        "approvals": [
+          {
+            "none": true
+          }
+        ],
+        "exceptions": [
+          {
+            "description": "totals do not match SAP",
+            "loops_back_to": 1
+          }
+        ],
+        "handover": "the consolidated file goes to variance analysis",
+        "__meta": {},
+        "__skipped": []
+      },
+      {
+        "name": "Analyse variances",
+        "goal": "Find the cost lines that are off budget",
+        "activities": [
+          "compare actuals with budget",
+          "mark lines over the threshold"
+        ],
+        "roles": [
+          {
+            "none": true
+          }
+        ],
+        "owner": "Cost controller",
+        "systems": [
+          "Excel"
+        ],
+        "data": {
+          "inputs": [
+            "consolidated cost file",
+            "budget"
+          ],
+          "outputs": [
+            "list of variances"
+          ]
+        },
+        "effort": {
+          "duration": "6 hours",
+          "frequency": "monthly"
+        },
+        "pain_points": [
+          "the threshold check is done by eye"
+        ],
+        "approvals": [
+          {
+            "none": true
+          }
+        ],
+        "exceptions": [
+          {
+            "none": true
+          }
+        ],
+        "handover": "the list of variances goes to the site managers",
+        "__meta": {},
+        "__skipped": []
+      },
+      {
+        "name": "Chase explanations",
+        "goal": "An explanation for every variance",
+        "activities": [
+          "email each site manager",
+          "send reminders"
+        ],
+        "roles": [
+          {
+            "role": "Site manager",
+            "contribution": "explains the variance"
+          }
+        ],
+        "owner": "Cost controller",
+        "systems": [
+          "Outlook"
+        ],
+        "data": {
+          "inputs": [
+            "list of variances",
+            "explanations from site managers"
+          ],
+          "outputs": [
+            "variance list with explanations"
+          ]
+        },
+        "effort": {
+          "duration": "15 minutes",
+          "frequency": "10 times a month"
+        },
+        "pain_points": [
+          "some site managers answer only after three reminders"
+        ],
+        "approvals": [
+          {
+            "none": true
+          }
+        ],
+        "exceptions": [
+          {
+            "description": "no answer by day 3; escalate to the Head of Controlling",
+            "loops_back_to": null
+          }
+        ],
+        "handover": "the explained list goes into the summary",
+        "__meta": {},
+        "__skipped": []
+      },
+      {
+        "name": "Write the variance summary",
+        "goal": "A cost report the CFO can act on",
+        "activities": [
+          "write the commentary",
+          "send the report"
+        ],
+        "roles": [
+          {
+            "role": "CFO",
+            "contribution": "reads the cost report"
+          }
+        ],
+        "owner": "Cost controller",
+        "systems": [
+          "Excel",
+          "Outlook"
+        ],
+        "data": {
+          "inputs": [
+            "variance list with explanations"
+          ],
+          "outputs": [
+            "cost report with variance summary"
+          ]
+        },
+        "effort": {
+          "duration": "6 hours",
+          "frequency": "every month"
+        },
+        "pain_points": [
+          "I write the commentary from scratch every month"
+        ],
+        "approvals": [
+          {
+            "approver_role": "Head of Controlling",
+            "waiting_time": "1 day"
+          }
+        ],
+        "exceptions": [
+          {
+            "none": true
+          }
+        ],
+        "handover": "the cost report goes to the CFO",
+        "__meta": {},
+        "__skipped": []
+      }
+    ],
+    "all_roles": [
+      "Cost controller",
+      "Site controller",
+      "Site manager",
+      "CFO",
+      "Head of Controlling"
+    ],
+    "all_tools": [
+      "Outlook",
+      "Excel",
+      "SAP S/4HANA"
+    ],
+    "substeps_complete": true,
+    "roles_confirmed": true,
+    "tools_confirmed": true
+  },
+  "__meta": {}
+}

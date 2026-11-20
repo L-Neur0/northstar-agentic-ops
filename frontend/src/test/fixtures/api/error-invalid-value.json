@@ -1,0 +1,4 @@
+{
+  "code": "invalid_value",
+  "message": "text: String should have at least 1 character"
+}

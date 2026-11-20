@@ -1,5 +1,5 @@
 {
-  "document_kind": "procedure",
+  "document_role": "whole_process",
   "name": {"value": "Monthly cost review", "quote": "Monthly cost review: procedure"},
   "trigger": {
     "value": "Month-end close is completed in the ledger",

@@ -46,7 +46,7 @@ def test_ac_17_17_worked_example_2(fixture_bytes):
         "End: Access review signed off"
     )
     raw: Any = read.raw
-    assert raw.document_kind == "process_map"
+    assert raw.document_role == "whole_process"
     assert (raw.name.value, raw.name.quote) == ("Quarterly access review", "Quarterly access review")
     assert (raw.trigger.value, raw.trigger.quote) == ("Quarter starts", "Quarter starts")
     assert (raw.end_result.value, raw.end_result.quote) == ("Access review signed off", "Access review signed off")

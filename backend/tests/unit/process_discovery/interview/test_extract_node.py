@@ -27,7 +27,8 @@ async def test_the_prompt_carries_the_question_and_the_fenced_message(ctx):
     assert "<<<PREVIOUS_QUESTION" in system["content"]
     assert "Which department are you in?" in system["content"]
     assert "It was about these keys: department" in system["content"]
-    assert user["content"].startswith("<<<EXPERT_MESSAGE\n") and user["content"].endswith("\nEXPERT_MESSAGE>>>")
+    body = str(user["content"])
+    assert body.startswith("<<<EXPERT_MESSAGE\n") and body.endswith("\nEXPERT_MESSAGE>>>")
 
 
 async def test_a_turn_without_text_makes_no_extract_call_and_charges_nothing(ctx):

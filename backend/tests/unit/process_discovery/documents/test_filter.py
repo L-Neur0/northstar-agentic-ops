@@ -34,7 +34,7 @@ TASK_TEXT = "\n".join(f"Step {i}: {name}" for i, name in enumerate(TASKS, start=
 
 
 def raw(**fields: Any):
-    return read_document_model().model_validate({"document_kind": "procedure", **fields})
+    return read_document_model().model_validate({"document_role": "whole_process", **fields})
 
 
 def steps(names, **cells) -> list[dict[str, Any]]:

@@ -8,9 +8,10 @@ through `after_action`, which recomputes the score and the phase exactly as a tu
 What: `TurnResult`, `hydrate`, `apply_state`, `run_turn`, `after_action` and `welcome`.
 Rules it protects: the input session is never mutated; an emptied scope verdict is saved as empty
 and a rejected placement as `proposal: None` (with `placed_for` kept); a refused daily budget in
-EXTRACT propagates and nothing is saved; the turn log carries keys, counts, codes and times only.
+EXTRACT propagates and nothing is saved; the turn log carries keys, counts, codes and times only
+(its `steer` object: status, counts and candidate ids, never a name, §3.15 item 15).
 Must not: talk to the store or the network itself (the LLM is passed in), or log any text.
-Spec 14 §3.2, §3.11, §3.12; AC-14.32, AC-14.51 to AC-14.54, AC-14.56.
+Spec 14 §3.2, §3.11, §3.12, §3.15; AC-14.32, AC-14.51 to AC-14.54, AC-14.56, AC-14.75, AC-14.80.
 """
 
 from __future__ import annotations
@@ -33,6 +34,7 @@ from app.models.process_discovery_schemas import (
     ScopeState,
     Score,
     Session,
+    SteeringState,
 )
 
 from ..domain.field_spec import spec_by_id
@@ -54,7 +56,7 @@ class TurnResult(NamedTuple):
     session: Session
     reply: str
     finish: FinishCheck
-    ideas: list[dict[str, str]]
+    ideas: list[dict[str, Any]]
 
 
 def hydrate(session: Session, text: str, now: str) -> TurnState:
@@ -72,7 +74,8 @@ def hydrate(session: Session, text: str, now: str) -> TurnState:
         "scope": session.scope.model_dump(mode="json"),
         "placement": session.placement.model_dump(mode="json"),
         "last_question": session.last_question.model_dump(mode="json"),
-        "documents": [{"id": d.id, "name": d.name} for d in session.documents],
+        "steering": session.steering.model_dump(mode="json"),
+        "documents": [{"id": d.id, "name": d.name, "kind": d.kind} for d in session.documents],
         "now": now,
         "classified": False,
         "ideas": [],
@@ -97,12 +100,29 @@ def apply_state(session: Session, state: TurnState) -> Session:
         "scope": ScopeState.model_validate(scope),
         "placement": PlacementState.model_validate(placement),
         "last_question": LastQuestion.model_validate(state.get("last_question") or {}),
+        "steering": SteeringState.model_validate(state.get("steering") or session.steering.model_dump(mode="json")),
         "updated_at": state.get("now") or session.updated_at,
     }
     return session.model_copy(deep=True, update=update)
 
 
-def _turn_log(session: Session, new: Session, state: TurnState, finish: FinishCheck, ms: int) -> dict[str, Any]:
+def _steer_log(steering: SteeringState, ctx: InterviewContext) -> dict[str, Any]:
+    """§3.15 item 15: status, counts and ids only; never a candidate's name or words."""
+    limit = ctx.steering.max_candidates if ctx.steering is not None else len(steering.candidates)
+    return {
+        "status": steering.status,
+        "questions": steering.questions,
+        "candidates": len(steering.candidates),
+        "known": [
+            sum(v is not None for v in (c.hours_per_year, c.people, c.data_score)) for c in steering.candidates[:limit]
+        ],
+        "recommended": steering.recommended_id,
+    }
+
+
+def _turn_log(
+    session: Session, new: Session, state: TurnState, finish: FinishCheck, ms: int, ctx: InterviewContext
+) -> dict[str, Any]:
     log = dict(as_mapping(state.get("log")) or {})
     sc = new.score
     return {
@@ -133,6 +153,7 @@ def _turn_log(session: Session, new: Session, state: TurnState, finish: FinishCh
         "calls": log.get("calls", {}),
         "fallback_used": log.get("fallback_used", False),
         "ideas": log.get("ideas", 0),
+        "steer": _steer_log(new.steering, ctx),
         "extract": log.get("extract", "skipped"),
         "duration_ms": ms,
     }
@@ -158,7 +179,9 @@ async def run_turn(
         new.profile.model_dump(mode="json", by_alias=True), vocab=ctx.vocab, scope=new.scope.model_dump(mode="json")
     )
     log_event(
-        logger, "interview_turn", **_turn_log(session, new, result, finish, int((time.monotonic() - started) * 1000))
+        logger,
+        "interview_turn",
+        **_turn_log(session, new, result, finish, int((time.monotonic() - started) * 1000), ctx),
     )
     return TurnResult(new, str(result.get("reply") or ""), finish, list(result.get("ideas") or []))
 

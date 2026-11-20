@@ -137,7 +137,7 @@ class FakeLLM:
         model_name: str | None,
         parse: Callable[[FakeReply], Any],
     ) -> Any:
-        checked = check_messages(messages)
+        checked = check_messages(messages, call_type)
         budget = token_budget(self._settings, call_type, max_tokens)
         if self._budget_guard is not None and not self._budget_guard(call_type):
             raise LLMBudgetExceededError(f"daily budget refused a {call_type.value} call")

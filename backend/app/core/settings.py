@@ -77,6 +77,7 @@ class Settings(BaseSettings):
     llm_max_tokens_opportunities: Tokens = 100_000
     llm_max_tokens_map: Tokens = 32_000
     llm_max_tokens_label: Tokens = 32_000
+    llm_max_tokens_assess_steps: Tokens = 32_000
     llm_max_tokens_brief: Tokens = 32_000
     llm_max_tokens_expert: Tokens = 32_000
     llm_cache_enabled: bool | None = None  # None = on in local, off elsewhere
@@ -87,6 +88,9 @@ class Settings(BaseSettings):
     placement_min_confidence: Annotated[float, Field(ge=0, le=1)] = 0.60
     placement_min_margin: Annotated[float, Field(ge=0, le=1)] = 0.15
     llm_cache_dir: Path = BACKEND_DIR / ".cache" / "llm"
+
+    # Assessment at Finish (spec 20 §3.1): each of the four parallel calls gets this long
+    assessment_call_timeout_seconds: Annotated[float, Field(ge=10, le=150)] = 60
 
     @model_validator(mode="after")
     def _check_stage_rules(self) -> Settings:

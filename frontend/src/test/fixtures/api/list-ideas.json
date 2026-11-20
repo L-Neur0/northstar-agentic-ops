@@ -1,0 +1,25 @@
+{
+  "ideas": [
+    {
+      "id": "08a0f199-c6a6-413a-8dfe-fcb0cd5c9c6b",
+      "name": "Supplier onboarding",
+      "words": "We also onboard suppliers",
+      "status": "open",
+      "fromSessionId": "aa2ee74c-066e-4f9d-8404-560ae9b8e6aa",
+      "startedSessionId": null,
+      "createdAt": "2026-11-19T10:00:04+00:00",
+      "signals": {
+        "runs": null,
+        "people": null,
+        "time": null,
+        "inputs": null
+      },
+      "hoursPerYear": null,
+      "people": null,
+      "dataScore": null,
+      "score": null,
+      "rank": null,
+      "recommended": false
+    }
+  ]
+}

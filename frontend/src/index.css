@@ -5,6 +5,8 @@
  * dark theme (.dark on <html>), so a component writes one class and works in both themes.
  * What: each variable is an "R G B" triple; tailwind.config.js maps it to a colour name with
  * rgb(var(--x) / <alpha-value>) so opacity utilities (bg-primary/50) keep working.
+ * Print (spec 23 §11.14; AC-23.100): the light values are forced whatever the screen theme, headings
+ * stay with their first block, table rows do not split and table heads repeat on every page.
  * Must not: hold raw colours anywhere else; text pairs must keep 4.5:1 contrast (tokens.test.ts).
  */
 @tailwind base;
@@ -73,5 +75,49 @@
   body {
     background-color: rgb(var(--bg));
     color: rgb(var(--text));
+  }
+}
+
+@media print {
+  html.dark {
+    color-scheme: light;
+    --bg: 248 250 252;
+    --surface: 255 255 255;
+    --surface-muted: 241 245 249;
+    --surface-strong: 226 232 240;
+    --border: 226 232 240;
+    --border-strong: 203 213 225;
+    --text: 15 23 42;
+    --text-muted: 71 85 105;
+    --text-subtle: 100 116 139;
+    --link: 29 78 216;
+    --primary: 37 99 235;
+    --primary-hover: 29 78 216;
+    --primary-contrast: 255 255 255;
+    --primary-soft: 239 246 255;
+    --success: 21 128 61;
+    --success-soft: 240 253 244;
+    --warning: 180 83 9;
+    --warning-soft: 255 251 235;
+    --danger: 185 28 28;
+    --danger-soft: 254 242 242;
+    --danger-solid: 220 38 38;
+    --danger-solid-hover: 185 28 28;
+    --bubble-expert: 239 246 255;
+    --bubble-agent: 241 245 249;
+    --overlay: 15 23 42;
+  }
+
+  h2,
+  h3 {
+    break-after: avoid;
+  }
+
+  tr {
+    break-inside: avoid;
+  }
+
+  thead {
+    display: table-header-group;
   }
 }

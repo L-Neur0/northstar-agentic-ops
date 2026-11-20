@@ -3,6 +3,8 @@
  * Why: the screens run against an in-memory fake until the backend is ready; the same code then
  * runs against the real API. `vite.config.ts` calls `assertBuildAllowed` so a production build in
  * fake mode fails instead of shipping fake data.
+ * `resolveProxyTarget` reads `API_PROXY_TARGET` for the dev server's `/api` proxy, so the app can
+ * run against a backend on another port (default :8000).
  * Rules: pure functions, no I/O; imported by the Vite config (Node) and safe in the browser.
  */
 export type ApiMode = 'http' | 'fake'
@@ -17,4 +19,10 @@ export function assertBuildAllowed(command: 'build' | 'serve', mode: ApiMode): v
       'VITE_API_MODE=fake is for local development only: a production build refuses it (spec 23, AC-23.48). Use `npm run dev:fake`.',
     )
   }
+}
+
+export const DEFAULT_PROXY_TARGET = 'http://localhost:8000'
+
+export function resolveProxyTarget(value: string | undefined): string {
+  return value?.trim() || DEFAULT_PROXY_TARGET
 }

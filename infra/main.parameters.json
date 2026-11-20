@@ -4,6 +4,11 @@
   "parameters": {
     "environmentName": { "value": "${AZURE_ENV_NAME}" },
     "location": { "value": "${AZURE_LOCATION}" },
-    "developerPrincipalId": { "value": "${DEVELOPER_PRINCIPAL_ID=}" }
+    "developerPrincipalId": { "value": "${DEVELOPER_PRINCIPAL_ID=}" },
+    "minReplicas": { "value": "${MIN_REPLICAS=1}" },
+    "appExists": { "value": "${SERVICE_APP_RESOURCE_EXISTS=false}" },
+    "workspaceCodeSpecialist": { "value": "${WORKSPACE_CODE_SPECIALIST}" },
+    "workspaceCodeEngineer": { "value": "${WORKSPACE_CODE_ENGINEER}" },
+    "workspaceTokenSecret": { "value": "${WORKSPACE_TOKEN_SECRET}" }
   }
 }

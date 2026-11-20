@@ -1,11 +1,11 @@
 /**
- * One field of "Your process": status icon and words, label, value, chips (spec 23 §3.8.3–5;
- * AC-23.29–23.31).
+ * One field of "Your process": status icon and words, label, value, chips (spec 23 §3.8.3–5,
+ * §11.7; AC-23.29–23.31, AC-23.75).
  * Why: the server's eight statuses each get a
  * lucide icon with an accessible name and words, so status is never shown by colour alone.
  * Rules: the status comes from the field view and the value from `formatValue`; this row never
- * decides whether something is answered. Proposals show their source and quote (read-only in
- * part 1). Must not render a document's full text.
+ * decides whether something is answered. Proposals show their source, the quote on request and
+ * ✓ / ✎ (`ProposalActions`, part 2). Must not render a document's full text.
  * Colours are theme tokens only, never raw palette classes (spec 23 §3.13.2; AC-23.57).
  */
 import type { ReactNode } from 'react'
@@ -21,6 +21,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import type { FieldStatus, FieldView } from '../../types/process-discovery'
+import { ProposalActions, type ProposalControls } from './ProposalActions'
 
 const STATUS: Record<FieldStatus, { Icon: LucideIcon; label: string; colour: string }> = {
   complete: { Icon: CheckCircle2, label: 'Complete', colour: 'text-success' },
@@ -43,19 +44,19 @@ function Chip({ children, tone = 'neutral' }: { children: ReactNode; tone?: 'neu
   return <span className={`inline-flex rounded px-1.5 py-0.5 text-[0.6875rem] ring-1 ring-inset ${cls}`}>{children}</span>
 }
 
-/** Where a proposal came from, its quote and how to confirm it (read-only in part 1). */
-export function ProposalChip({ view }: { view: FieldView }) {
-  const from = view.source === 'document' ? `from ${view.documentName ?? 'a document'}` : 'from your idea'
-  return (
-    <div className="mt-1 rounded border border-primary/30 bg-primary-soft/50 px-2 py-1.5 text-xs text-fg">
-      <Chip tone="info">{from}</Chip>
-      {view.quote && <blockquote className="mt-1 border-l-2 border-primary/50 pl-2 italic">{view.quote}</blockquote>}
-      <p className="mt-1 text-muted">Say yes in the chat to confirm, or give the right answer.</p>
-    </div>
-  )
-}
-
-export function FieldRow({ view, value, notScored = false, children }: { view: FieldView; value: string; notScored?: boolean; children?: ReactNode }) {
+export function FieldRow({
+  view,
+  value,
+  notScored = false,
+  proposals,
+  children,
+}: {
+  view: FieldView
+  value: string
+  notScored?: boolean
+  proposals?: ProposalControls
+  children?: ReactNode
+}) {
   const { Icon, label, colour } = STATUS[view.status] ?? STATUS.empty
   const showValue = value.trim().length > 0
   const empty = <span className="italic text-subtle">Not yet described</span>
@@ -88,12 +89,11 @@ export function FieldRow({ view, value, notScored = false, children }: { view: F
           <p className={`text-xs ${view.status === 'invalid' ? 'text-danger' : 'text-warning'}`}>{view.reason}</p>
         )}
         <div className="mt-0.5 flex flex-wrap gap-1 empty:hidden">
-          {view.status === 'proposed' && <Chip tone="info">Proposed</Chip>}
           {view.status === 'deferred' && <Chip tone="warning">Asked again later</Chip>}
-          {view.status === 'complete' && view.source === 'document' && <Chip>from {view.documentName ?? 'a document'}</Chip>}
+          {view.status === 'complete' && view.source === 'document' && <Chip>from {view.documentName ?? 'a removed document'}</Chip>}
           {view.status === 'complete' && view.source === 'specialist' && <Chip>edited by IT</Chip>}
         </div>
-        {view.status === 'proposed' && <ProposalChip view={view} />}
+        {view.status === 'proposed' && <ProposalActions view={view} controls={proposals} />}
         {children}
       </div>
     </li>

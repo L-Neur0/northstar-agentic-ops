@@ -1,8 +1,27 @@
-# CI: lint and tests on every push and pull request (spec 10 §3.10). Deploy jobs come in spec 50.
+# ci.yml: checks, image check and approved deploy of the Discovery Agent (spec 10 §3.10, spec 25 §3.12).
+#
+# Why it exists: every push and pull request is linted and tested (app and
+#   infra) and the image is built and checked; a deploy to the demo environment
+#   runs only from main, only after both pass, and only with a person's approval.
+# What it does: `checks` (lint, tests, bicep lint, infra tests), `image`
+#   (make image-check, no push), `deploy` (OIDC sign-in, azd provision + deploy
+#   with APP_VERSION = short SHA, then the smoke check against that version).
+# Must not: store an Azure secret (sign-in is OIDC with id-token: write); deploy
+#   from a pull request or a branch other than main; cancel a running deploy.
+# Deploy trigger (spec 25 Q1): while the repo is private, deploy runs only on a
+#   manual `workflow_dispatch` from main (the manual run is the approval). When
+#   the repo is public and the `demo` environment has a required reviewer, set
+#   the repository variable DEPLOY_ON_PUSH=true to deploy on every push to main.
+# Acceptance criteria: AC-25.26, AC-25.27 (and AC-10.19 for `checks`).
 name: ci
 on:
   push:
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
 jobs:
   checks:
     runs-on: ubuntu-latest
@@ -14,6 +33,52 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - run: az bicep install
       - run: make setup
       - run: make lint
       - run: make test
+      - run: make infra-lint infra-test
+
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: make image-check
+
+  deploy:
+    needs: [checks, image]
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'push' && vars.DEPLOY_ON_PUSH == 'true'))
+    runs-on: ubuntu-latest
+    environment: demo
+    permissions:
+      id-token: write
+      contents: read
+    concurrency:
+      group: deploy-demo
+      cancel-in-progress: false
+    env:
+      AZURE_ENV_NAME: demo
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+      AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+      MIN_REPLICAS: ${{ vars.MIN_REPLICAS }}
+      DEVELOPER_PRINCIPAL_ID: ${{ vars.DEVELOPER_PRINCIPAL_ID }}
+      WORKSPACE_CODE_SPECIALIST: ${{ secrets.WORKSPACE_CODE_SPECIALIST }}
+      WORKSPACE_CODE_ENGINEER: ${{ secrets.WORKSPACE_CODE_ENGINEER }}
+      WORKSPACE_TOKEN_SECRET: ${{ secrets.WORKSPACE_TOKEN_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Azure/setup-azd@v2
+      - name: Sign in with OIDC (no stored secret)
+        run: >-
+          azd auth login --federated-credential-provider github
+          --client-id ${{ vars.AZURE_CLIENT_ID }} --tenant-id ${{ vars.AZURE_TENANT_ID }}
+      - name: Version = short commit SHA
+        run: echo "APP_VERSION=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+      - run: azd provision --no-prompt
+      - run: azd deploy --no-prompt
+      - name: Smoke check against this version
+        run: infra/scripts/smoke.sh "$(azd env get-value SERVICE_APP_URI)" "$APP_VERSION"

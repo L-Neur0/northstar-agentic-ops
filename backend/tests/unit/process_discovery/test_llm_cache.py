@@ -95,7 +95,7 @@ def test_the_key_changes_with_every_input():
     assert base == LLMCache.key("app-chat", CallType.GUIDE, messages(), "text")
     assert len(base) == 64
     changed_message = messages()
-    changed_message[1]["content"] += "!"
+    changed_message[1]["content"] = str(changed_message[1]["content"]) + "!"
     variants = [
         LLMCache.key("app-chat", CallType.GUIDE, changed_message, "text"),
         LLMCache.key("app-chat", CallType.GUIDE, messages()[:1], "text"),

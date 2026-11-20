@@ -114,7 +114,9 @@ async def test_ac_17_32_worked_example_1(vocab, docs_config, fixture_bytes):
         "kind": "docx",
         "outcome": "read",
         "reader": "model",
-        "documentKind": "procedure",
+        "documentRole": "whole_process",
+        "targetSource": "none",
+        "fromImage": False,
         "bytes": len(data),
         "chars": result.record.chars,
         "truncated": False,
@@ -205,7 +207,7 @@ async def test_ac_17_19_long_bpmn_gives_a_step_list(vocab, docs_config, fixture_
 
 async def test_ac_17_35_stored_record(vocab, docs_config, fixture_bytes):
     data = fixture_bytes("long_procedure.txt")
-    llm = FakeLLM({CallType.READ_DOCUMENT: [{"document_kind": "procedure"}]})
+    llm = FakeLLM({CallType.READ_DOCUMENT: [{"document_role": "whole_process"}]})
     result = await read(vocab, docs_config, session_with(procedure_profile(vocab)), data, name="long.txt", llm=llm)
     stored = result.record.model_dump(by_alias=True)
     assert "data" not in stored and "content" not in stored

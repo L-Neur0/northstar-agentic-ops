@@ -1,0 +1,16 @@
+{
+  "sessions": [
+    {
+      "id": "aa2ee74c-066e-4f9d-8404-560ae9b8e6aa",
+      "status": "finished",
+      "phase": "finished",
+      "processName": "Monthly cost review",
+      "clusterCode": "FIN",
+      "score": 1.0,
+      "messageCount": 25,
+      "createdAt": "2026-11-19T10:00:00+00:00",
+      "updatedAt": "2026-11-19T10:00:17+00:00",
+      "reportStatus": "mapped"
+    }
+  ]
+}

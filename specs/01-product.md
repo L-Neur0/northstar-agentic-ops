@@ -248,25 +248,31 @@ Rules for the questions:
 
 ### F-04 · Start from your documents
 
-**Purpose.** Many experts already have something written down. Use it, so the interview only asks for what is missing, and let the expert correct what the AI understood.
+> **Amended 2026-11-20** (product owner): any document at any time, read in context, images, confirmation in the chat. Detail: spec 17 §3.18–§3.19, spec 14 §3.16.
 
-1. **When:** at any point in the interview, from an *Add a document* button. The welcome message and the find phase mention it.
-2. **What:** an existing process description or procedure, a process map, or an example of what the process takes in or produces (a report, a form, an export).
-   - Formats: PDF, Word (.docx), Excel (.xlsx) and CSV, text and Markdown, BPMN 2.0 (.bpmn / .xml). Images of diagrams: *Could*.
-   - Limits: up to 5 documents per session, 10 MB each. Large documents are read up to a fixed text budget; the agent says when it read only part.
-3. **Reading:**
+**Purpose.** Many experts already have something written down, or an example of what a step produces. Use it at the moment it comes up, so the interview only asks for what is missing, and let the expert correct what the AI understood.
+
+1. **When:** at **any time** in an active session, in any phase: the "+" button by the message box, the *Add a document* button in the panel, or a file dropped on the chat. The welcome message and the find phase mention it.
+2. **What:** any file about the work: a procedure, a process map, an e-mail, a spreadsheet, a report, a template, a screenshot, a photo of a form or a whiteboard.
+   - Formats: PDF, Word (.docx), Excel (.xlsx), PowerPoint (.pptx), e-mail (.eml: subject, date, attachment names and body only, never names or addresses), CSV, text and Markdown, BPMN 2.0 (.bpmn / .xml), and **images (PNG, JPG), including screenshots**. Other formats (.doc, .msg) are not read: save them as PDF or take a screenshot.
+   - Limits: up to 10 documents per session; 10 MB per file; images up to 5 MB and 40 megapixels. Large documents are read up to a fixed text budget; the agent says when it read only part.
+3. **Reading in context:**
    - A BPMN file is read **by code**: tasks become proposed steps (names, order), lanes become proposed roles.
-   - Any other document is read by **one model call** that reverse-engineers it: what the process seems to be, its trigger and result, its steps, roles, systems, data in and out, approvals and exceptions. For an example output it infers the end result, the outputs of the last step and the data that must exist to produce it.
-   - **Every proposal carries a quote** from the document; code checks the quote is really in the text and drops proposals without one.
-4. **Writing:** proposals fill only fields that are empty or still proposals. They never overwrite what the expert said or a specialist entered. Steps are proposed only while the step table is empty; a document with more than 6 steps is proposed as a list for the expert to group. The cluster and the confirmations are never set from a document.
-5. **Feedback:** proposed values are shown in the profile marked *from <document>*, with the quote. They **do not count** until confirmed. The agent's next questions present them in small groups ("Your procedure says the review starts at month-end close and ends with the cost report to the CFO. Is that right?"):
+   - Any other file is read by **one model call that knows where the interview is**: the phase, the step in focus, the question just asked, the form so far. It first decides what the file is: the **whole process** (today's behaviour), an **example of what a step produces**, an **example of what a step receives**, **something used in a step** (a template, a system screenshot), or **other**. Then it proposes only what fits. Example: during step 3, a site report is an output example, so it proposes step 3's outputs as a short description of the file ("Excel cost report per site with variance comments, one tab per site"); a screenshot of a system proposes that step's systems; plus anything else the file clearly shows (activities, roles, exceptions).
+   - **Which step:** the step in focus, unless the file or the expert's last message names another. Code checks that the step exists. A file that belongs to a step but matches none fills nothing for a step.
+   - **Evidence, checked by code:** a value copied from a document carries a quote found in its text; a description of the file carries a short excerpt found in its text (a title, a header row, a line).
+   - **Images** are read by the model with vision: it copies the visible text and describes the image. Evidence is checked against that transcription only, so every proposal from an image is marked *(from an image)*. The image itself is never stored, only the transcription and the description.
+4. **Writing:** proposals fill only fields that are empty or still proposals, or the missing part of a partly answered field (a volume with a count and no period; a step's data with inputs and no outputs): then the whole field is proposed, with the expert's part unchanged, and a no restores exactly what was there. They never overwrite what the expert said or a specialist entered. Steps are proposed only while the step table is empty (a document with more than 6 steps is proposed as a list for the expert to group); a file about one step never adds, removes or reorders steps. The cluster and the confirmations are never set from a document.
+5. **Confirmation in the chat:** right after an upload, the agent's next message names the file and asks plainly, without the expert typing first: *From "site_report_march.xlsx" I'd fill: Step 3 "Collect explanations" – Outputs: Excel cost report per site… Should I fill it like this, or is something wrong?*
    - a plain yes confirms the values in that question;
    - a correction replaces them with the expert's words;
-   - the panel has ✓ and ✎ on each proposed value.
+   - a no rejects them, and the agent asks for them later as normal questions;
+   - ✓ and ✎ on each proposed value in the panel are shortcuts for the same.
+   Proposed values are shown in the profile marked *from <document>* with the evidence. They **do not count** until confirmed. Further proposals from the same file are presented in small groups in the next questions.
 6. The expert can remove a document. Values confirmed from it stay (the expert confirmed them); proposals from it are removed.
-7. Instruction-like text inside a document ("ignore your rules…") is always treated as data, never followed. A document that fails the injection screen is rejected as a whole, with a plain message.
+7. Instruction-like text inside a document or an image ("ignore your rules…") is always treated as data, never followed. A document whose text (or an image whose transcription) fails the injection screen is rejected as a whole, with a plain message.
 
-**Done when:** an expert who uploads a 5-step procedure gets the steps proposed with quotes, confirms or corrects them in a few turns, and is then asked only about what the document did not cover; nothing from the document counts before it is confirmed.
+**Done when:** an expert who uploads a 5-step procedure gets the steps proposed with quotes, confirms or corrects them in a few turns, and is then asked only about what the document did not cover; an expert on step 3 who uploads an example report is asked at once whether step 3's outputs are "Excel cost report per site…", and a plain yes makes it count; nothing from a document or an image counts before it is confirmed.
 
 ### F-05 · Field rules, Verdicts and proposed values
 
@@ -277,7 +283,7 @@ Rules for the questions:
 3. Storing a value and counting it are different. A field can hold a value and still be partial (a volume without a period). The expert is asked only for the missing part, and the agent repeats back the part it already has.
 4. A rule may read another field (the target must use the same unit as the baseline).
 5. *None* answers count as complete. A stored "false" is never an answer.
-6. Every value keeps its **source** (expert, document, specialist) and, for documents, the quote. A **proposed** value never counts, whatever its Verdict.
+6. Every value keeps its **source** (expert, document, specialist) and, for documents, the evidence (a quote, or an excerpt for a description of the file; marked when from an image). A **proposed** value never counts, whatever its Verdict.
 
 **Done when:** for every field, the review screen and the agent agree on whether it is answered, why not, and where the value came from.
 
@@ -566,7 +572,7 @@ A new company is a new set of these files. Access codes, rate limits and the dai
 
 1. The tool maps **processes, not people**. It never reports an individual's time or performance.
 2. No account and no e-mail are needed. Reports, the overview and briefs show roles, never names; an optional first name is kept on the session only, for the greeting.
-3. Uploaded files are used to read the text and are **not kept**: only the extracted text (within the budget) is stored with the session, and only the quotes appear in the profile. Specialists never see the full text.
+3. Uploaded files are used to read the text and are **not kept**: only the extracted text (within the budget) is stored with the session, and only the quotes appear in the profile. Specialists never see the full text **Amended 2026-11-20:** images are not kept either; only the model's transcription of the visible text and a short description of the image (no people) are stored, like extracted text, with metadata such as location removed before the model sees the image.
 4. An expert can delete one session, one idea, one document, or all their data. Unfinished sessions expire after a configured period (default 90 days).
 5. The expert is told in the welcome message that the transformation team may read the conversation to improve the tool. Conversations are visible only in the workspace (F-17); they never appear in reports, the overview or briefs.
 6. Expert text and document text are always passed to the model as fenced data, never as instructions. Input that looks like prompt injection is rejected with a plain message.
@@ -622,7 +628,7 @@ stateDiagram-v2
 
 ## 9. Out of scope
 
-**Not in the prototype, planned later:** company sign-in and roles from the directory · reading images of diagrams · invitation campaigns by cluster or region · grouping the same process across regions into one use case · a steering-group pack · translation of reports into one language · read-only roles for cluster leads.
+**Not in the prototype, planned later:** company sign-in and roles from the directory · OCR of scanned PDFs · invitation campaigns by cluster or region · grouping the same process across regions into one use case · a steering-group pack · translation of reports into one language · read-only roles for cluster leads.
 
 **Never:** go / no-go or funding decisions inside the tool · answering questions or searching documents · routing tickets · judging people · writing to any system of record.
 

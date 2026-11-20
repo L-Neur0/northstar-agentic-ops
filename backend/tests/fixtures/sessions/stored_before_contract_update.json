@@ -1,0 +1,280 @@
+{
+  "session": {
+    "id": "f0498e19-017e-4550-aac3-3e24e3325951",
+    "ownerId": "hash",
+    "type": "session",
+    "displayName": null,
+    "createdAt": "2026-11-18T09:00:00Z",
+    "updatedAt": "2026-11-18T09:00:00Z",
+    "finishedAt": "2026-11-18T09:00:00Z",
+    "ttl": null,
+    "status": "finished",
+    "phase": "finished",
+    "messages": [],
+    "profile": {
+      "department": "",
+      "user_function": "",
+      "region": "",
+      "process": {
+        "name": "Monthly cost review",
+        "cluster": {
+          "code": "",
+          "name": "",
+          "decided_by": ""
+        },
+        "trigger": "",
+        "end_result": "",
+        "value_at_end": "",
+        "business_pain": "",
+        "volume": {
+          "count": null,
+          "period": "",
+          "raw": ""
+        },
+        "process_owner": {
+          "role": "",
+          "none_identified": false
+        },
+        "baseline_metric": {
+          "value": "",
+          "unit": "",
+          "qualitative": "",
+          "estimated": false
+        },
+        "target_metric": {
+          "value": "",
+          "unit": ""
+        },
+        "variation": {
+          "same": "",
+          "differences": ""
+        },
+        "sensitive_data": [],
+        "substep_count": null,
+        "substep_count_rejected": null,
+        "substeps": [
+          {
+            "name": "Collect",
+            "goal": "",
+            "activities": [],
+            "roles": [],
+            "owner": "",
+            "systems": [],
+            "data": {
+              "inputs": [],
+              "outputs": []
+            },
+            "effort": {
+              "duration": "",
+              "frequency": ""
+            },
+            "pain_points": [],
+            "approvals": [],
+            "exceptions": [],
+            "handover": "",
+            "__meta": {},
+            "__skipped": []
+          },
+          {
+            "name": "Check",
+            "goal": "",
+            "activities": [],
+            "roles": [],
+            "owner": "",
+            "systems": [],
+            "data": {
+              "inputs": [],
+              "outputs": []
+            },
+            "effort": {
+              "duration": "",
+              "frequency": ""
+            },
+            "pain_points": [],
+            "approvals": [],
+            "exceptions": [],
+            "handover": "",
+            "__meta": {},
+            "__skipped": []
+          }
+        ],
+        "all_roles": [],
+        "all_tools": [],
+        "substeps_complete": false,
+        "roles_confirmed": false,
+        "tools_confirmed": false
+      },
+      "__meta": {}
+    },
+    "score": {
+      "value": 0.0,
+      "filledPoints": 0,
+      "totalPoints": 18
+    },
+    "counters": {
+      "fieldAsks": {},
+      "cellAsks": {},
+      "findTurns": 0,
+      "wideningCount": 0,
+      "confirmTurns": 0
+    },
+    "scope": {
+      "verdict": null,
+      "scopedFor": "",
+      "awaitingWidening": false,
+      "wideningAsked": false,
+      "overridden": false
+    },
+    "placement": {
+      "proposal": null,
+      "placedFor": "",
+      "rejected": false
+    },
+    "lastQuestion": {
+      "focus": [
+        "process.name"
+      ],
+      "proposals": [],
+      "confirm": "roles"
+    },
+    "documents": [],
+    "rawSubsteps": [],
+    "assessment": {
+      "summary": "Two steps could be helped.",
+      "opportunities": [
+        {
+          "id": "o1",
+          "title": "Read the site files",
+          "substeps": [
+            1
+          ],
+          "type": "document_ai",
+          "whatChanges": "",
+          "how": "",
+          "prepareFirst": "",
+          "impact": "high",
+          "impactReason": "",
+          "feasibility": "medium",
+          "feasibilityReason": "",
+          "evidence": "we copy every file by hand",
+          "savingShare": 0.0,
+          "review": "pending",
+          "reviewNote": ""
+        }
+      ],
+      "stayHuman": [
+        {
+          "substeps": [
+            2
+          ],
+          "reason": "judgement",
+          "evidence": "I decide"
+        }
+      ],
+      "diagram": {
+        "lanes": [
+          "Cost controller"
+        ],
+        "nodes": [
+          {
+            "id": "s",
+            "type": "start",
+            "label": "",
+            "lane": "",
+            "stepIndex": null,
+            "marker": ""
+          },
+          {
+            "id": "t1",
+            "type": "task",
+            "label": "Collect",
+            "lane": "",
+            "stepIndex": 1,
+            "marker": "user"
+          }
+        ],
+        "flows": [
+          {
+            "source": "s",
+            "target": "t1",
+            "label": "",
+            "isDefault": false
+          }
+        ],
+        "simplified": false,
+        "stepsHash": "abc"
+      },
+      "labels": [
+        {
+          "step": 1,
+          "inputs": [
+            {
+              "name": "site files",
+              "format": "spreadsheet",
+              "evidence": ""
+            }
+          ],
+          "decisions": []
+        }
+      ],
+      "value": {
+        "complete": true,
+        "missing": [],
+        "hoursPerYear": 168.0,
+        "costToday": null,
+        "hoursFreed": null,
+        "valueConservative": null,
+        "valueExpected": null
+      },
+      "readiness": {
+        "dimensions": [
+          {
+            "key": "data",
+            "level": "medium",
+            "reason": "r",
+            "toPrepare": "p",
+            "note": ""
+          }
+        ]
+      },
+      "path": {
+        "prepareFirst": [],
+        "quickWins": [
+          "o1"
+        ],
+        "biggerChanges": []
+      },
+      "stepsHash": "abc",
+      "generatedAt": "2026-11-18T09:00:00Z",
+      "outcomes": {
+        "opportunities": "generated",
+        "diagram": "generated",
+        "labels": "generated"
+      }
+    },
+    "report": {
+      "status": "mapped",
+      "validatedAt": null,
+      "validatedBy": null,
+      "note": ""
+    },
+    "briefs": [],
+    "cost": {
+      "tokensIn": 0,
+      "tokensOut": 0,
+      "euros": 0.0
+    }
+  },
+  "idea": {
+    "id": "ab721304-2cf1-4f20-a434-f3bb9e80ee1f",
+    "ownerId": "hash",
+    "type": "idea",
+    "name": "Booking travel",
+    "words": "I book travel",
+    "fromSessionId": "f0498e19-017e-4550-aac3-3e24e3325951",
+    "startedSessionId": null,
+    "status": "open",
+    "createdAt": "2026-11-18T09:00:00Z",
+    "ttl": null
+  }
+}

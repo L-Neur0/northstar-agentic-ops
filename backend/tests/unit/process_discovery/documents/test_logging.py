@@ -44,7 +44,7 @@ FIELDS = {
 }
 TEXT = f"Procedure {SENTINEL}\nThe {SENTINEL} review starts at month end.\n".encode()
 REPLY = {
-    "document_kind": "procedure",
+    "document_role": "whole_process",
     "trigger": {"value": f"Month end {SENTINEL}", "quote": f"The {SENTINEL} review starts"},
     "end_result": {"value": "A report", "quote": "a quote that is not there"},
 }
@@ -100,7 +100,7 @@ async def test_ac_17_37_failed(vocab, docs_config, caplog):
 async def test_ac_17_37_rejected(vocab, docs_config, caplog):
     caplog.set_level(logging.INFO, logger="app")
     with pytest.raises(DocumentRejected):
-        await upload(vocab, docs_config, FakeLLM(), documents=[record(f"d{i}") for i in range(5)])
+        await upload(vocab, docs_config, FakeLLM(), documents=[record(f"d{i}") for i in range(10)])
     [line] = lines(caplog)
     assert (vars(line)["outcome"], vars(line)["reject_code"], vars(line)["document_id"], line.levelno) == (
         "rejected",

@@ -1,7 +1,7 @@
 /**
  * Page tests for the interview page, driven through the real page with an injected API
- * (spec 23 §3.4–3.11; AC-23.14–23.16, 23.21–23.23, 23.25–23.27, 23.32, 23.40, 23.41, 23.43–23.45,
- * 23.47, 23.49).
+ * (spec 23 §3.4–3.11, §11.1–§11.9; AC-23.14–23.16, 23.21–23.23, 23.25–23.27, 23.32, 23.40, 23.41,
+ * 23.43–23.45, 23.47, 23.49, 23.62, 23.63, 23.66–23.69, 23.72, 23.73, 23.76, 23.103–23.105).
  * Why: the page test (honest exit, intro first-run, welcome dialog held back
  * by the intro, first name on the very first create) and extended to the new contract. The state
  * lives in the page's hook, so the honest way to test it is to render the page.
@@ -279,7 +279,7 @@ describe('finish (AC-23.40) and conflict (AC-23.41)', () => {
     await api.sendMessage(session.id, '/finish-ready')
     renderPage(api, `/process-discovery/${session.id}`)
     await user.click(await screen.findByRole('button', { name: 'Finish and build my report' }))
-    expect(await screen.findByText('Your map is finished. Your discovery report will be shown here.')).toBeInTheDocument()
+    expect(await screen.findByText('About 342 hours a year.')).toBeInTheDocument()
     expect(screen.getByTestId('path')).toHaveTextContent(`/report/${session.id}`)
   })
 
@@ -399,4 +399,282 @@ describe('scripted interview through the page (AC-23.47)', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Finish and build my report' })).toBeEnabled())
     expect(screen.getByRole('progressbar', { name: 'Completeness' })).toHaveAttribute('aria-valuenow', '100')
   }, 20_000)
+})
+
+/* ---- Part 2: documents in the interview ---- */
+
+const fileInput = () => screen.getByTestId('document-input') as HTMLInputElement
+/** The "+" of the composer (the hint card has a text button with the same name). */
+const plus = () => screen.getAllByRole('button', { name: 'Add a document' }).find((b) => b.hasAttribute('aria-label')) as HTMLElement
+const docFile = (name: string, size = 100) => new File([new Uint8Array(size)], name)
+
+async function openActive(api: DiscoveryApi, id: string) {
+  renderPage(api, `/process-discovery/${id}`)
+  await screen.findByRole('log')
+  await screen.findByText(/up to 10 MB/)
+}
+
+describe('the "+" button and the file input (AC-23.61, AC-23.103, AC-23.104)', () => {
+  it('sits to the LEFT of the message box and opens the picker; accept lists the extensions', async () => {
+    const { api, session } = await seeded()
+    await openActive(api, session.id)
+    const button = plus()
+    expect(button.compareDocumentPosition(composer()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(button).toHaveAttribute('title', 'Add a document: a procedure, a process map or an example report')
+    expect(fileInput()).toHaveAttribute('accept', '.pdf,.docx,.xlsx,.csv,.txt,.md,.bpmn,.xml')
+    const click = vi.spyOn(fileInput(), 'click')
+    await userEvent.click(button)
+    button.focus()
+    await userEvent.keyboard('{Enter}')
+    expect(click).toHaveBeenCalledTimes(2)
+  })
+
+  it('a chosen file uploads exactly like the panel: proposals, the panel list and the chat note (AC-23.103, AC-23.105)', async () => {
+    const user = userEvent.setup()
+    const { api, session } = await seeded()
+    const upload = vi.spyOn(api, 'uploadDocument')
+    await openActive(api, session.id)
+    await user.upload(fileInput(), docFile('procedure.docx'))
+    const sentence = 'I read "procedure.docx" and found 2 values and 5 steps for your process. Nothing counts until you confirm it.'
+    // spec 14 §3.16 / spec 23 §11.4 amendment: the agent's question is a chat message; the sentence stays in the panel
+    expect(await within(log()).findByText(/From "procedure\.docx" I'd fill/)).toBeInTheDocument()
+    expect(screen.queryByTestId('chat-system-note')).not.toBeInTheDocument()
+    expect(screen.getByText(sentence)).toBeInTheDocument()
+    expect(upload).toHaveBeenCalledTimes(1)
+    expect(within(screen.getByRole('list', { name: 'Your documents' })).getByText('procedure.docx')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Documents/ })).toHaveTextContent('1/5')
+    expect(screen.getByRole('button', { name: 'Confirm Trigger' })).toBeInTheDocument()
+  })
+
+  it('is disabled with a spinner during an upload, and with a reason when the session is closed or a turn runs (AC-23.104)', async () => {
+    const user = userEvent.setup()
+    const { api, session } = await seeded()
+    const gate = deferred<void>()
+    const real = api.uploadDocument.bind(api)
+    vi.spyOn(api, 'uploadDocument').mockImplementation(async (id, file, onProgress) => {
+      onProgress?.(40)
+      await gate.promise
+      return real(id, file)
+    })
+    const turn = deferred<TurnOut>()
+    await openActive(api, session.id)
+    await user.upload(fileInput(), docFile('procedure.docx'))
+    expect(plus()).toBeDisabled()
+    expect(plus()).toHaveAttribute('aria-busy', 'true')
+    // AC-23.66: the composer, the panel button and Finish wait during the upload
+    expect(composer()).toBeDisabled()
+    expect(screen.getByRole('button', { name: /Add a document.*or drop/ })).toBeDisabled()
+    expect(screen.getByRole('progressbar', { name: 'Upload progress' })).toHaveAttribute('aria-valuenow', '40')
+    gate.resolve()
+    await within(log()).findByText(/From "procedure\.docx" I'd fill/)
+    expect(plus()).toBeEnabled()
+
+    vi.spyOn(api, 'sendMessage').mockReturnValue(turn.promise)
+    await user.type(composer(), 'Finance{Enter}')
+    expect(plus()).toBeDisabled()
+    expect(plus()).toHaveAttribute('title', 'Wait for the reply before adding a document.')
+    expect(screen.getByRole('button', { name: 'Confirm Trigger' })).toBeDisabled()
+  })
+
+  it('is disabled at the document limit, with the limit sentence as its tooltip', async () => {
+    const { api, session } = await seeded()
+    for (let i = 0; i < 5; i += 1) await api.uploadDocument(session.id, docFile(`empty ${i}.txt`))
+    await openActive(api, session.id)
+    expect(plus()).toBeDisabled()
+    expect(plus()).toHaveAttribute('title', 'You can add up to 5 documents. Remove one to add another.')
+  })
+
+  it('is disabled on a closed session', async () => {
+    const api = fake()
+    vi.spyOn(api, 'getSession').mockResolvedValue(readySession({ status: 'finished', phase: 'finished' }))
+    renderPage(api, '/process-discovery/s-1')
+    await screen.findByRole('log')
+    expect(plus()).toBeDisabled()
+    expect(plus()).toHaveAttribute('title', 'This session is closed.')
+  })
+})
+
+describe('drop on the chat (AC-23.105)', () => {
+  it('a file dropped on the conversation uploads and the panel updates', async () => {
+    const { api, session } = await seeded()
+    await openActive(api, session.id)
+    fireEvent.drop(screen.getByRole('region', { name: 'Discovery conversation' }), {
+      dataTransfer: { types: ['Files'], files: [docFile('procedure.docx')] },
+    })
+    expect(await within(log()).findByText(/From "procedure\.docx" I'd fill/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Documents/ })).toHaveTextContent('1/5')
+  })
+})
+
+describe('pre-checks and config (AC-23.62, AC-23.63)', () => {
+  it.each([
+    ['big.pdf', 10 * 1_048_576 + 1, 'This file is larger than 10 MB.'],
+    ['empty.pdf', 0, "I couldn't find any text in this file. If it is a scan, try the file it was made from."],
+  ])('%s is refused in the panel without a call', async (name, size, sentence) => {
+    const user = userEvent.setup({ applyAccept: false })
+    const { api, session } = await seeded()
+    const upload = vi.spyOn(api, 'uploadDocument')
+    await openActive(api, session.id)
+    await user.upload(fileInput(), docFile(name, size))
+    expect(await screen.findByRole('alert')).toHaveTextContent(sentence)
+    expect(upload).not.toHaveBeenCalled()
+  })
+
+  it('a wrong extension is refused without a call', async () => {
+    const user = userEvent.setup({ applyAccept: false })
+    const { api, session } = await seeded()
+    const upload = vi.spyOn(api, 'uploadDocument')
+    await openActive(api, session.id)
+    await user.upload(fileInput(), docFile('photo.png'))
+    expect(await screen.findByRole('alert')).toHaveTextContent("This file type can't be read.")
+    expect(upload).not.toHaveBeenCalled()
+  })
+
+  it('at the limit the panel button shows the limit sentence instead of opening the picker', async () => {
+    const { api, session } = await seeded()
+    for (let i = 0; i < 5; i += 1) await api.uploadDocument(session.id, docFile(`empty ${i}.txt`))
+    await openActive(api, session.id)
+    const click = vi.spyOn(fileInput(), 'click')
+    await userEvent.click(screen.getByRole('button', { name: /Add a document.*or drop/ }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('You can add up to 5 documents. Remove one to add another.')
+    expect(click).not.toHaveBeenCalled()
+  })
+
+  it('with the config failing the picker still opens, no pre-check runs and the call is made (AC-23.62)', async () => {
+    const user = userEvent.setup({ applyAccept: false })
+    const { api, session } = await seeded()
+    vi.spyOn(api, 'getConfig').mockRejectedValue(new ApiError(0, 'network', 'x'))
+    const upload = vi.spyOn(api, 'uploadDocument')
+    renderPage(api, `/process-discovery/${session.id}`)
+    await screen.findByRole('log')
+    expect(fileInput()).not.toHaveAttribute('accept')
+    const click = vi.spyOn(fileInput(), 'click')
+    await user.click(screen.getByRole('button', { name: /Add a document.*or drop/ }))
+    expect(click).toHaveBeenCalled()
+    await user.upload(fileInput(), docFile('photo.png'))
+    await waitFor(() => expect(upload).toHaveBeenCalled())
+    expect(await screen.findByRole('alert')).toHaveTextContent("This file type can't be read.")
+  })
+})
+
+describe('upload results and errors (AC-23.67–23.69)', () => {
+  it('keeps the composer text and the chosen step tab after an upload (AC-23.67)', async () => {
+    const user = userEvent.setup()
+    const api = fake()
+    vi.spyOn(api, 'getSession').mockResolvedValue(stepsSession())
+    vi.spyOn(api, 'uploadDocument').mockResolvedValue({
+      session: stepsSession({ documents: [{ id: 'd', name: 'a.docx', kind: 'docx', bytes: 1, chars: 1, truncated: false, uploadedAt: 'x', outcome: 'read', proposals: 0, pending: 0 }] }),
+      document: { id: 'd', name: 'a.docx', kind: 'docx', bytes: 1, chars: 1, truncated: false, uploadedAt: 'x', outcome: 'read', proposals: 0, pending: 0 },
+      report: { documentId: 'd', outcome: 'read', reader: 'model', truncated: false, offered: { fields: 0, steps: 0, cells: 0 }, kept: { fields: 0, steps: 0, cells: 0 }, dropped: 0, skipped: [], stepList: 0, message: 'I read "a.docx" but found nothing new for the form.', documentRole: 'whole_process', targetStep: null, targetSource: 'none', fromImage: false },
+      reply: { id: 'r', role: 'agent', text: 'I read "a.docx" but found nothing new for the form. Let\'s carry on where we left off.', at: 'x' },
+    })
+    renderPage(api, '/process-discovery/s-1')
+    await screen.findByText(/up to 10 MB/)
+    await user.click(screen.getByRole('tab', { name: /^Step 1/ }))
+    await user.type(composer(), 'half typed')
+    await user.upload(fileInput(), docFile('a.docx'))
+    await screen.findAllByText('I read "a.docx" but found nothing new for the form.')
+    expect(composer()).toHaveValue('half typed')
+    expect(screen.getByRole('tab', { name: /^Step 1/ })).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it.each([
+    ['document_limit', 409, 'You can add up to 5 documents. Remove one to add another.'],
+    ['budget_exhausted', 429, 'The tool has reached its limit for today. Please try again tomorrow.'],
+    ['network', 0, 'Could not reach the server. Check your connection and try again.'],
+  ])('%s shows in the panel, without a banner and without a reload (AC-23.68)', async (code, status, sentence) => {
+    const user = userEvent.setup()
+    const { api, session } = await seeded()
+    vi.spyOn(api, 'uploadDocument').mockRejectedValue(new ApiError(status, code, ''))
+    await openActive(api, session.id)
+    const get = vi.spyOn(api, 'getSession')
+    await user.upload(fileInput(), docFile('procedure.docx'))
+    const alerts = await screen.findAllByRole('alert')
+    expect(alerts).toHaveLength(1)
+    expect(alerts[0]).toHaveTextContent(sentence)
+    expect(alerts[0].closest('aside')).not.toBeNull()
+    expect(get).not.toHaveBeenCalled()
+  })
+
+  it('session_closed locks the composer and clears the spinners; conflict reloads with the banner (AC-23.69)', async () => {
+    const user = userEvent.setup()
+    const { api, session } = await seeded()
+    const upload = vi.spyOn(api, 'uploadDocument').mockRejectedValueOnce(new ApiError(409, 'conflict', ''))
+    await openActive(api, session.id)
+    const get = vi.spyOn(api, 'getSession')
+    await user.upload(fileInput(), docFile('procedure.docx'))
+    expect(await screen.findByRole('alert')).toHaveTextContent('This session changed in another tab.')
+    await waitFor(() => expect(get).toHaveBeenCalled())
+    upload.mockRejectedValueOnce(new ApiError(400, 'session_closed', 'This session is closed.'))
+    await user.upload(fileInput(), docFile('procedure.docx'))
+    await waitFor(() => expect(composer()).toBeDisabled())
+    expect(screen.queryByRole('progressbar', { name: 'Upload progress' })).not.toBeInTheDocument()
+    expect(screen.getAllByText('This session is closed.').length).toBeGreaterThan(0)
+  })
+})
+
+describe('proposals, removal and the hint through the page (AC-23.72, AC-23.73, AC-23.76, AC-23.78)', () => {
+  it('✓ confirms, ✎ rejects without a message and says why; a step batch confirms the step', async () => {
+    const user = userEvent.setup()
+    const { api, session } = await seeded()
+    await api.uploadDocument(session.id, docFile('procedure.docx'))
+    const send = vi.spyOn(api, 'sendMessage')
+    const reject = vi.spyOn(api, 'rejectProposals')
+    await openActive(api, session.id)
+    await user.click(screen.getByRole('button', { name: 'Confirm Trigger' }))
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Confirm Trigger' })).not.toBeInTheDocument())
+    expect(screen.getByRole('list', { name: 'Your documents' })).toHaveTextContent('7 proposals · 6 waiting for you')
+    await user.click(screen.getByRole('button', { name: 'Reject End result' }))
+    expect(await screen.findByText('Removed. The agent will ask you about End result.')).toBeInTheDocument()
+    expect(reject).toHaveBeenCalledWith(session.id, ['process.end_result'])
+    expect(send).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: 'Confirm the 5 proposed step names' }))
+    await waitFor(() => expect(screen.getByRole('list', { name: 'Your documents' })).toHaveTextContent('all settled'))
+  })
+
+  it('removing the document keeps a confirmed value "from a removed document" (AC-23.72)', async () => {
+    const user = userEvent.setup()
+    const { api, session } = await seeded()
+    await api.uploadDocument(session.id, docFile('procedure.docx'))
+    await api.confirmProposals(session.id, ['process.trigger'])
+    await openActive(api, session.id)
+    await user.click(screen.getByRole('button', { name: 'Remove procedure.docx' }))
+    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Remove' }))
+    expect(await screen.findByText('No documents yet.')).toBeInTheDocument()
+    expect(screen.getByText('from a removed document')).toBeInTheDocument()
+  })
+
+  it('a 404 on remove reloads the session with "That document was already removed." (AC-23.72)', async () => {
+    const user = userEvent.setup()
+    const { api, session } = await seeded()
+    await api.uploadDocument(session.id, docFile('procedure.docx'))
+    vi.spyOn(api, 'removeDocument').mockRejectedValue(new ApiError(404, 'not_found', 'Not found.'))
+    await openActive(api, session.id)
+    const get = vi.spyOn(api, 'getSession')
+    await user.click(screen.getByRole('button', { name: 'Remove procedure.docx' }))
+    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Remove' }))
+    expect(await screen.findByText('That document was already removed.')).toBeInTheDocument()
+    await waitFor(() => expect(get).toHaveBeenCalled())
+  })
+
+  it('the hint shows on a fresh session, opens the picker and is gone once a document exists (AC-23.73)', async () => {
+    const user = userEvent.setup()
+    const { api, session } = await seeded()
+    await openActive(api, session.id)
+    const hint = within(log()).getByRole('button', { name: 'Add a document' })
+    const click = vi.spyOn(fileInput(), 'click')
+    await user.click(hint)
+    expect(click).toHaveBeenCalled()
+    await user.upload(fileInput(), docFile('empty notes.txt'))
+    await within(log()).findByText(/carry on where we left off/)
+    expect(within(log()).queryByRole('button', { name: 'Add a document' })).not.toBeInTheDocument()
+  })
+
+  it('no hint in later phases or on a closed session (AC-23.73)', async () => {
+    const api = fake()
+    vi.spyOn(api, 'getSession').mockResolvedValue(stepsSession())
+    renderPage(api, '/process-discovery/s-1')
+    await screen.findByRole('log')
+    expect(within(log()).queryByRole('button', { name: 'Add a document' })).not.toBeInTheDocument()
+  })
 })

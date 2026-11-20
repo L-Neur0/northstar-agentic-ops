@@ -37,7 +37,10 @@ def test_the_priority_table(ctx):
     assert (
         ask(ctx, no_cluster, "find", placement=placed, counters={"field_asks": {"process.cluster": 2}}).mode == "picker"
     )
-    assert ask(ctx, no_cluster, "find", placement=placed, counters={"find_turns": 5}).mode == "picker"
+    direct_once = {"find_turns": 5, "field_asks": {"process.cluster": 1}}
+    assert ask(ctx, no_cluster, "find", placement=placed, counters=direct_once).mode == "picker"
+    # R9 / §3.15: a proposal never put yet is put once, even at the direct posture (steering lengthens find)
+    assert ask(ctx, no_cluster, "find", placement=placed, counters={"find_turns": 6}).mode == "propose"
     assert ask(ctx, no_cluster, "find").mode == "picker"
     assert ask(ctx, base, "boundaries") == ("field", ("process.trigger",), None)
     walking = profile_with(ctx, *BOUNDARIES, *MEASURE, steps=2)
@@ -61,7 +64,7 @@ async def test_this_turn_names_the_target_and_last_question_records_it(ctx):
     session = session_at(ctx, "boundaries", profile_with(ctx, "process.trigger"))
     llm = fake(EXTRACT=[{}], GUIDE=["Q?"])
     result = await turn(session, "hm", llm, ctx)
-    system = llm.calls_of(CallType.GUIDE)[0].messages[0]["content"]
+    system = str(llm.calls_of(CallType.GUIDE)[0].messages[0]["content"])
     this_turn = system.split("THIS TURN:\n", 1)[1].split("\n\n", 1)[0]
     assert "`process.end_result`" in this_turn
     assert this_turn.count("`process.") == 1

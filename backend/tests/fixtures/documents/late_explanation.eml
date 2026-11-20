@@ -1,0 +1,18 @@
+From: Cost Controller <controller@example.org>
+To: Site Manager North <north.manager@example.org>
+Subject: Missing variance explanation for CC-101
+Date: Mon, 02 Mar 2026 09:00:00 +0100
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="b1"
+
+--b1
+Content-Type: text/plain; charset=utf-8
+
+Please send the explanation for the variance on CC-101 within three working days.
+--b1
+Content-Type: application/pdf; name="site_report.pdf"
+Content-Disposition: attachment; filename="site_report.pdf"
+Content-Transfer-Encoding: base64
+
+JVBERi0xLjQK
+--b1--

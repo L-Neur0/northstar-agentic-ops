@@ -6,11 +6,14 @@ know fails loudly in tests instead of disappearing on the next save, and an out-
 count can never make a session unloadable.
 What: three bases (`ProfileModel` keeps registry keys; `StorageModel` and `WireModel` use camelCase
 aliases), the enums, the profile with its rows and sidecars (`__meta`, `__skipped`), the session and
-idea documents, the assessment containers that specs 20, 21 and 23 fill, and the shared wire
-models. Every dump uses `by_alias=True`.
+idea documents (with the steering state and idea signals of spec 14 §3.15), the assessment
+containers that specs 18, 19, 20, 21, 23 and 26 fill, and the shared wire models. Every dump uses
+`by_alias=True`. Every field added after the first stored session has a default, so a document
+saved before the addition still loads; the money fields parked by spec 19 (R5) are typed `None`.
 Must not: hold rules of "answered" (that is `domain.field_spec`), read a clock (times are passed
 in), or restate a limit or a total (they are imported from the registry).
-Tests: AC-12.25, AC-12.28, AC-12.39 to AC-12.43.
+Tests: AC-12.25, AC-12.28, AC-12.39 to AC-12.43; the amendments in `test_contract_amendments.py`
+(spec 14 §3.15, spec 18 §4.4, spec 19 §4.3, spec 26 §4.2, AC-19.39).
 """
 
 from __future__ import annotations
@@ -19,7 +22,7 @@ import uuid
 from enum import StrEnum
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, SerializerFunctionWrapHandler, model_serializer, model_validator
 from pydantic.alias_generators import to_camel
 
 from app.services.process_discovery.domain.field_spec import (
@@ -30,6 +33,8 @@ from app.services.process_discovery.domain.field_spec import (
     SOURCE_DOCUMENT,
     SOURCE_SPECIALIST,
 )
+
+MAX_STEERING_CANDIDATES = 5  # candidates kept per session while steering (spec 14 §3.15 item 1)
 
 # --- Bases ----------------------------------------------------------------------------------------
 
@@ -122,7 +127,11 @@ class Grade(StrEnum):
 
 
 class FieldMeta(StorageModel):
-    """Who wrote a field and whether it is confirmed (§3.6). JSON keys: source, status, documentId, quote, by, at."""
+    """Who wrote a field and whether it is confirmed (§3.6). JSON keys: source, status, documentId, quote, by, at.
+
+    `replaces` (spec 17 Q5, AC-17.62): on a document proposal that completes a partly answered field,
+    the value and meta it replaced, `{"value": ..., "meta": {...} | None}`, restored exactly on a no.
+    """
 
     source: Literal["expert", "document", "specialist"]
     status: Literal["proposed", "confirmed"]
@@ -130,6 +139,15 @@ class FieldMeta(StorageModel):
     quote: str | None = None
     by: str | None = None
     at: str
+    replaces: dict[str, Any] | None = None
+
+    @model_serializer(mode="wrap")
+    def _drop_empty_replaces(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
+        """`replaces` is stored only when present, so every other meta keeps its six keys."""
+        data: dict[str, Any] = handler(self)
+        if data.get("replaces") is None:
+            data.pop("replaces", None)
+        return data
 
     @model_validator(mode="after")
     def _rules(self) -> FieldMeta:
@@ -347,7 +365,7 @@ class LastQuestion(StorageModel):
 
     focus: list[str] = Field(default_factory=list)
     proposals: list[str] = Field(default_factory=list)
-    confirm: Literal["cluster", "roles", "systems"] | None = None
+    confirm: Literal["cluster", "roles", "systems", "recommendation"] | None = None
 
 
 class StepListItem(StorageModel):
@@ -360,7 +378,7 @@ class StepListItem(StorageModel):
 class DocumentRecord(StorageModel):
     id: str
     name: str
-    kind: Literal["pdf", "docx", "xlsx", "csv", "txt", "md", "bpmn"]
+    kind: Literal["pdf", "docx", "xlsx", "pptx", "csv", "txt", "md", "eml", "bpmn", "png", "jpeg"]
     bytes: int = Field(ge=0)
     chars: int = Field(ge=0)
     truncated: bool = False
@@ -371,6 +389,41 @@ class DocumentRecord(StorageModel):
     step_list: list[StepListItem] = Field(default_factory=list)
 
 
+class CandidateSignals(StorageModel):
+    """The expert's own words for the four steering signals of one candidate (spec 14 §3.15 item 3)."""
+
+    runs: str | None = None
+    people: str | None = None
+    time: str | None = None
+    inputs: str | None = None
+
+
+class SteeringCandidate(StorageModel):
+    """One candidate process heard in `find`, with the numbers code read from its signals (§3.15 item 1)."""
+
+    id: str = Field(pattern=r"^c[1-5]$")
+    name: str
+    words: str = ""
+    signals: CandidateSignals = Field(default_factory=CandidateSignals)
+    runs_per_year: float | None = None
+    hours_per_year: float | None = None
+    people: float | None = None
+    data_score: float | None = Field(default=None, ge=0, le=1)
+    score: float | None = Field(default=None, ge=0, le=1)
+    rank: int | None = Field(default=None, ge=1)
+
+
+class SteeringState(StorageModel):
+    """Steering toward the candidate with the most value and the readiest data (spec 14 §3.15)."""
+
+    status: Literal["off", "collecting", "ranked", "chosen"] = "off"
+    candidates: list[SteeringCandidate] = Field(default_factory=list, max_length=MAX_STEERING_CANDIDATES)
+    questions: int = Field(default=0, ge=0)
+    recommend_asks: int = Field(default=0, ge=0)
+    recommended_id: str | None = None
+    declined: bool = False
+
+
 class Cost(StorageModel):
     tokens_in: int = 0
     tokens_out: int = 0
@@ -378,6 +431,16 @@ class Cost(StorageModel):
 
 
 # --- Assessment containers (specs 20, 21 may add fields, never rename) -------------------------------
+
+EvidenceSource = Literal["expert", "document", "specialist"]
+
+# Legal BPMN markers per node type; the first is the default (spec 18 §3.7 item 3).
+DIAGRAM_MARKERS_BY_TYPE: dict[str, tuple[str, ...]] = {
+    "start": ("none", "message", "timer", "conditional", "signal"),
+    "task": ("none", "user", "manual", "service", "send", "receive", "script", "business_rule"),
+    "gateway": ("exclusive", "parallel", "inclusive", "event_based"),
+    "end": ("none", "message", "terminate", "error"),
+}
 
 
 class Opportunity(StorageModel):
@@ -396,12 +459,16 @@ class Opportunity(StorageModel):
     saving_share: float = Field(default=0.0, ge=0, le=0.9)
     review: Literal["pending", "accepted", "adjusted", "rejected"] = "pending"
     review_note: str = ""
+    evidence_key: str = ""
+    evidence_source: EvidenceSource | None = None
+    blocked_by: list[str] = Field(default_factory=list)
 
 
 class StayHuman(StorageModel):
     substeps: list[int] = Field(default_factory=list)
     reason: str = ""
     evidence: str = ""
+    evidence_key: str = ""
 
 
 class DiagramNode(StorageModel):
@@ -420,10 +487,29 @@ class DiagramFlow(StorageModel):
     is_default: bool = False
 
 
+class DataObject(StorageModel):
+    """An input or output of one step, drawn beside its task (spec 18 §4.4; built by code)."""
+
+    id: str
+    step_index: int = Field(ge=1)
+    direction: Literal["input", "output"]
+    label: str
+
+
+class DataStore(StorageModel):
+    """A system the steps read or write, drawn once (spec 18 §4.4; built by code)."""
+
+    id: str
+    label: str
+    steps: list[int] = Field(default_factory=list)
+
+
 class ProcessDiagram(StorageModel):
     lanes: list[str] = Field(default_factory=list)
     nodes: list[DiagramNode] = Field(default_factory=list)
     flows: list[DiagramFlow] = Field(default_factory=list)
+    data_objects: list[DataObject] = Field(default_factory=list)
+    data_stores: list[DataStore] = Field(default_factory=list)
     simplified: bool = False
     steps_hash: str = ""
 
@@ -446,14 +532,51 @@ class StepLabels(StorageModel):
     decisions: list[DecisionLabel] = Field(default_factory=list)
 
 
+# Fields typed `None` are parked until the value method is decided (spec 19, refinement R5): no cost,
+# rate, share or value can be stored while R5 is open. Deciding R5 changes these types here.
+
+
+class StepValue(StorageModel):
+    """Hours of one step (spec 19 §4.3); a number is None when it cannot be computed."""
+
+    step: int = Field(ge=1)
+    name: str = ""
+    duration_hours: float | None = None
+    runs_per_year: float | None = None
+    hours_per_year: float | None = None
+    rate: None = None
+    share: None = None
+    hours_freed: None = None
+    value_conservative: None = None
+    value_expected: None = None
+    problem: str | None = None
+
+
+class OpportunityValue(StorageModel):
+    """Hours of the steps one opportunity covers (spec 19 §4.3)."""
+
+    id: str
+    step_hours: float | None = None
+    hours_freed: None = None
+    value_conservative: None = None
+    value_expected: None = None
+
+
 class ValueResult(StorageModel):
     complete: bool = False
     missing: list[str] = Field(default_factory=list)
     hours_per_year: float | None = None
-    cost_today: float | None = None
-    hours_freed: float | None = None
-    value_conservative: float | None = None
-    value_expected: float | None = None
+    cost_today: None = None
+    hours_freed: None = None
+    value_conservative: None = None
+    value_expected: None = None
+    currency: str = ""
+    runs_per_year: float | None = None
+    steps: list[StepValue] = Field(default_factory=list)
+    opportunities: list[OpportunityValue] = Field(default_factory=list)
+    problems: list[str] = Field(default_factory=list)
+    formulas: list[str] = Field(default_factory=list)
+    assumptions: list[str] = Field(default_factory=list)
 
 
 class ReadinessDimension(StorageModel):
@@ -462,6 +585,8 @@ class ReadinessDimension(StorageModel):
     reason: str = ""
     to_prepare: str = ""
     note: str = ""
+    label: str = ""
+    steps: list[int] = Field(default_factory=list)
 
 
 class Readiness(StorageModel):
@@ -472,6 +597,40 @@ class Path(StorageModel):
     prepare_first: list[str] = Field(default_factory=list)
     quick_wins: list[str] = Field(default_factory=list)
     bigger_changes: list[str] = Field(default_factory=list)
+    prepare_items: list[str] = Field(default_factory=list)
+
+
+class StepRating(StorageModel):
+    """The step assessment's rating of one step (spec 26 §4.2); `fit` None = not assessed."""
+
+    step: int = Field(ge=1)
+    name: str
+    fit: Literal["automate", "assist", "human"] | None = None
+    reason: str = ""
+    evidence: str = ""
+    evidence_key: str = ""
+    evidence_source: EvidenceSource | None = None
+    route_id: str | None = None
+    route_reason: str = ""
+
+
+class RouteSummary(StorageModel):
+    """The recommended route built by code from the ratings and the step hours (spec 26 §3.6)."""
+
+    headline: str = ""
+    start_with: list[int] = Field(default_factory=list)
+    later: list[int] = Field(default_factory=list)
+    fix_first: list[int] = Field(default_factory=list)
+    stay_with_people: list[int] = Field(default_factory=list)
+    not_routed: list[int] = Field(default_factory=list)
+    prepare: list[str] = Field(default_factory=list)
+
+
+class StepAssessment(StorageModel):
+    steps: list[StepRating] = Field(default_factory=list)
+    route: RouteSummary | None = None
+    inputs_hash: str = ""
+    placeholder_catalogue: bool = False
 
 
 class Assessment(StorageModel):
@@ -483,11 +642,12 @@ class Assessment(StorageModel):
     value: ValueResult | None = None
     readiness: Readiness | None = None
     path: Path | None = None
+    step_assessment: StepAssessment | None = None
     steps_hash: str = ""
     generated_at: str = ""
-    outcomes: dict[Literal["opportunities", "diagram", "labels"], Literal["generated", "fallback", "failed"]] = Field(
-        default_factory=dict
-    )
+    outcomes: dict[
+        Literal["opportunities", "diagram", "labels", "steps"], Literal["generated", "fallback", "failed"]
+    ] = Field(default_factory=dict)
 
 
 class ReportState(StorageModel):
@@ -542,6 +702,7 @@ class Session(StorageModel):
     scope: ScopeState = Field(default_factory=ScopeState)
     placement: PlacementState = Field(default_factory=PlacementState)
     last_question: LastQuestion = Field(default_factory=LastQuestion)
+    steering: SteeringState = Field(default_factory=SteeringState)
     documents: list[DocumentRecord] = Field(default_factory=list)
     raw_substeps: list[Step] = Field(default_factory=list)
     assessment: Assessment | None = None
@@ -564,6 +725,13 @@ class Idea(StorageModel):
     status: Literal["open", "started", "dismissed"] = "open"
     created_at: str
     ttl: int | None = None
+    signals: CandidateSignals = Field(default_factory=CandidateSignals)
+    hours_per_year: float | None = None
+    people: float | None = None
+    data_score: float | None = Field(default=None, ge=0, le=1)
+    score: float | None = Field(default=None, ge=0, le=1)
+    rank: int | None = Field(default=None, ge=1)
+    recommended: bool = False
 
 
 # --- Shared wire models ------------------------------------------------------------------------------

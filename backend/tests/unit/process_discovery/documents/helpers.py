@@ -81,3 +81,31 @@ def record(document_id: str, name: str = "notes.txt") -> DocumentRecord:
     return DocumentRecord(
         id=document_id, name=name, kind="txt", bytes=10, chars=4, text="text", uploaded_at=AT, outcome="read"
     )
+
+
+SITE_STEPS = ["Export actuals", "Compare with budget", "Collect explanations", "Review", "Send report"]
+SITE_AGENT = 'You are on step 3 of 5 — "Collect explanations". What do the site managers send back, and in what form?'
+SITE_EXPERT = "They send a report, I'll upload one."
+
+
+def site_reply() -> dict[str, Any]:
+    """The scripted reply of worked example 4 (spec 17 §3.18 item 11)."""
+    return json.loads((FIXTURES / "site_report_march.reply.json").read_text(encoding="utf-8"))
+
+
+def site_session(vocab: Vocabulary, profile: dict[str, Any] | None = None) -> Session:
+    """Worked example 4's state: phase `steps`, 5 rows, focus on step 3's data, the last two messages."""
+    from app.models.process_discovery_schemas import LastQuestion, Message, MessageRole, Phase
+
+    base = profile if profile is not None else expert_steps(vocab, procedure_profile(vocab), SITE_STEPS)
+    session = session_with(base)
+    return session.model_copy(
+        update={
+            "phase": Phase.STEPS,
+            "last_question": LastQuestion(focus=["process.substeps[3].data"]),
+            "messages": [
+                Message(role=MessageRole.AGENT, text=SITE_AGENT, at=AT),
+                Message(role=MessageRole.EXPERT, text=SITE_EXPERT, at=AT),
+            ],
+        }
+    )

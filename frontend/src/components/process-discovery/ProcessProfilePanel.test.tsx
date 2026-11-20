@@ -1,6 +1,6 @@
 /**
- * Tests for the "Your process" panel and its *Finish* block (spec 23 §3.8.1, §3.8.12;
- * AC-23.38, AC-23.39).
+ * Tests for the "Your process" panel and its *Finish* block (spec 23 §3.8.1, §3.8.12, §11.1,
+ * §11.8; AC-23.38, AC-23.39, AC-23.66, AC-23.79).
  * Why: the *Finish* button state comes only from the server's `finish.ready`; `looksLikeTask` is
  * advice and never blocks; a blocked button explains why, linked by `aria-describedby`.
  * Rules: an unknown blocked-reason code is shown as is, never hidden.
@@ -10,7 +10,7 @@ import userEvent from '@testing-library/user-event'
 import { ProcessProfilePanel } from './ProcessProfilePanel'
 import { defaultSections } from './sectionState'
 import { renderWithProviders } from '../../test/render'
-import { buildSession, readySession } from '../../test/fixtures/sessions'
+import { buildSession, readySession, withProposals } from '../../test/fixtures/sessions'
 import { initialDiscoveryState } from '../../hooks/discoveryReducer'
 import type { SessionOut } from '../../types/process-discovery'
 
@@ -92,5 +92,53 @@ describe('blocked reasons (AC-23.39)', () => {
   it('is disabled when ready but the session is locked', () => {
     panel(readySession(), { locked: true })
     expect(finishButton()).toBeDisabled()
+  })
+})
+
+describe('part 2 additions (AC-23.66, AC-23.79)', () => {
+  const controls = {
+    canAct: true,
+    disabled: false,
+    pending: null,
+    openQuotes: new Set<string>(),
+    onToggleQuote: vi.fn(),
+    onConfirm: vi.fn(),
+    onReject: vi.fn(),
+  }
+
+  it('two or more proposed step names offer one batch with the S01 keys in step order (AC-23.79)', async () => {
+    const onConfirm = vi.fn()
+    panel(withProposals(), { proposals: { ...controls, onConfirm } })
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm the 3 proposed step names' }))
+    expect(onConfirm).toHaveBeenCalledWith(['process.substeps[1].name', 'process.substeps[2].name', 'process.substeps[3].name'])
+  })
+
+  it('Finish is disabled while a document write runs (AC-23.66)', () => {
+    panel(readySession(), { pending: { ...initialDiscoveryState.pending, proposals: { keys: ['k'], kind: 'confirm' } } })
+    expect(finishButton()).toBeDisabled()
+  })
+
+  it('places the Documents section between Roles and systems and Finish', () => {
+    panel(withProposals(), {
+      documentPanel: {
+        editable: true,
+        busy: false,
+        limits: { allowedTypes: ['pdf'], maxFiles: 5, maxFileMb: 10, maxImageMb: 5 },
+        uploading: null,
+        removingId: null,
+        notice: null,
+        error: null,
+        onOpenPicker: vi.fn(),
+        onFile: vi.fn(),
+        onRemove: vi.fn(),
+        onDismissNotice: vi.fn(),
+        onDismissError: vi.fn(),
+      },
+    })
+    const toggles = screen.getAllByRole('button', { expanded: true }).map((b) => b.textContent ?? '')
+    const roles = toggles.findIndex((t) => t.startsWith('Roles and systems'))
+    const docs = toggles.findIndex((t) => t.startsWith('Documents'))
+    expect(docs).toBe(roles + 1)
+    expect(screen.getByRole('button', { name: /^Documents/ })).toHaveTextContent('2/5')
   })
 })

@@ -24,7 +24,7 @@ TEXT = procedure_text()
 
 
 def raw(**fields: Any):
-    return read_document_model().model_validate({"document_kind": "procedure", **fields})
+    return read_document_model().model_validate({"document_role": "whole_process", **fields})
 
 
 def doc_step(name: str, quote: str | None = None, **cells: Any) -> dict[str, Any]:

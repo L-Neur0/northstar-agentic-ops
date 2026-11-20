@@ -8,7 +8,8 @@ client from `create_llm` (settings from `backend/.env`, your `az login` locally;
 off). It prints the offered, kept and skipped counts and checks that the reading succeeded and
 that at least one quoted proposal survived.
 Must not: run in CI or by default (marked `live`, skipped unless `RUN_LIVE=1`), or log the text.
-Covers AC-17.21 (strict schema accepted for real) and AC-17.32 (real reply through the pipeline).
+Covers AC-17.21 (strict schema accepted for real), AC-17.32 (real reply through the pipeline) and the
+§3.19 item 4 assumption (`test_image_read`: the deployment reads an image under the strict schema).
 """
 
 from __future__ import annotations
@@ -67,3 +68,29 @@ async def test_live_read_document_keeps_quoted_proposals():
     )
     assert report.outcome == "read"
     assert report.kept.fields + report.kept.steps + report.kept.cells > 0
+
+
+async def test_image_read():
+    """Spec 17 §3.19 item 4: the `app-chat` deployment reads one image with the strict image schema."""
+    from app.services.process_discovery.documents.context import ReadingContext
+
+    config = load_company_config(NIG)
+    vocab = Vocabulary(taxonomy=config.taxonomy, regions=config.organisation.regions, wording=config.wording)
+    llm = create_llm(Settings(llm_cache_enabled=False))  # pyright: ignore[reportCallIssue]
+    data = (Path(__file__).resolve().parents[1] / "fixtures" / "documents" / "planning_tool.png").read_bytes()
+    try:
+        result = await read_document(
+            Session(owner_id="live-test", created_at=AT, updated_at=AT),
+            filename="planning_tool.png",
+            data=data,
+            llm=llm,
+            config=config.documents,
+            document_id="d1",
+            now=AT,
+            vocab=vocab,
+            context=ReadingContext(phase="steps"),
+        )
+    finally:
+        await llm.aclose()
+    assert result.report.outcome == "read" and result.from_image
+    assert result.record.text.startswith("Image: ") and "Planning tool" in result.record.text

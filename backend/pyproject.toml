@@ -23,6 +23,8 @@ dependencies = [
     "defusedxml>=0.7,<0.8",
     "slowapi==0.1.10",
     "azure-monitor-opentelemetry>=1.8,<1.9",
+    "python-pptx>=1.0.2",
+    "pillow>=13.0.0",
 ]
 
 [dependency-groups]

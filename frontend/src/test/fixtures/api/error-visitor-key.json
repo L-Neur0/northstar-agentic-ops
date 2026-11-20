@@ -1,0 +1,4 @@
+{
+  "code": "visitor_key_required",
+  "message": "A visitor key (22 to 64 URL-safe characters) is required."
+}

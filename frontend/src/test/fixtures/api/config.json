@@ -1,0 +1,33 @@
+{
+  "productName": "Discovery Agent",
+  "regions": [
+    "North America",
+    "Europe",
+    "Middle East",
+    "Asia-Pacific"
+  ],
+  "languages": [
+    "en",
+    "de"
+  ],
+  "documents": {
+    "allowedTypes": [
+      "pdf",
+      "docx",
+      "xlsx",
+      "pptx",
+      "csv",
+      "txt",
+      "md",
+      "eml",
+      "bpmn",
+      "xml",
+      "png",
+      "jpg",
+      "jpeg"
+    ],
+    "maxFiles": 10,
+    "maxFileMb": 10.0,
+    "maxImageMb": 5.0
+  }
+}

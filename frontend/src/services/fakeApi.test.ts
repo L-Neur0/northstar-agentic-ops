@@ -1,5 +1,6 @@
 /**
- * Tests for the in-memory fake of spec 15's interview routes (spec 23 §3.12.4–5; AC-23.47).
+ * Tests for the in-memory fake of spec 15's interview routes (spec 23 §3.12.4–5, §11.15; AC-23.47,
+ * AC-23.81, AC-23.101).
  * Why: the screens are built and demoed against this fake before the backend is ready, so it must
  * play the scripted monthly cost review from the welcome to a ready *Finish*, keep the server's
  * rules (closed sessions, finish gate, unknown cluster) and honour the `/error <code>` trigger.
@@ -127,5 +128,156 @@ describe('fake API (AC-23.47)', () => {
   it('returns the nine clusters in order', async () => {
     const t = await make().getTaxonomy()
     expect(t.clusters.map((c) => c.code)).toEqual(['FIN', 'HR', 'LEG', 'IT', 'PRO', 'COM', 'KNW', 'ANL', 'GWT'])
+  })
+})
+
+const doc = (name: string, size = 100) => new File([new Uint8Array(size)], name)
+const view = (s: SessionOut, key: string) => s.fieldViews.find((v) => v.key === key)!
+
+describe('fake documents (AC-23.81)', () => {
+  it('a procedure on an empty session proposes trigger, end result and 5 step names with quotes', async () => {
+    const api = make()
+    const s0 = await api.createSession({})
+    const progress: number[] = []
+    const up = await api.uploadDocument(s0.id, doc('Cost review procedure.docx'), (p) => progress.push(p))
+    expect(progress).toEqual([25, 50, 75, 100])
+    expect(up.report.message).toBe(
+      'I read "Cost review procedure.docx" and found 2 values and 5 steps for your process. Nothing counts until you confirm it.',
+    )
+    expect(view(up.session, 'process.trigger')).toMatchObject({
+      status: 'proposed',
+      source: 'document',
+      documentName: 'Cost review procedure.docx',
+      quote: 'The review starts once month-end close is completed.',
+    })
+    expect(view(up.session, 'process.end_result').status).toBe('proposed')
+    const names = up.session.fieldViews.filter((v) => /substeps\[\d\]\.name$/.test(v.key))
+    expect(names).toHaveLength(5)
+    expect(names.every((v) => v.status === 'proposed' && v.quote)).toBe(true)
+    expect(up.session.documents).toEqual([expect.objectContaining({ name: 'Cost review procedure.docx', kind: 'docx', proposals: 7, pending: 7 })])
+    expect(up.document.pending).toBe(7)
+  })
+
+  it('never overwrites a value the expert gave (fill-only)', async () => {
+    const api = make()
+    let s = await api.createSession({})
+    for (let i = 0; i < FAKE_SCRIPT_LENGTH; i += 1) s = (await api.sendMessage(s.id, 'yes')).session
+    const before = s.profile.process.trigger
+    const up = await api.uploadDocument(s.id, doc('procedure.pdf'))
+    expect(up.session.profile.process.trigger).toBe(before)
+    expect(up.report.message).toContain('nothing new')
+  })
+
+  it.each([
+    ['map.bpmn', (s: SessionOut) => expect(view(s, 'process.substeps[1].roles').status).toBe('proposed')],
+    ['empty notes.txt', (s: SessionOut) => expect(s.documents[0]).toMatchObject({ proposals: 0, outcome: 'read' })],
+    ['long procedure.md', (s: SessionOut) => expect(s.documents[0].truncated).toBe(true)],
+    ['failed.pdf', (s: SessionOut) => expect(s.documents[0]).toMatchObject({ outcome: 'failed', proposals: 0 })],
+  ])('%s gives its scripted outcome', async (name, check) => {
+    const api = make()
+    const s0 = await api.createSession({})
+    const up = await api.uploadDocument(s0.id, doc(name))
+    check(up.session)
+    if (name.startsWith('long')) expect(up.report.message).toContain('It is long, so I read only the first part.')
+    if (name.startsWith('failed')) expect(up.report.message).toContain("I couldn't read this document just now.")
+    if (name.startsWith('empty')) expect(up.report.message).toBe('I read "empty notes.txt" but found nothing new for the form.')
+  })
+
+  it.each([
+    ['scan.pdf', 100, 422, 'document_unreadable'],
+    ['inject.txt', 100, 400, 'unsafe_input'],
+    ['photo.png', 100, 415, 'document_type'],
+    ['big.pdf', 10 * 1_048_576 + 1, 413, 'document_too_large'],
+    ['zero.pdf', 0, 422, 'document_unreadable'],
+  ])('%s is refused with %i %s', async (name, size, status, code) => {
+    const api = make()
+    const s0 = await api.createSession({})
+    await expect(api.uploadDocument(s0.id, doc(name, size))).rejects.toMatchObject({ status, code })
+    expect((await api.getSession(s0.id)).documents).toEqual([])
+  })
+
+  it('refuses a sixth document with 409 document_limit', async () => {
+    const api = make()
+    const s0 = await api.createSession({})
+    for (let i = 0; i < 5; i += 1) await api.uploadDocument(s0.id, doc(`empty ${i}.txt`))
+    await expect(api.uploadDocument(s0.id, doc('empty 6.txt'))).rejects.toMatchObject({ status: 409, code: 'document_limit' })
+  })
+
+  it('confirm, reject and remove update the views and the pending counts', async () => {
+    const api = make()
+    const s0 = await api.createSession({})
+    const up = await api.uploadDocument(s0.id, doc('procedure.docx'))
+    const id = up.document.id
+    let s = await api.confirmProposals(s0.id, ['process.trigger', 'not.a.proposal'])
+    expect(view(s, 'process.trigger')).toMatchObject({ status: 'complete', source: 'document', documentName: 'procedure.docx' })
+    expect(s.documents[0].pending).toBe(6)
+    s = await api.rejectProposals(s0.id, ['process.end_result'])
+    expect(view(s, 'process.end_result').status).toBe('empty')
+    expect(s.profile.process.end_result).toBe('')
+    expect(s.documents[0].pending).toBe(5)
+    s = await api.removeDocument(s0.id, id)
+    expect(s.documents).toEqual([])
+    expect(s.profile.process.substeps).toEqual([])
+    expect(view(s, 'process.trigger')).toMatchObject({ status: 'complete', source: 'document', documentName: null })
+    await expect(api.removeDocument(s0.id, id)).rejects.toMatchObject({ status: 404, code: 'not_found' })
+  })
+
+  it('/error <code> also fails the next document call', async () => {
+    const api = make()
+    const s0 = await api.createSession({})
+    await api.sendMessage(s0.id, '/error budget_exhausted')
+    await expect(api.uploadDocument(s0.id, doc('procedure.docx'))).rejects.toMatchObject({ status: 429, code: 'budget_exhausted' })
+  })
+
+  it('getConfig returns the document limits', async () => {
+    expect((await make().getConfig()).documents).toEqual({
+      allowedTypes: ['pdf', 'docx', 'xlsx', 'csv', 'txt', 'md', 'bpmn', 'xml'],
+      maxFiles: 5,
+      maxFileMb: 10,
+      maxImageMb: 5,
+    })
+  })
+})
+
+describe('fake report and PDF (AC-23.101)', () => {
+  async function finished(api: ReturnType<typeof make>) {
+    const s0 = await api.createSession({})
+    await api.sendMessage(s0.id, '/finish-ready')
+    await api.confirm(s0.id, 'substeps')
+    await api.confirm(s0.id, 'roles')
+    await api.confirm(s0.id, 'tools')
+    return api.finish(s0.id)
+  }
+
+  it('a finished session returns the EU report; an active one is not ready', async () => {
+    const api = make()
+    const s = await finished(api)
+    const report = await api.getReport(s.id)
+    expect(report.atAGlance.hours).toBe('About 342 hours a year.')
+    const active = await api.createSession({})
+    await expect(api.getReport(active.id)).rejects.toMatchObject({ status: 409, code: 'report_not_ready' })
+    await expect(api.getReport('nope')).rejects.toMatchObject({ status: 404 })
+  })
+
+  it('/report-failed steps marks steps and route; /report-missing map leaves the map out', async () => {
+    const api = make()
+    const s = await finished(api)
+    const extra = await api.createSession({})
+    await api.sendMessage(extra.id, '/report-failed steps')
+    const failed = await api.getReport(s.id)
+    expect(failed.steps.note?.kind).toBe('failed')
+    expect(failed.route.note?.kind).toBe('failed')
+    await api.sendMessage(extra.id, '/report-missing map')
+    const missing = await api.getReport(s.id)
+    expect('map' in missing).toBe(false)
+    expect((await api.getReport(s.id)).map).toBeDefined()
+  })
+
+  it('the PDF call returns a blob starting with %PDF and the file name', async () => {
+    const api = make()
+    const s = await finished(api)
+    const { blob, filename } = await api.getReportPdf(s.id)
+    expect((await blob.text()).startsWith('%PDF')).toBe(true)
+    expect(filename).toBe('discovery-report-monthly-cost-review.pdf')
   })
 })

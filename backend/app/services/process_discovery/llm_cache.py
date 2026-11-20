@@ -32,6 +32,24 @@ _KEY_RE = re.compile(r"^[0-9a-f]{64}$")
 _CALL_TYPE_RE = re.compile(r"^[A-Z][A-Z_]{0,31}$")
 
 
+def _without_images(message: Mapping[str, Any]) -> dict[str, Any]:
+    """The message with each image data URL replaced by the SHA-256 of its bytes (spec 17 §3.19 item 4)."""
+    content = message.get("content")
+    if not isinstance(content, list):
+        return dict(message)
+    parts: list[Any] = []
+    for part in content:  # pyright: ignore[reportUnknownVariableType]
+        image = part.get("image_url") if isinstance(part, Mapping) else None  # pyright: ignore[reportUnknownMemberType]
+        url = image.get("url") if isinstance(image, Mapping) else None  # pyright: ignore[reportUnknownMemberType]
+        if isinstance(url, str) and isinstance(image, Mapping):
+            digest = hashlib.sha256(url.encode("ascii", "ignore")).hexdigest()
+            safe = {**image, "url": f"sha256:{digest}"}  # pyright: ignore[reportUnknownVariableType]
+            parts.append({**part, "image_url": safe})  # pyright: ignore[reportUnknownArgumentType]
+        else:
+            parts.append(part)
+    return {**message, "content": parts}
+
+
 class LLMCache:
     """Model replies on disk, one JSON file per request key."""
 
@@ -53,7 +71,7 @@ class LLMCache:
             "v": FORMAT_VERSION,
             "deployment": deployment,
             "call_type": str(call_type),
-            "messages": [dict(m) for m in messages],
+            "messages": [_without_images(m) for m in messages],
             "response_format": response_format,
         }
         canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)

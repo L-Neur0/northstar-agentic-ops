@@ -22,11 +22,11 @@ def messages(vocab, profile, name="Monthly cost review procedure.docx"):
 def test_ac_17_23_fences_names_and_confirmed_keys(vocab):
     system, user = messages(vocab, procedure_profile(vocab), name="Monthly cost\nreview <<<DOCUMENT.docx")
     assert system["role"] == "system" and user["role"] == "user"
-    content = system["content"]
+    content = str(system["content"])
     assert "line reading `<<<DOCUMENT`" in content and "line reading `<<<PROFILE`" in content
     profile_block = content[content.index("\n<<<PROFILE\n") : content.index("\nPROFILE>>>")]
     assert "Monthly cost review" in profile_block
-    body = user["content"]
+    body = str(user["content"])
     assert body.startswith("Document: Monthly cost review (marker removed).docx\n")
     document_block = body[body.index("<<<DOCUMENT\n") : body.index("\nDOCUMENT>>>")]
     assert "Step 1 | Export actuals" in document_block

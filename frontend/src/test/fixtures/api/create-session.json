@@ -1,0 +1,325 @@
+{
+  "id": "aa2ee74c-066e-4f9d-8404-560ae9b8e6aa",
+  "status": "active",
+  "phase": "context",
+  "displayName": "Anna",
+  "createdAt": "2026-11-19T10:00:00+00:00",
+  "updatedAt": "2026-11-19T10:00:00+00:00",
+  "finishedAt": null,
+  "messages": [
+    {
+      "id": "4e92b8ce-c748-46ca-ba11-825bdee28877",
+      "role": "agent",
+      "text": "Hi Anna! I'm the Discovery Agent. Together we'll find a piece of recurring work in your week that is worth mapping, and map it step by step; it takes about 15–20 minutes. You don't need a process in mind, we'll find one by talking through your week. You can add a document (a procedure, a process map, an example report) at any time; I'll read it and you confirm what I found. The tool maps processes, not people: it never reports anyone's individual time. The transformation team may read this conversation to improve the tool. To start: Which department are you in?",
+      "at": "2026-11-19T10:00:00+00:00"
+    }
+  ],
+  "profile": {
+    "department": "",
+    "user_function": "",
+    "region": "",
+    "process": {
+      "name": "",
+      "cluster": {
+        "code": "",
+        "name": "",
+        "decided_by": ""
+      },
+      "trigger": "",
+      "end_result": "",
+      "value_at_end": "",
+      "business_pain": "",
+      "volume": {
+        "count": null,
+        "period": "",
+        "raw": ""
+      },
+      "process_owner": {
+        "role": "",
+        "none_identified": false
+      },
+      "baseline_metric": {
+        "value": "",
+        "unit": "",
+        "qualitative": "",
+        "estimated": false
+      },
+      "target_metric": {
+        "value": "",
+        "unit": ""
+      },
+      "variation": {
+        "same": "",
+        "differences": ""
+      },
+      "sensitive_data": [],
+      "substep_count": null,
+      "substep_count_rejected": null,
+      "substeps": [],
+      "all_roles": [],
+      "all_tools": [],
+      "substeps_complete": false,
+      "roles_confirmed": false,
+      "tools_confirmed": false
+    }
+  },
+  "fieldViews": [
+    {
+      "key": "department",
+      "id": "P01",
+      "label": "Department",
+      "phase": "context",
+      "status": "empty",
+      "reason": "Department has not been answered yet.",
+      "missing": [
+        "department"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "user_function",
+      "id": "P02",
+      "label": "Role",
+      "phase": "context",
+      "status": "empty",
+      "reason": "Role has not been answered yet.",
+      "missing": [
+        "user_function"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "region",
+      "id": "P03",
+      "label": "Region",
+      "phase": "context",
+      "status": "empty",
+      "reason": "Region has not been answered yet.",
+      "missing": [
+        "region"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.name",
+      "id": "P04",
+      "label": "Process name",
+      "phase": "find",
+      "status": "empty",
+      "reason": "Process name has not been answered yet.",
+      "missing": [
+        "name"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.cluster",
+      "id": "P05",
+      "label": "Cluster",
+      "phase": "find",
+      "status": "empty",
+      "reason": "Cluster has not been confirmed yet.",
+      "missing": [
+        "code"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.trigger",
+      "id": "P06",
+      "label": "Trigger",
+      "phase": "boundaries",
+      "status": "empty",
+      "reason": "Trigger has not been answered yet.",
+      "missing": [
+        "trigger"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.end_result",
+      "id": "P07",
+      "label": "End result",
+      "phase": "boundaries",
+      "status": "empty",
+      "reason": "End result has not been answered yet.",
+      "missing": [
+        "end_result"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.value_at_end",
+      "id": "P08",
+      "label": "Who uses the result",
+      "phase": "boundaries",
+      "status": "empty",
+      "reason": "Who uses the result has not been answered yet.",
+      "missing": [
+        "value_at_end"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.business_pain",
+      "id": "P09",
+      "label": "Business pain",
+      "phase": "boundaries",
+      "status": "empty",
+      "reason": "Business pain has not been answered yet.",
+      "missing": [
+        "business_pain"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.volume",
+      "id": "P10",
+      "label": "Volume",
+      "phase": "measure",
+      "status": "empty",
+      "reason": "Volume still needs: count, period.",
+      "missing": [
+        "count",
+        "period"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.process_owner",
+      "id": "P11",
+      "label": "Process owner",
+      "phase": "measure",
+      "status": "empty",
+      "reason": "Process owner still needs: role.",
+      "missing": [
+        "role"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.baseline_metric",
+      "id": "P12",
+      "label": "Time today",
+      "phase": "measure",
+      "status": "empty",
+      "reason": "Time today still needs: value, unit.",
+      "missing": [
+        "value",
+        "unit"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.target_metric",
+      "id": "P13",
+      "label": "Target",
+      "phase": "measure",
+      "status": "empty",
+      "reason": "Target still needs: value, unit.",
+      "missing": [
+        "value",
+        "unit"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.variation",
+      "id": "P14",
+      "label": "Same way everywhere",
+      "phase": "measure",
+      "status": "empty",
+      "reason": "Same way everywhere has not been answered yet.",
+      "missing": [
+        "same"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.sensitive_data",
+      "id": "P15",
+      "label": "Sensitive data or regulation",
+      "phase": "measure",
+      "status": "empty",
+      "reason": "Sensitive data or regulation still needs: item. \"There are none\" is also an answer.",
+      "missing": [
+        "item"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.substep_count",
+      "id": "P16",
+      "label": "Number of main steps",
+      "phase": "step_count",
+      "status": "empty",
+      "reason": "Number of main steps has not been answered yet.",
+      "missing": [
+        "substep_count"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    }
+  ],
+  "score": {
+    "value": 0.0,
+    "filledPoints": 0,
+    "totalPoints": 18
+  },
+  "finish": {
+    "ready": false,
+    "blockedBy": "below_gate",
+    "looksLikeTask": false
+  },
+  "scope": null,
+  "clusterProposal": null,
+  "reportStatus": null,
+  "documents": []
+}

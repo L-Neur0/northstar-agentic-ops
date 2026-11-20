@@ -47,3 +47,32 @@ def test_end_of_input_exits_cleanly():
     out = io.StringIO()
     assert chat.main(["--fake", str(SCRIPT)], stdin=io.StringIO("Finance\n"), out=out) == 0
     assert out.getvalue().count("agent> ") == 2
+
+
+def test_the_terminal_builds_the_same_context_as_the_app(monkeypatch):
+    """Spec 14 §3.15: `make chat` runs with steering on, like the app (context from `build_context`)."""
+    captured = {}
+
+    async def fake_chat(llm, ctx, stdin, out, company=None):
+        captured["ctx"] = ctx
+        return 0
+
+    chat = load_chat()
+    monkeypatch.setattr(chat, "chat", fake_chat)
+    assert chat.main(["--fake", str(SCRIPT)], stdin=io.StringIO(""), out=io.StringIO()) == 0
+    assert captured["ctx"].steering is not None
+
+
+def test_ac_14_90_upload_prints_the_question_and_yes_confirms():
+    """AC-14.90: `/upload PATH` runs the service's upload steps; a following "yes" confirms the group."""
+    chat = load_chat()
+    out = io.StringIO()
+    bpmn = BACKEND / "tests" / "fixtures" / "documents" / "access_review.bpmn"
+    script = BACKEND / "tests" / "fixtures" / "transcripts" / "chat_upload_fake.yaml"
+    stdin = io.StringIO(f"/upload {bpmn}\nyes\n/profile\n/quit\n")
+    assert chat.main(["--fake", str(script)], stdin=stdin, out=out) == 0
+    text = out.getvalue()
+    assert 'agent> From "access_review.bpmn" I\'d fill:' in text
+    assert "Should I fill it like this, or is something wrong?" in text
+    profile_lines = [line for line in text.splitlines() if line.startswith("process.trigger:")]
+    assert profile_lines and "proposed" not in profile_lines[-1]

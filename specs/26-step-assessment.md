@@ -210,7 +210,7 @@ class SolutionCatalogue(BaseModel):   # extra="forbid", frozen
 
 | ID | Given / when / then |
 |---|---|
-| AC-26.1 | `SolutionCatalogue` loads `config/nig/solutions.yaml` (7 entries, `placeholder: true`); it rejects a duplicate id, a bad slug, an unknown category, an empty `fits`, an unknown fit, an empty `choose_when`, more than 30 entries, and a file with no entry fitting `human` |
+| AC-26.1 | `SolutionCatalogue` loads `config/nig/solutions.yaml` (13 entries, `placeholder: false`, `assumed: true`; at least one `existing_internal` entry); it rejects a duplicate id, a bad slug, an unknown category, an empty `fits`, an unknown fit, an empty `choose_when`, more than 30 entries, and a file with no entry fitting `human` |
 | AC-26.2 | `strict_json_schema(AssessStepsOut)` builds; the `fit` literal equals `AIFit` (pinned in a test) |
 | AC-26.3 | `run_step_assessment` makes one `generate_structured` call with `CallType.ASSESS_STEPS`; the system prompt holds every rule of §3.4 (by phrase), the PROFILE fence instruction and one catalogue line per entry with its id; the profile travels fenced |
 | AC-26.4 | Given the §3.2 reply on the EU fixture, `ground_step_ratings` returns 5 ratings with the fits, routes and evidence keys shown and `dropped` all zero |

@@ -5,10 +5,11 @@ Why: prompts and the turn are tuned by talking to them; a terminal runner that u
 the interview without the web app, and with a scripted model (`--fake`) it is testable.
 What: reads expert messages from stdin, prints each agent reply and one status line
 (`phase=… score=… (x/y) finish=… ask=… asks=…`), and handles the commands `/profile`,
-`/confirm roles|systems`, `/cluster CODE`, `/finish`, `/save PATH`, `/load PATH` and `/quit`.
+`/confirm roles|systems`, `/cluster CODE`, `/finish`, `/save PATH`, `/load PATH`, `/upload PATH`
+(spec 14 §3.16 R7: the service's upload steps, printing the agent's question) and `/quit`.
 End of input exits cleanly (0). Against the real model it runs in stage `local`, so the LLM cache
 is on. Must not: store anything outside the files named by `/save`, or log message text.
-Spec 14 §3.12; AC-14.57.
+Spec 14 §3.12; AC-14.57, AC-14.90.
 """
 
 from __future__ import annotations
@@ -16,6 +17,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import sys
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import IO, Any
@@ -29,17 +31,18 @@ import yaml  # noqa: E402
 from app.core.config import load_company_config  # noqa: E402
 from app.core.settings import Settings  # noqa: E402
 from app.models.process_discovery_schemas import Message, Profile, Session  # noqa: E402
-from app.services.process_discovery.domain.field_spec import Vocabulary  # noqa: E402
+from app.services.process_discovery import build_context  # noqa: E402
+from app.services.process_discovery.documents import DocumentRejected  # noqa: E402
 from app.services.process_discovery.fake_llm import FakeLLM  # noqa: E402
 from app.services.process_discovery.interview.graph import build_graph  # noqa: E402
 from app.services.process_discovery.interview.phases import ask_count, read_counters  # noqa: E402
-from app.services.process_discovery.interview.replies import Lexicon  # noqa: E402
 from app.services.process_discovery.interview.turn import after_action, run_turn, welcome  # noqa: E402
-from app.services.process_discovery.interview.types import Ask, InterviewContext, InterviewSettings  # noqa: E402
+from app.services.process_discovery.interview.types import Ask, InterviewContext  # noqa: E402
 from app.services.process_discovery.llm import LLM, CallType, LLMBudgetExceededError, create_llm  # noqa: E402
 from app.services.process_discovery.profile.mutate import UnknownClusterError, confirm_rollup, set_cluster  # noqa: E402
 from app.services.process_discovery.profile.scoring import finish_check  # noqa: E402
 from app.services.process_discovery.profile.views import field_views  # noqa: E402
+from app.services.process_discovery.service import upload_into  # noqa: E402
 
 
 def _now() -> str:
@@ -105,7 +108,8 @@ def command(line: str, session: Session, ctx: InterviewContext, out: IO[str]) ->
         print(f"loaded {arg}", file=out)
     else:
         print(
-            "commands: /profile, /confirm roles|systems, /cluster CODE, /finish, /save PATH, /load PATH, /quit",
+            "commands: /profile, /confirm roles|systems, /cluster CODE, /finish, /save PATH, /load PATH, "
+            "/upload PATH, /quit",
             file=out,
         )
         return session, False
@@ -113,7 +117,23 @@ def command(line: str, session: Session, ctx: InterviewContext, out: IO[str]) ->
     return session, False
 
 
-async def chat(llm: LLM, ctx: InterviewContext, stdin: IO[str], out: IO[str]) -> int:
+async def upload(path: str, session: Session, llm: LLM, ctx: InterviewContext, company: Any, out: IO[str]) -> Session:
+    """`/upload PATH`: the service's upload steps on the in-memory session; prints the agent's question."""
+    file = Path(path)
+    try:
+        new, report = await upload_into(
+            session, filename=file.name, data=file.read_bytes(), llm=llm, config=company.documents, ctx=ctx, now=_now()
+        )
+    except (OSError, DocumentRejected) as error:
+        print(f"upload refused: {getattr(error, 'message', type(error).__name__)}", file=out)
+        return session
+    print(f"report> {report.message}", file=out)
+    print(f"agent> {new.messages[-1].text}", file=out)
+    print(status_line(new, ctx), file=out)
+    return new
+
+
+async def chat(llm: LLM, ctx: InterviewContext, stdin: IO[str], out: IO[str], company: Any = None) -> int:
     """The loop: welcome, then one turn per line until `/quit` or end of input."""
     graph = build_graph(llm, ctx)
     text, question = welcome(None, ctx)
@@ -126,6 +146,9 @@ async def chat(llm: LLM, ctx: InterviewContext, stdin: IO[str], out: IO[str]) ->
     print(status_line(session, ctx), file=out)
     for raw in stdin:
         line = raw.rstrip("\n")
+        if line.startswith("/upload ") and company is not None:
+            session = await upload(line.partition(" ")[2].strip(), session, llm, ctx, company, out)
+            continue
         if line.startswith("/"):
             session, stop = command(line, session, ctx, out)
             if stop:
@@ -150,18 +173,13 @@ def main(argv: list[str] | None = None, stdin: IO[str] | None = None, out: IO[st
     args = parser.parse_args(argv)
     settings = Settings()
     company = load_company_config(settings.company_config_dir)
-    vocab = Vocabulary(taxonomy=company.taxonomy, regions=company.organisation.regions, wording=company.wording)
-    ctx = InterviewContext(
-        vocab=vocab,
-        lexicon=Lexicon.from_config(company.language),
-        settings=InterviewSettings(),
-        product_name=company.organisation.product_name,
-    )
+    # The same context the app builds, with the interview settings, and steering on when configured.
+    ctx = replace(build_context(company, settings), steering=company.steering)
     llm: LLM = load_fake(args.fake) if args.fake else create_llm(settings)
 
     async def run() -> int:
         try:
-            return await chat(llm, ctx, stdin or sys.stdin, out or sys.stdout)
+            return await chat(llm, ctx, stdin or sys.stdin, out or sys.stdout, company)
         finally:
             await llm.aclose()
 

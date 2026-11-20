@@ -8,17 +8,24 @@ What: `ExtractedText`, `extract_text` (pdf, docx, xlsx, csv, txt, md; BPMN is `b
 `clean_and_cap` and `decode_text` (re-exported from `intake`, where the kind check needs it).
 Extraction stops once it has the budget plus one character, so a 500-page PDF is not read in full.
 Must not: keep or return the bytes, read headers, footers, comments or tracked deletions, read
-the clock or reach the network. Spec 17 §3.4; AC-17.9 to AC-17.15.
+the clock or reach the network. Spec 17 §3.4; AC-17.9 to AC-17.15. Amendment 2026-11-20: `.pptx`
+(per slide, in order: title, text boxes, tables, then the notes; pictures ignored) and `.eml`
+(Subject, Date, attachment names and the plain-text body, an HTML-only body turned into text;
+never a sender, recipient or address). AC-17.66, AC-17.67.
 """
 
 from __future__ import annotations
 
 import csv
+import email
+import email.policy
 import io
 import re
 import unicodedata
 from collections.abc import Iterator
 from dataclasses import dataclass
+from email.message import EmailMessage
+from html.parser import HTMLParser
 from typing import Any
 
 from .intake import DocumentKind, DocumentRejected, decode_text, unreadable
@@ -153,6 +160,93 @@ def _csv_lines(data: bytes) -> Iterator[str]:
             yield line
 
 
+def _shape_lines(shape: Any) -> Iterator[str]:
+    """Text of one slide shape: a group's members, a table's rows, a text frame's paragraphs; pictures give nothing."""
+    if getattr(shape, "shapes", None) is not None:  # a group
+        for member in shape.shapes:
+            yield from _shape_lines(member)
+    elif getattr(shape, "has_table", False):
+        for row in shape.table.rows:
+            yield CELL_JOIN.join(" ".join(cell.text.split()) for cell in row.cells)
+    elif getattr(shape, "has_text_frame", False):
+        for paragraph in shape.text_frame.paragraphs:
+            yield "".join(run.text for run in paragraph.runs)
+
+
+def _pptx_lines(data: bytes) -> Iterator[str]:
+    from pptx import Presentation
+
+    deck = Presentation(io.BytesIO(data))
+    for number, slide in enumerate(deck.slides, start=1):
+        yield f"## Slide {number}"
+        title = slide.shapes.title
+        if title is not None and title.has_text_frame:
+            yield title.text_frame.text
+        for shape in slide.shapes:
+            if title is not None and shape.shape_id == title.shape_id:
+                continue
+            yield from _shape_lines(shape)
+        if slide.has_notes_slide:
+            notes = slide.notes_slide.notes_text_frame
+            if notes is not None and notes.text.strip():
+                yield "Notes: " + notes.text
+
+
+class _HtmlText(HTMLParser):
+    """The visible text of an HTML body: tags dropped, script and style skipped, block ends as new lines."""
+
+    BLOCKS = frozenset({"p", "br", "div", "li", "tr", "h1", "h2", "h3", "h4", "table"})
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.parts: list[str] = []
+        self._skip = 0
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag in ("script", "style"):
+            self._skip += 1
+        elif tag in self.BLOCKS:
+            self.parts.append("\n")
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in ("script", "style") and self._skip:
+            self._skip -= 1
+        elif tag in self.BLOCKS:
+            self.parts.append("\n")
+
+    def handle_data(self, data: str) -> None:
+        if not self._skip:
+            self.parts.append(data)
+
+
+def _html_text(html: str) -> str:
+    parser = _HtmlText()
+    parser.feed(html)
+    parser.close()
+    return "".join(parser.parts)
+
+
+def _eml_lines(data: bytes) -> Iterator[str]:
+    """Subject, Date, attachment names, then the body. Never From, To, Cc or any address (§3.1 item 10)."""
+    message = email.message_from_bytes(data, policy=email.policy.default)
+    assert isinstance(message, EmailMessage)
+    for header in ("Subject", "Date"):
+        value = message.get(header)
+        if value is not None and str(value).strip():
+            yield f"{header}: {' '.join(str(value).split())}"
+    names = [part.get_filename() for part in message.iter_attachments()]
+    shown = [" ".join(n.split()) for n in names if n]
+    if shown:
+        yield "Attachments: " + ", ".join(shown)
+    plain = message.get_body(preferencelist=("plain",))
+    if plain is not None:
+        yield str(plain.get_content())  # pyright: ignore[reportAttributeAccessIssue]
+        return
+    html = message.get_body(preferencelist=("html",))
+    if html is not None:
+        yield _html_text(str(html.get_content()))  # pyright: ignore[reportAttributeAccessIssue]
+
+
 def extract_text(kind: DocumentKind, data: bytes, budget: int) -> ExtractedText:
     """The stored text of an upload of `kind` (not BPMN); `document_unreadable` when there is none."""
     if kind in ("txt", "md"):
@@ -163,6 +257,8 @@ def extract_text(kind: DocumentKind, data: bytes, budget: int) -> ExtractedText:
         "docx": (_docx_lines, "\n"),
         "xlsx": (_xlsx_lines, "\n"),
         "csv": (_csv_lines, "\n"),
+        "pptx": (_pptx_lines, "\n"),
+        "eml": (_eml_lines, "\n"),
     }
     if kind not in extractors:
         raise ValueError(f"no text extractor for {kind!r}")

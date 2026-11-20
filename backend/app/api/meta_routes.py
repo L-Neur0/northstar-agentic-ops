@@ -45,6 +45,7 @@ def public_config(company: CompanyConfig = Depends(get_company)) -> ConfigOut:
             allowed_types=list(documents.allowed_types),
             max_files=documents.max_files_per_session,
             max_file_mb=documents.max_file_mb,
+            max_image_mb=documents.max_image_mb,
         ),
     )
 

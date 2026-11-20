@@ -9,12 +9,14 @@ deliverable to point at.
 Why: the model only phrases the question; everything observable (phase, completeness, what is
 missing and why, how often it was asked, whether *Finish* is open) is given to it, never asked.
 The sections come in a fixed order (role → current state → this turn → still missing → proposals
-waiting → rules → phase focus → blocks), so a reviewer and a test can find each one.
+waiting → steering, on a recommendation turn → rules → phase focus → blocks), so a reviewer and a
+test can find each one. On a `steer` or `recommend` turn the posture text is left out (§3.15 item 10).
 What: `guide_system(state, ask, finish, *, vocab)`, `guide_messages` (system + the last
 `GUIDE_HISTORY_TURNS` messages, expert turns fenced as `EXPERT`), `missing_line`, `finish_block`
 and `FINISH_TEXT` (one sentence per `FinishBlock` code).
 Must not: tell the model to end the session, let it give a number about hours, cost or value, or
-inline untrusted text without a fence or `single_line`. Spec 14 §3.9; AC-14.39 to AC-14.50, AC-14.58.
+inline untrusted text without a fence or `single_line`. Spec 14 §3.9, §3.15 item 12; AC-14.39 to AC-14.50,
+AC-14.58, AC-14.77.
 """
 
 from __future__ import annotations
@@ -38,6 +40,7 @@ from ...profile.scoring import FinishCheck, rejected_substep_count
 from ...profile.shapes import as_list, as_mapping, meta_for, normalized_profile, process_of, resolve_key, stored_value
 from ...profile.verdicts import answer_started, grade
 from ..phases import ask_count, missing_fields, posture, read_counters, step_focus
+from ..steering import STEER_PREFIX, ranked, read_steering
 from ..types import Ask
 from .common import field_brief, inline_name, render_profile, text_value
 from .phase_text import (
@@ -50,6 +53,7 @@ from .phase_text import (
     wrap_up_block,
 )
 from .posture import posture_text
+from .steering_text import recommend_text, steer_text, steering_block
 
 GUIDE_ROLE = (
     "You are a process discovery assistant. You interview a process expert the way a good analyst does: you help "
@@ -67,7 +71,7 @@ RULES = """RULES:
 - STILL MISSING is authoritative. Never ask a field in the same words twice: the second time, rephrase it concretely and say in one short sentence why the map needs it; the third time, name the exact missing part and offer the words that would settle it. Never skip a listed field on your own: the system removes it when it stops asking.
 - A STILL MISSING line with a dash and an explanation was partly answered already. Ask only for the part it names, and repeat back the part you have so the expert can see it landed.
 - Never ask the expert to classify their work into an internal framework, and never ask them to name a cluster unaided.
-- Never give a number about hours, cost, value or savings: the tool computes those after Finish.
+- Never give a number about hours, cost, value or savings: the tool computes those after Finish, except the numbers in the STEERING block, copied as given.
 - Never end the session. If the expert wants to stop, say they can close it with the Close button.
 - If the expert has no process in mind, ask about their week, their recurring frustrations and their hand-offs, then propose a candidate in their own words."""
 
@@ -100,12 +104,35 @@ def _documents(state: Mapping[str, Any]) -> dict[str, str]:
     return {str(d.get("id", "")): str(d.get("name", "")) for d in docs}
 
 
-def missing_line(profile: Mapping[str, Any], key: str, *, vocab: Vocabulary, documents: Mapping[str, str]) -> str:
+IMAGE_KINDS = ("png", "jpeg")
+IMAGE_MARK = " (from an image)"
+
+
+def image_documents(state: Mapping[str, Any]) -> frozenset[str]:
+    """Ids of the documents that are images (spec 14 §3.16 R5): their proposals carry "(from an image)"."""
+    docs = [d for d in (as_mapping(x) for x in (as_list(state.get("documents")) or [])) if d is not None]
+    return frozenset(str(d.get("id", "")) for d in docs if d.get("kind") in IMAGE_KINDS)
+
+
+def from_image(profile: Mapping[str, Any], key: str, images: frozenset[str]) -> bool:
+    """The key's proposal came from an image document."""
+    return str((meta_for(profile, key) or {}).get("documentId") or "") in images
+
+
+def missing_line(
+    profile: Mapping[str, Any],
+    key: str,
+    *,
+    vocab: Vocabulary,
+    documents: Mapping[str, str],
+    images: frozenset[str] = frozenset(),
+) -> str:
     """One STILL MISSING bullet: bare when untouched, with the Verdict reason when half answered, with the quote when proposed."""
     meta = meta_for(profile, key) or {}
     if meta.get("status") == "proposed" and answer_started(profile, key):
         name = documents.get(str(meta.get("documentId") or ""))
         source = f"proposed from {single_line(name, 120)}" if name else "proposed"
+        source += IMAGE_MARK if from_image(profile, key, images) else ""
         quote = single_line(meta.get("quote") or "", 200)
         return f'- {key} — {source}: "{quote}", waiting for confirmation'
     verdict = grade(profile, key, vocab=vocab)
@@ -123,7 +150,12 @@ def _label(key: str, vocab: Vocabulary) -> str:
 
 
 def _proposals_block(
-    profile: Mapping[str, Any], keys: Sequence[str], *, vocab: Vocabulary, documents: Mapping[str, str]
+    profile: Mapping[str, Any],
+    keys: Sequence[str],
+    *,
+    vocab: Vocabulary,
+    documents: Mapping[str, str],
+    images: frozenset[str] = frozenset(),
 ) -> str:
     if not keys:
         return "PROPOSALS WAITING:\n- (none)"
@@ -134,6 +166,7 @@ def _proposals_block(
         value = single_line(text_value(stored_value(profile, key), address.spec if address else None), 300)
         name = documents.get(str(meta.get("documentId") or ""))
         origin = f" (from {single_line(name, 120)})" if name else ""
+        origin += IMAGE_MARK if from_image(profile, key, images) else ""
         lines.append(f'- {_label(key, vocab)}: {value}; quote{origin}: "{single_line(meta.get("quote") or "", 200)}"')
     return (
         "PROPOSALS WAITING:\n"
@@ -151,6 +184,12 @@ def _this_turn(state: Mapping[str, Any], ask: Ask, finish: FinishCheck, *, vocab
         return widening_block(as_mapping(state.get("scope")) or {})
     if ask.kind == "proposals":
         return "Present the PROPOSALS WAITING below together in one short question; that is the only question for this turn."
+    steer = read_steering(as_mapping(state.get("steering")))
+    if ask.kind == "steer":
+        steered = [c for c in steer["candidates"] if c.get("rank")] or steer["candidates"]
+        return steer_text([k.removeprefix(STEER_PREFIX) for k in ask.keys], steered)
+    if ask.kind == "recommend":
+        return recommend_text(ask.mode or "pick")
     if ask.kind == "cluster":
         placement = as_mapping(state.get("placement")) or {}
         return cluster_block(
@@ -162,10 +201,14 @@ def _this_turn(state: Mapping[str, Any], ask: Ask, finish: FinishCheck, *, vocab
         return wrap_up_block(ask.keys, vocab=vocab, ready=finish.ready)
     key = ask.keys[0] if ask.keys else ""
     if key == "process.name":
-        return (
+        text = (
             "Help the expert settle on the one process to map (`process.name`), as PHASE FOCUS describes; that is the "
             "only topic for this turn."
         )
+        top = ranked(steer)[:1] if steer["status"] == "ranked" else []
+        if top and posture(counters["find_turns"]) == "direct":
+            text += f" If you propose one candidate, propose {inline_name(top[0]['name'])}: the system ranked it first."
+        return text
     return f"Ask about {_label(key, vocab)} (`{key}`) now; that is the only question for this turn."
 
 
@@ -173,7 +216,7 @@ def _phase_focus(state: Mapping[str, Any], ask: Ask, *, vocab: Vocabulary) -> st
     profile = normalized_profile(as_mapping(state.get("profile")))
     phase = str(state.get("phase") or "")
     parts = [phase_headline(phase, profile)]
-    if phase == PHASE_FIND:
+    if phase == PHASE_FIND and ask.kind not in ("steer", "recommend"):
         counters = read_counters(as_mapping(state.get("counters")))
         scope = as_mapping(state.get("scope")) or {}
         text = posture_text(posture(counters["find_turns"]), awaiting_widening=scope.get("awaiting_widening") is True)
@@ -257,8 +300,14 @@ def guide_system(state: Mapping[str, Any], ask: Ask, finish: FinishCheck, *, voc
     documents = _documents(state)
     doc_list = [{"id": k, "name": v} for k, v in documents.items()]
     missing = missing_fields(profile, phase, counters, vocab=vocab)
-    missing_text = "\n".join(missing_line(profile, k, vocab=vocab, documents=documents) for k in missing) or "- (none)"
+    images = image_documents(state)
+    missing_text = (
+        "\n".join(missing_line(profile, k, vocab=vocab, documents=documents, images=images) for k in missing)
+        or "- (none)"
+    )
     proposals = ask.keys if ask.kind == "proposals" else ()
+    steer = read_steering(as_mapping(state.get("steering")))
+    recommended = steer["recommended_id"] if ask.mode == "recommend" else None
     sections = [
         GUIDE_ROLE
         + "\n"
@@ -271,7 +320,8 @@ def guide_system(state: Mapping[str, Any], ask: Ask, finish: FinishCheck, *, voc
         "- Profile so far:\n" + fence_untrusted(render_profile(profile, vocab=vocab, documents=doc_list), "PROFILE"),
         "THIS TURN:\n" + _this_turn(state, ask, finish, vocab=vocab),
         "STILL MISSING:\n" + missing_text,
-        _proposals_block(profile, proposals, vocab=vocab, documents=documents),
+        _proposals_block(profile, proposals, vocab=vocab, documents=documents, images=images),
+        steering_block(ranked(steer), recommended) if ask.kind == "recommend" else "",
         RULES,
         "PHASE FOCUS:\n" + _phase_focus(state, ask, vocab=vocab),
         _one_off_block(state),

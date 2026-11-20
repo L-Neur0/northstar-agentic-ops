@@ -64,9 +64,10 @@ PHASE_HEADLINES: dict[str, str] = {
         + "".join(f"    · {q}\n" for q in SIGNAL_QUESTIONS.values())
         + "- When you hear a candidate, name it back in the expert's own words and ask if that is the one worth "
         "mapping. Let them correct you; a correction is progress.\n"
-        "- When several candidates were mentioned, list them back in the expert's words, one line each on why it "
-        "could be worth mapping (it repeats, several people, several systems), and ask which to map now; the "
-        "others are kept as ideas for later.\n"
+        "- When several candidates were mentioned, THIS TURN says what to ask: a quick question about each, or the "
+        "system's recommendation. Otherwise list them back in the expert's words, one line each on why it could be "
+        "worth mapping (it repeats, several people, several systems), and ask which to map now; the others are kept "
+        "as ideas for later.\n"
         "- They may also add a document (a procedure, a process map, an example report) at any time.\n"
         "Never bring up clusters, an internal process framework or a list of areas yourself (only when THIS TURN "
         "puts a cluster to the expert), and never ask which category their work belongs to."

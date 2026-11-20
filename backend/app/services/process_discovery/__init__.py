@@ -22,6 +22,12 @@ if TYPE_CHECKING:
         DiscoveryService as DiscoveryService,
     )
     from .service import (
+        DocumentNotFound as DocumentNotFound,
+    )
+    from .service import (
+        DocumentRejected as DocumentRejected,
+    )
+    from .service import (
         IdeaAlreadyStarted as IdeaAlreadyStarted,
     )
     from .service import (

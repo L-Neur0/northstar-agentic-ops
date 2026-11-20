@@ -4,7 +4,8 @@ ACCEPTED FOR NOW — wording to be refined with the product owner. Builds the ex
 longest one, because it is the only call that writes): the role, the fenced profile, the fenced
 previous question, the key list and row shapes, the step bound, the spelling rule and the none
 answers. Adapted: no cluster-assent key (a yes is read by code), the step range is 2 to 6, the
-expert message is fenced in the user message, and in `find` other candidates are returned as ideas.
+expert message is fenced in the user message, and in `find` other candidates are returned as ideas
+with the expert's words for their steering signals (§3.15 item 4).
 
 Why: everything the call may emit (which keys exist, their shapes, which ones this turn is about)
 is read from the registry and the live profile at call time, so a registry edit lands here on the
@@ -13,13 +14,14 @@ messages, because the JSON-object response format is rejected without it.
 What: `extractor_system`, `extractor_user`, and `extract_view` (the profile as registry-keyed JSON
 without `__meta`, `__skipped`, flags, roll-ups or the parked count).
 Must not: let the model write the cluster, a confirmation or a flag; invite it to infer, rephrase or
-translate; or put the expert's text outside a fence. Spec 14 §3.9; AC-14.3, AC-14.58, AC-14.60.
+translate; or put the expert's text outside a fence. Spec 14 §3.9, §3.15 item 12; AC-14.3, AC-14.58,
+AC-14.60, AC-14.66.
 """
 
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 from app.utils.prompt_safety import fence_instruction, fence_untrusted
@@ -28,6 +30,7 @@ from ...domain.field_spec import MAX_STEPS, META_KEY, SKIPPED_KEY, Vocabulary, e
 from ...profile.constants import CONFIRMATION_FLAGS, FLAG_SUBSTEP_COUNT_REJECTED
 from ...profile.shapes import as_list, as_mapping, normalized_profile, process_of
 from ...profile.verdicts import current_step_index, expected_steps
+from ..steering import STEER_PREFIX
 
 ROW_EXAMPLE = (
     'For example, "the AP clerk checks the invoice and the manager signs it" is '
@@ -60,8 +63,9 @@ def extractor_system(
     *,
     vocab: Vocabulary,
     phase: str,
+    candidates: Sequence[str] = (),
 ) -> str:
-    """The EXTRACT system prompt for this turn."""
+    """The EXTRACT system prompt for this turn; `candidates` are the names already heard in `find`."""
     declared = expected_steps(profile, vocab=vocab)
     index = current_step_index(profile, vocab=vocab)
     keys = "\n".join(f'- "{key}"' for key in extract_keys())
@@ -78,7 +82,11 @@ def extractor_system(
             "emitted. Otherwise emit no step keys."
         )
     asked = (previous_question or "").strip()
-    about = [*_str_list(last_question.get("focus")), *_str_list(last_question.get("proposals"))]
+    about = [
+        k
+        for k in (*_str_list(last_question.get("focus")), *_str_list(last_question.get("proposals")))
+        if not k.startswith(STEER_PREFIX)
+    ]
     context = ""
     if asked:
         context = (
@@ -96,8 +104,24 @@ def extractor_system(
         ideas = (
             "Other recurring work: if the expert mentions other pieces of recurring work besides the one being "
             'discussed, also return them as `"candidates": [{"name": "<short name in their words>", "words": '
-            '"<what they said about it, copied>"}]`. That key is not a field; never invent a candidate.\n\n'
+            '"<what they said about it, copied>"}]`. That key is not a field; never invent a candidate. When the '
+            "expert describes several pieces of recurring work and has not said which one to map, return them all as "
+            "candidates and emit no `process.name`: the choice is theirs.\n\n"
+            "Candidate signals: when the expert says how often, how long, how many people or what the work starts "
+            "from for a candidate, return `candidate_signals` with the candidate's name and their words: "
+            '`"candidate_signals": [{"name": "<candidate>", "runs": "<how often>", "time": "<how long>", "people": '
+            '"<how many people>", "inputs": "<what it starts from>"}]`, only the parts they said, copied; never a '
+            "number of your own. That key is not a field either.\n\n"
         )
+        if candidates:
+            ideas += (
+                "Candidates already heard (use exactly these names in `candidate_signals`, and do not return them "
+                "again as candidates): "
+                + fence_instruction("CANDIDATES", "The candidate names")
+                + "\n"
+                + fence_untrusted("\n".join(candidates), "CANDIDATES")
+                + "\n\n"
+            )
     return (
         "You are a data extraction assistant. Your only job is to turn the expert's message into a JSON object of "
         "field changes.\n\n"

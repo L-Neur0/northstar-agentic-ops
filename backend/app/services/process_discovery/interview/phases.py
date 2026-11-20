@@ -8,16 +8,19 @@ posture escalates on schedule; the list confirmation changes manner after 6 turn
 What: field limits and states (`deferred_keys`, `given_up_keys`), `phase_blocks`,
 `phase_from_state`, `advance_phase` (collecting phases never move backwards; the tail may step
 back; terminals never change), `missing_fields`, `step_focus`, `posture`, `proposal_group`,
-`next_ask`, `charge_asks` and `cell_escapes`.
+`steering_ask`, `next_ask`, `charge_asks` (never charges a `steer:` key) and `cell_escapes`.
 Must not: write the profile, call a model, read a clock or mutate its inputs; every function
 derives what it needs from the whole `counters` so no caller can forget a set.
-Spec 14 §3.3, §3.5, §3.6, §3.8; AC-14.20 to AC-14.30, AC-14.41 to AC-14.43.
+Spec 14 §3.3, §3.5, §3.6, §3.8, §3.15 item 10; AC-14.20 to AC-14.30, AC-14.41 to AC-14.43, AC-14.65,
+AC-14.73.
 """
 
 from __future__ import annotations
 
 from collections.abc import Mapping
 from typing import Any, Literal
+
+from app.core.config import SteeringConfig
 
 from ..domain.field_spec import (
     CELL_ASK_LIMIT,
@@ -55,7 +58,7 @@ from ..profile.constants import (
     ROLLUP_TARGETS,
 )
 from ..profile.proposals import proposed_keys
-from ..profile.shapes import as_list, as_mapping, normalized_profile, parse_step_key, process_of, rows_of
+from ..profile.shapes import as_list, as_mapping, meta_for, normalized_profile, parse_step_key, process_of, rows_of
 from ..profile.verdicts import (
     P16_KEY,
     cell_counts,
@@ -66,6 +69,7 @@ from ..profile.verdicts import (
     field_counts,
     grade,
 )
+from .steering import RECOMMEND_ASK_LIMIT, STEER_PREFIX, next_signals, read_steering
 from .types import Ask
 
 PROPOSAL_GROUP_MAX = 4
@@ -287,15 +291,66 @@ def proposal_group(
     return next((cells[i] for i in sorted(cells)), [])
 
 
+#: Document roles that describe one step rather than the whole process (spec 17 §3.18 item 2).
+STEP_SCOPED_ROLES: frozenset[str] = frozenset({"step_output_example", "step_input_example", "step_material", "other"})
+
+
+def document_group(
+    profile: Mapping[str, Any],
+    counters: Mapping[str, Any],
+    *,
+    document_id: str,
+    role: str,
+    target_step: int | None,
+    vocab: Vocabulary,
+) -> tuple[list[str], int]:
+    """The proposals of one document asked right after its upload, and how many of its others wait (§3.16 item 3).
+
+    Deferred keys are included (the expert brought the file up now); given-up and skipped ones are not.
+    """
+    p = normalized_profile(profile)
+    held = set(given_up_keys(p, counters, vocab=vocab))
+    rows = rows_of(p)
+    fields: list[str] = []
+    cells: dict[int, list[str]] = {}
+    for key in proposed_keys(p):
+        meta = meta_for(p, key) or {}
+        if meta.get("documentId") != document_id:
+            continue
+        parsed = parse_step_key(key)
+        if parsed is None:
+            if key not in held:
+                fields.append(key)
+            continue
+        index, leaf = parsed
+        if index <= len(rows) and not cell_skipped(rows[index - 1], leaf):
+            cells.setdefault(index, []).append(key)
+    candidates = fields + [k for i in sorted(cells) for k in cells[i]]
+    if role in STEP_SCOPED_ROLES:
+        group = [*(cells.get(target_step, []) if target_step is not None else []), *fields][:PROPOSAL_GROUP_MAX]
+    elif fields:
+        group = fields[:PROPOSAL_GROUP_MAX]
+    else:
+        names = [k for i in sorted(cells) for k in cells[i] if k.endswith(".name")]
+        group = names or next((cells[i] for i in sorted(cells)), [])[:PROPOSAL_GROUP_MAX]
+    return group, len([k for k in candidates if k not in group])
+
+
 # --- The ask target -------------------------------------------------------------------------------
 
 
 def _cluster_mode(state: Mapping[str, Any], counters: Mapping[str, Any]) -> Literal["propose", "picker"]:
+    """Propose a live proposal; the picker once it was rejected, asked twice, or asked once at the direct posture.
+
+    A proposal never put to the expert is put once even at the direct posture: the picker is the
+    guard for a proposal that did not land, and steering (§3.15) can push the name past question 6.
+    """
     placement = as_mapping(state.get("placement")) or {}
     code = proposable_code(as_mapping(placement.get("proposal")))
     if not code or placement.get("rejected") is True:
         return "picker"
-    if posture(read_counters(counters)["find_turns"]) == "direct" or field_asks(counters, CLUSTER_KEY) >= 2:
+    asked = field_asks(counters, CLUSTER_KEY)
+    if asked >= 2 or (asked >= 1 and posture(read_counters(counters)["find_turns"]) == "direct"):
         return "picker"
     return "propose"
 
@@ -310,8 +365,23 @@ def wrap_up_keys(profile: Mapping[str, Any], counters: Mapping[str, Any], *, voc
     return out
 
 
-def next_ask(state: Mapping[str, Any], *, vocab: Vocabulary) -> Ask:
-    """The one ask target of this turn, by the priority table of §3.8."""
+def steering_ask(state: Mapping[str, Any], cfg: SteeringConfig, *, vocab: Vocabulary) -> Ask | None:
+    """`steer` while collecting, then `recommend` (at most 2), only in `find` while P04 does not count (§3.15 item 10)."""
+    profile = normalized_profile(as_mapping(state.get("profile")))
+    if state.get("phase") != PHASE_FIND or field_counts(profile, NAME_KEY, vocab=vocab):
+        return None
+    steer = read_steering(as_mapping(state.get("steering")))
+    signals = next_signals(steer, cfg)
+    if signals:
+        return Ask("steer", tuple(STEER_PREFIX + s for s in signals))
+    if steer["status"] == "ranked" and steer["recommend_asks"] < RECOMMEND_ASK_LIMIT:
+        mode = "recommend" if steer["recommended_id"] and not steer["declined"] else "pick"
+        return Ask("recommend", (NAME_KEY,), mode)
+    return None
+
+
+def next_ask(state: Mapping[str, Any], *, vocab: Vocabulary, steering: SteeringConfig | None = None) -> Ask:
+    """The one ask target of this turn, by the priority table of §3.8 (with `steer` and `recommend`, §3.15)."""
     profile = normalized_profile(as_mapping(state.get("profile")))
     phase = str(state.get("phase") or PHASE_CONTEXT)
     counters = read_counters(as_mapping(state.get("counters")))
@@ -321,6 +391,9 @@ def next_ask(state: Mapping[str, Any], *, vocab: Vocabulary) -> Ask:
     group = proposal_group(profile, phase, counters, vocab=vocab)
     if group:
         return Ask("proposals", tuple(group))
+    steered = steering_ask(state, steering, vocab=vocab) if steering is not None else None
+    if steered is not None:
+        return steered
     missing = missing_fields(profile, phase, counters, vocab=vocab)
     if phase in COLLECTING_PHASES or phase == PHASE_REVIEW:
         if missing and missing[0] == CLUSTER_KEY:
@@ -350,6 +423,12 @@ def last_question_for(ask: Ask) -> dict[str, Any]:
         return {"focus": list(ask.keys), "proposals": [], "confirm": first}
     if ask.kind == "widening":
         return {"focus": [], "proposals": [], "confirm": None}
+    if ask.kind == "recommend":
+        return {
+            "focus": list(ask.keys),
+            "proposals": [],
+            "confirm": "recommendation" if ask.mode == "recommend" else None,
+        }
     return {"focus": list(ask.keys), "proposals": [], "confirm": None}
 
 
@@ -382,7 +461,7 @@ def charge_asks(
     ]
     rollups = set(ROLLUP_KEYS.values())
     for key in dict.fromkeys(keys):
-        if key in rollups:
+        if key in rollups or key.startswith(STEER_PREFIX):
             continue
         if parse_step_key(key) is not None:
             out["cell_asks"][key] = out["cell_asks"].get(key, 0) + 1

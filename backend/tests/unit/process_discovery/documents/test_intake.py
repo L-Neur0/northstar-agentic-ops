@@ -31,16 +31,17 @@ def reject_code(call) -> str:
     return caught.value.code
 
 
-def test_ac_17_1_sixth_document_is_refused_before_the_bytes_are_inspected(docs_config):
-    existing = [record(f"d{i}") for i in range(1, 6)]
+def test_ac_17_1_ac_17_69_eleventh_document_is_refused_before_the_bytes_are_inspected(docs_config):
+    assert docs_config.max_files_per_session == 10  # decided 2026-11-20 (Q9)
+    existing = [record(f"d{i}") for i in range(1, 11)]
     with pytest.raises(DocumentRejected) as caught:
         check_intake(existing, "notes.exe", b"", docs_config)  # every other check would fail too
     assert caught.value.code == "document_limit"
-    assert caught.value.message == "You can add up to 5 documents. Remove one to add another."
+    assert caught.value.message == "You can add up to 10 documents. Remove one to add another."
 
 
-def test_ac_17_1_four_documents_leave_room(docs_config, fixture_bytes):
-    existing = [record(f"d{i}") for i in range(1, 5)]
+def test_ac_17_1_nine_documents_leave_room(docs_config, fixture_bytes):
+    existing = [record(f"d{i}") for i in range(1, 10)]
     assert check_intake(existing, "notes.txt", fixture_bytes("cost_review_notes.txt"), docs_config)[1] == "txt"
 
 
@@ -59,7 +60,7 @@ def test_ac_17_2_too_large_message(docs_config):
     assert caught.value.message == "This file is larger than 10 MB."
 
 
-@pytest.mark.parametrize("name", ["setup.exe", "slides.pptx", "README"])
+@pytest.mark.parametrize("name", ["setup.exe", "mail.msg", "README"])
 def test_ac_17_3_extension_not_allowed(docs_config, name):
     assert reject_code(lambda: check_intake([], name, b"hello world", docs_config)) == "document_type"
 
@@ -67,7 +68,10 @@ def test_ac_17_3_extension_not_allowed(docs_config, name):
 def test_ac_17_3_type_message(docs_config):
     with pytest.raises(DocumentRejected) as caught:
         check_intake([], "setup.exe", b"MZ", docs_config)
-    assert caught.value.message == "This file type can't be read. Use PDF, Word, Excel, CSV, text, Markdown or BPMN."
+    assert caught.value.message == (
+        "This file type can't be read. Use PDF, Word, Excel, PowerPoint, CSV, text, Markdown, e-mail (.eml), BPMN, "
+        "PNG or JPG."
+    )
 
 
 def test_ac_17_4_family_mismatch(docs_config, fixture_bytes):

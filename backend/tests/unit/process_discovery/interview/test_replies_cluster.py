@@ -2,7 +2,9 @@
 
 Why: placement used to hang on one model token; a plain yes, a no, or a cluster name are now read
 by code from the state. What: armed proposals, short yes and no, naming a cluster, the lexicon, a
-settled cluster, and a yes to a code that no longer resolves.
+settled cluster, a yes to a code that no longer resolves, and (refinement R9) a yes that opens a
+sentence ("Yes, that cluster fits."), replayed from a live run where it was ignored twice and the
+third cluster question became the picker.
 """
 
 from app.models.process_discovery_schemas import Profile
@@ -146,3 +148,52 @@ async def test_a_yes_to_an_unresolvable_code_is_a_rejection(ctx):
     assert result.session.profile.process.cluster.code == ""
     assert result.session.placement.rejected is True
     assert result.session.placement.proposal is None
+
+
+# --- R9: a yes that opens a sentence (live transcript, replayed) ------------------------------------------
+
+SCOPE = {
+    "multi_role": True,
+    "multi_system": True,
+    "trigger_and_outcome": True,
+    "recurring": True,
+    "external_consumer": True,
+    "reasoning": "several roles",
+}
+PROPOSE = (
+    "The monthly cost review fits under Finance: Planning, recording and reporting money. "
+    "Does that fit how you would file it?"
+)
+
+
+async def test_a_yes_opening_a_short_sentence_confirms_the_proposal_in_one_turn(ctx):
+    """AC-14.6, AC-14.47 (R9). Replays the live run: context, the name, then "Yes, that cluster fits."
+
+    Before the fix the reply decided nothing, the agent proposed Finance again, the same reply was
+    ignored again, and the third cluster question was the picker with the suggestion gone.
+    """
+    llm = fake(
+        EXTRACT=[{"department": "Finance"}, {"user_function": "cost controller"}, {"region": "Europe"}]
+        + [{"process.name": "monthly cost review"}, {}],
+        GUIDE=["Your role?", "Region?", "Normal week?", PROPOSE, "What starts it?"],
+        CLASSIFY=[{"scope": SCOPE}],
+    )
+    session = new_session(ctx)
+    for text in ("I work in Finance.", "I am a cost controller.", "I am based in Europe."):
+        session = (await turn(session, text, llm, ctx)).session
+    named = await turn(session, "The process is the monthly cost review.", llm, ctx)
+    assert named.session.placement.proposal is not None and named.session.placement.proposal.code == "FIN"
+    assert named.session.last_question.confirm == "cluster"
+    answered = await turn(named.session, "Yes, that cluster fits.", llm, ctx)
+    cluster = answered.session.profile.process.cluster
+    assert (cluster.code, cluster.decided_by) == ("FIN", "proposal")
+    assert answered.session.last_question.focus != ["process.cluster"]
+
+
+def test_an_opening_yes_needs_a_clean_rest(ctx):
+    """AC-14.11 (R9): the yes must open the reply, and the rest must not say no or name another cluster."""
+    state = as_state(cluster_session(ctx, agent=PROPOSE), "x")
+    for text in ("Yes, that cluster fits.", "Yes. It starts when the month-end close is done.", "Ja, passt so."):
+        assert read_cluster_reply(state, text, vocab=ctx.vocab, lexicon=ctx.lexicon).verdict is True, text
+    for text in ("Yes, but that is wrong for us", "Yes, though I would say Legal", "well yes, but", "I guess yes."):
+        assert read_cluster_reply(state, text, vocab=ctx.vocab, lexicon=ctx.lexicon).verdict is None, text

@@ -1,0 +1,9 @@
+# Scripted model replies for `make chat --fake` with `/upload` (spec 14 AC-14.90). The BPMN upload needs no
+# model call; the "yes" after it runs one turn (EXTRACT, CLASSIFY for the confirmed name, GUIDE).
+EXTRACT:
+  - {}
+CLASSIFY:
+  - scope: {multi_role: true, multi_system: true, trigger_and_outcome: true, recurring: true, external_consumer: true, reasoning: "several roles"}
+    placement: {code: IT, confidence: 0.9, rationale: "access work", runner_up: null, runner_up_confidence: null}
+GUIDE:
+  - Which department are you in?

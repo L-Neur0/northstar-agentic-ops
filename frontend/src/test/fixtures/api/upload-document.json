@@ -1,0 +1,1413 @@
+{
+  "session": {
+    "id": "7184ad3f-493b-47d7-8f90-61d50b702905",
+    "status": "active",
+    "phase": "boundaries",
+    "displayName": null,
+    "createdAt": "2026-11-19T10:00:00+00:00",
+    "updatedAt": "2026-11-19T10:00:01+00:00",
+    "finishedAt": null,
+    "messages": [
+      {
+        "id": "d9b31026-b201-43fa-9425-b5d3ce06ee59",
+        "role": "agent",
+        "text": "Welcome",
+        "at": "2026-11-19T10:00:00+00:00"
+      },
+      {
+        "id": "e4b7d0e4-e846-4935-98df-e1af1508ab2d",
+        "role": "agent",
+        "text": "From \"Monthly cost review procedure.docx\" I'd fill:\n- Trigger: Month-end close is completed in the ledger\n- End result: The monthly cost report\n- Who uses the result: The CFO uses it to decide on budget corrections\n- Volume: count: 1; period: month; raw: every month for 14 cost centres\nThere is more in it (25 other values); I'll ask about those next.\nShould I fill it like this, or is something wrong?",
+        "at": "2026-11-19T10:00:01+00:00"
+      }
+    ],
+    "profile": {
+      "department": "Finance",
+      "user_function": "Cost controller",
+      "region": "Europe",
+      "process": {
+        "name": "Monthly cost review",
+        "cluster": {
+          "code": "FIN",
+          "name": "Finance",
+          "decided_by": "proposal"
+        },
+        "trigger": "Month-end close is completed in the ledger",
+        "end_result": "The monthly cost report",
+        "value_at_end": "The CFO uses it to decide on budget corrections",
+        "business_pain": "",
+        "volume": {
+          "count": 1,
+          "period": "month",
+          "raw": "every month for 14 cost centres"
+        },
+        "process_owner": {
+          "role": "Head of Controlling",
+          "none_identified": false
+        },
+        "baseline_metric": {
+          "value": "",
+          "unit": "",
+          "qualitative": "",
+          "estimated": false
+        },
+        "target_metric": {
+          "value": "",
+          "unit": ""
+        },
+        "variation": {
+          "same": "",
+          "differences": ""
+        },
+        "sensitive_data": [],
+        "substep_count": null,
+        "substep_count_rejected": null,
+        "substeps": [
+          {
+            "name": "Export actuals",
+            "goal": "",
+            "activities": [
+              "Export actual costs per cost centre"
+            ],
+            "roles": [
+              {
+                "role": "Cost controller",
+                "contribution": ""
+              }
+            ],
+            "owner": "Cost controller",
+            "systems": [
+              "SAP S/4HANA"
+            ],
+            "data": {
+              "inputs": [
+                "Actual costs per cost centre"
+              ],
+              "outputs": [
+                "Review workbook"
+              ]
+            },
+            "effort": {
+              "duration": "",
+              "frequency": ""
+            },
+            "pain_points": [],
+            "approvals": [],
+            "exceptions": [],
+            "handover": ""
+          },
+          {
+            "name": "Compare with budget",
+            "goal": "",
+            "activities": [
+              "Compare actuals with the budget",
+              "Flag every variance above 5%"
+            ],
+            "roles": [
+              {
+                "role": "Cost controller",
+                "contribution": ""
+              }
+            ],
+            "owner": "",
+            "systems": [
+              "Excel"
+            ],
+            "data": {
+              "inputs": [],
+              "outputs": []
+            },
+            "effort": {
+              "duration": "",
+              "frequency": ""
+            },
+            "pain_points": [],
+            "approvals": [],
+            "exceptions": [],
+            "handover": ""
+          },
+          {
+            "name": "Collect explanations",
+            "goal": "",
+            "activities": [],
+            "roles": [
+              {
+                "role": "Cost centre manager",
+                "contribution": "Explains flagged variances"
+              }
+            ],
+            "owner": "",
+            "systems": [
+              "E-mail"
+            ],
+            "data": {
+              "inputs": [
+                "Flagged variances"
+              ],
+              "outputs": []
+            },
+            "effort": {
+              "duration": "Three working days",
+              "frequency": ""
+            },
+            "pain_points": [],
+            "approvals": [],
+            "exceptions": [
+              {
+                "description": "Explanation missing after three working days: escalate to the department head",
+                "loops_back_to": null
+              }
+            ],
+            "handover": ""
+          },
+          {
+            "name": "Review",
+            "goal": "",
+            "activities": [],
+            "roles": [
+              {
+                "role": "Head of Controlling",
+                "contribution": ""
+              }
+            ],
+            "owner": "Head of Controlling",
+            "systems": [],
+            "data": {
+              "inputs": [],
+              "outputs": []
+            },
+            "effort": {
+              "duration": "",
+              "frequency": ""
+            },
+            "pain_points": [],
+            "approvals": [
+              {
+                "approver_role": "Head of Controlling",
+                "waiting_time": ""
+              }
+            ],
+            "exceptions": [],
+            "handover": ""
+          },
+          {
+            "name": "Send the cost report",
+            "goal": "",
+            "activities": [],
+            "roles": [
+              {
+                "role": "Cost controller",
+                "contribution": ""
+              }
+            ],
+            "owner": "",
+            "systems": [
+              "Power BI"
+            ],
+            "data": {
+              "inputs": [],
+              "outputs": [
+                "Monthly cost report"
+              ]
+            },
+            "effort": {
+              "duration": "",
+              "frequency": ""
+            },
+            "pain_points": [],
+            "approvals": [],
+            "exceptions": [],
+            "handover": ""
+          }
+        ],
+        "all_roles": [
+          "Cost controller",
+          "Cost centre manager",
+          "Head of Controlling"
+        ],
+        "all_tools": [
+          "SAP S/4HANA",
+          "Excel",
+          "E-mail",
+          "Power BI"
+        ],
+        "substeps_complete": false,
+        "roles_confirmed": false,
+        "tools_confirmed": false
+      }
+    },
+    "fieldViews": [
+      {
+        "key": "department",
+        "id": "P01",
+        "label": "Department",
+        "phase": "context",
+        "status": "complete",
+        "reason": "",
+        "missing": [],
+        "source": "expert",
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "user_function",
+        "id": "P02",
+        "label": "Role",
+        "phase": "context",
+        "status": "complete",
+        "reason": "",
+        "missing": [],
+        "source": "expert",
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "region",
+        "id": "P03",
+        "label": "Region",
+        "phase": "context",
+        "status": "complete",
+        "reason": "",
+        "missing": [],
+        "source": "expert",
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.name",
+        "id": "P04",
+        "label": "Process name",
+        "phase": "find",
+        "status": "complete",
+        "reason": "",
+        "missing": [],
+        "source": "expert",
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.cluster",
+        "id": "P05",
+        "label": "Cluster",
+        "phase": "find",
+        "status": "complete",
+        "reason": "",
+        "missing": [],
+        "source": "expert",
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.trigger",
+        "id": "P06",
+        "label": "Trigger",
+        "phase": "boundaries",
+        "status": "proposed",
+        "reason": "",
+        "missing": [],
+        "source": "document",
+        "quote": "The review starts once month-end close is completed in the ledger",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.end_result",
+        "id": "P07",
+        "label": "End result",
+        "phase": "boundaries",
+        "status": "proposed",
+        "reason": "",
+        "missing": [],
+        "source": "document",
+        "quote": "The process ends with the monthly cost report",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.value_at_end",
+        "id": "P08",
+        "label": "Who uses the result",
+        "phase": "boundaries",
+        "status": "proposed",
+        "reason": "",
+        "missing": [],
+        "source": "document",
+        "quote": "which the CFO uses to decide on budget corrections",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.business_pain",
+        "id": "P09",
+        "label": "Business pain",
+        "phase": "boundaries",
+        "status": "empty",
+        "reason": "Business pain has not been answered yet.",
+        "missing": [
+          "business_pain"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.volume",
+        "id": "P10",
+        "label": "Volume",
+        "phase": "measure",
+        "status": "proposed",
+        "reason": "",
+        "missing": [],
+        "source": "document",
+        "quote": "It runs every month for 14 cost centres",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.process_owner",
+        "id": "P11",
+        "label": "Process owner",
+        "phase": "measure",
+        "status": "proposed",
+        "reason": "",
+        "missing": [],
+        "source": "document",
+        "quote": "Owner: Head of Controlling",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.baseline_metric",
+        "id": "P12",
+        "label": "Time today",
+        "phase": "measure",
+        "status": "empty",
+        "reason": "Time today still needs: value, unit.",
+        "missing": [
+          "value",
+          "unit"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.target_metric",
+        "id": "P13",
+        "label": "Target",
+        "phase": "measure",
+        "status": "empty",
+        "reason": "Target still needs: value, unit.",
+        "missing": [
+          "value",
+          "unit"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.variation",
+        "id": "P14",
+        "label": "Same way everywhere",
+        "phase": "measure",
+        "status": "empty",
+        "reason": "Same way everywhere has not been answered yet.",
+        "missing": [
+          "same"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.sensitive_data",
+        "id": "P15",
+        "label": "Sensitive data or regulation",
+        "phase": "measure",
+        "status": "empty",
+        "reason": "Sensitive data or regulation still needs: item. \"There are none\" is also an answer.",
+        "missing": [
+          "item"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substep_count",
+        "id": "P16",
+        "label": "Number of main steps",
+        "phase": "step_count",
+        "status": "empty",
+        "reason": "Number of main steps has not been answered yet.",
+        "missing": [
+          "substep_count"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[1].name",
+        "id": "S01",
+        "label": "Step name",
+        "phase": "steps",
+        "status": "proposed",
+        "reason": "",
+        "missing": [],
+        "source": "document",
+        "quote": "Export actuals",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[1].goal",
+        "id": "S02",
+        "label": "Goal",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Goal has not been answered yet.",
+        "missing": [
+          "goal"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[1].activities",
+        "id": "S03",
+        "label": "Activities",
+        "phase": "steps",
+        "status": "proposed",
+        "reason": "",
+        "missing": [],
+        "source": "document",
+        "quote": "exports actual costs per cost centre from SAP S/4HANA",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[1].roles",
+        "id": "S04",
+        "label": "Roles involved",
+        "phase": "steps",
+        "status": "proposed",
+        "reason": "",
+        "missing": [],
+        "source": "document",
+        "quote": "The cost controller exports actual costs",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[1].owner",
+        "id": "S05",
+        "label": "Step owner",
+        "phase": "steps",
+        "status": "proposed",
+        "reason": "",
+        "missing": [],
+        "source": "document",
+        "quote": "The cost controller exports actual costs",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[1].systems",
+        "id": "S06",
+        "label": "Systems",
+        "phase": "steps",
+        "status": "proposed",
+        "reason": "",
+        "missing": [],
+        "source": "document",
+        "quote": "from SAP S/4HANA",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[1].data",
+        "id": "S07",
+        "label": "Data in and out",
+        "phase": "steps",
+        "status": "proposed",
+        "reason": "",
+        "missing": [],
+        "source": "document",
+        "quote": "exports actual costs per cost centre … into the review workbook",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[1].effort",
+        "id": "S08",
+        "label": "Effort",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Effort still needs: duration, frequency.",
+        "missing": [
+          "duration",
+          "frequency"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[1].pain_points",
+        "id": "S09",
+        "label": "Pain points",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Pain points has not been answered yet.",
+        "missing": [
+          "pain_points"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[1].approvals",
+        "id": "S10",
+        "label": "Approvals",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Approvals still needs: approver role. \"There are none\" is also an answer.",
+        "missing": [
+          "approver_role"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[1].exceptions",
+        "id": "S11",
+        "label": "Exceptions",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Exceptions still needs: description. \"There are none\" is also an answer.",
+        "missing": [
+          "description"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[1].handover",
+        "id": "S12",
+        "label": "Hand-over",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Hand-over has not been answered yet.",
+        "missing": [
+          "handover"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[2].name",
+        "id": "S01",
+        "label": "Step name",
+        "phase": "steps",
+        "status": "proposed",
+        "reason": "",
+        "missing": [],
+        "source": "document",
+        "quote": "Compare with budget",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[2].goal",
+        "id": "S02",
+        "label": "Goal",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Goal has not been answered yet.",
+        "missing": [
+          "goal"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[2].activities",
+        "id": "S03",
+        "label": "Activities",
+        "phase": "steps",
+        "status": "proposed",
+        "reason": "",
+        "missing": [],
+        "source": "document",
+        "quote": "compares actuals with the budget in Excel … flags every variance above 5%",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[2].roles",
+        "id": "S04",
+        "label": "Roles involved",
+        "phase": "steps",
+        "status": "proposed",
+        "reason": "",
+        "missing": [],
+        "source": "document",
+        "quote": "The cost controller compares actuals with the budget",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[2].owner",
+        "id": "S05",
+        "label": "Step owner",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Step owner has not been answered yet.",
+        "missing": [
+          "owner"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[2].systems",
+        "id": "S06",
+        "label": "Systems",
+        "phase": "steps",
+        "status": "proposed",
+        "reason": "",
+        "missing": [],
+        "source": "document",
+        "quote": "the budget in Excel",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[2].data",
+        "id": "S07",
+        "label": "Data in and out",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Data in and out still needs: inputs, outputs.",
+        "missing": [
+          "inputs",
+          "outputs"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[2].effort",
+        "id": "S08",
+        "label": "Effort",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Effort still needs: duration, frequency.",
+        "missing": [
+          "duration",
+          "frequency"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[2].pain_points",
+        "id": "S09",
+        "label": "Pain points",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Pain points has not been answered yet.",
+        "missing": [
+          "pain_points"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[2].approvals",
+        "id": "S10",
+        "label": "Approvals",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Approvals still needs: approver role. \"There are none\" is also an answer.",
+        "missing": [
+          "approver_role"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[2].exceptions",
+        "id": "S11",
+        "label": "Exceptions",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Exceptions still needs: description. \"There are none\" is also an answer.",
+        "missing": [
+          "description"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[2].handover",
+        "id": "S12",
+        "label": "Hand-over",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Hand-over has not been answered yet.",
+        "missing": [
+          "handover"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[3].name",
+        "id": "S01",
+        "label": "Step name",
+        "phase": "steps",
+        "status": "proposed",
+        "reason": "",
+        "missing": [],
+        "source": "document",
+        "quote": "Collect explanations",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[3].goal",
+        "id": "S02",
+        "label": "Goal",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Goal has not been answered yet.",
+        "missing": [
+          "goal"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[3].activities",
+        "id": "S03",
+        "label": "Activities",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Activities has not been answered yet.",
+        "missing": [
+          "activities"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[3].roles",
+        "id": "S04",
+        "label": "Roles involved",
+        "phase": "steps",
+        "status": "proposed",
+        "reason": "",
+        "missing": [],
+        "source": "document",
+        "quote": "Cost centre managers explain flagged variances",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[3].owner",
+        "id": "S05",
+        "label": "Step owner",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Step owner has not been answered yet.",
+        "missing": [
+          "owner"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[3].systems",
+        "id": "S06",
+        "label": "Systems",
+        "phase": "steps",
+        "status": "proposed",
+        "reason": "",
+        "missing": [],
+        "source": "document",
+        "quote": "by e-mail",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[3].data",
+        "id": "S07",
+        "label": "Data in and out",
+        "phase": "steps",
+        "status": "proposed",
+        "reason": "Data in and out still needs: outputs.",
+        "missing": [
+          "outputs"
+        ],
+        "source": "document",
+        "quote": "explain flagged variances",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[3].effort",
+        "id": "S08",
+        "label": "Effort",
+        "phase": "steps",
+        "status": "proposed",
+        "reason": "Effort still needs: frequency.",
+        "missing": [
+          "frequency"
+        ],
+        "source": "document",
+        "quote": "within three working days",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[3].pain_points",
+        "id": "S09",
+        "label": "Pain points",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Pain points has not been answered yet.",
+        "missing": [
+          "pain_points"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[3].approvals",
+        "id": "S10",
+        "label": "Approvals",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Approvals still needs: approver role. \"There are none\" is also an answer.",
+        "missing": [
+          "approver_role"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[3].exceptions",
+        "id": "S11",
+        "label": "Exceptions",
+        "phase": "steps",
+        "status": "proposed",
+        "reason": "",
+        "missing": [],
+        "source": "document",
+        "quote": "If an explanation is missing after three working days",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[3].handover",
+        "id": "S12",
+        "label": "Hand-over",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Hand-over has not been answered yet.",
+        "missing": [
+          "handover"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[4].name",
+        "id": "S01",
+        "label": "Step name",
+        "phase": "steps",
+        "status": "proposed",
+        "reason": "",
+        "missing": [],
+        "source": "document",
+        "quote": "Step 4 | Review",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[4].goal",
+        "id": "S02",
+        "label": "Goal",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Goal has not been answered yet.",
+        "missing": [
+          "goal"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[4].activities",
+        "id": "S03",
+        "label": "Activities",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Activities has not been answered yet.",
+        "missing": [
+          "activities"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[4].roles",
+        "id": "S04",
+        "label": "Roles involved",
+        "phase": "steps",
+        "status": "proposed",
+        "reason": "",
+        "missing": [],
+        "source": "document",
+        "quote": "The Head of Controlling reviews variances and explanations",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[4].owner",
+        "id": "S05",
+        "label": "Step owner",
+        "phase": "steps",
+        "status": "proposed",
+        "reason": "",
+        "missing": [],
+        "source": "document",
+        "quote": "The Head of Controlling reviews variances",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[4].systems",
+        "id": "S06",
+        "label": "Systems",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Systems has not been answered yet.",
+        "missing": [
+          "systems"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[4].data",
+        "id": "S07",
+        "label": "Data in and out",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Data in and out still needs: inputs, outputs.",
+        "missing": [
+          "inputs",
+          "outputs"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[4].effort",
+        "id": "S08",
+        "label": "Effort",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Effort still needs: duration, frequency.",
+        "missing": [
+          "duration",
+          "frequency"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[4].pain_points",
+        "id": "S09",
+        "label": "Pain points",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Pain points has not been answered yet.",
+        "missing": [
+          "pain_points"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[4].approvals",
+        "id": "S10",
+        "label": "Approvals",
+        "phase": "steps",
+        "status": "proposed",
+        "reason": "",
+        "missing": [],
+        "source": "document",
+        "quote": "approves the commentary",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[4].exceptions",
+        "id": "S11",
+        "label": "Exceptions",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Exceptions still needs: description. \"There are none\" is also an answer.",
+        "missing": [
+          "description"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[4].handover",
+        "id": "S12",
+        "label": "Hand-over",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Hand-over has not been answered yet.",
+        "missing": [
+          "handover"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[5].name",
+        "id": "S01",
+        "label": "Step name",
+        "phase": "steps",
+        "status": "proposed",
+        "reason": "",
+        "missing": [],
+        "source": "document",
+        "quote": "Send the cost report",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[5].goal",
+        "id": "S02",
+        "label": "Goal",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Goal has not been answered yet.",
+        "missing": [
+          "goal"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[5].activities",
+        "id": "S03",
+        "label": "Activities",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Activities has not been answered yet.",
+        "missing": [
+          "activities"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[5].roles",
+        "id": "S04",
+        "label": "Roles involved",
+        "phase": "steps",
+        "status": "proposed",
+        "reason": "",
+        "missing": [],
+        "source": "document",
+        "quote": "The cost controller publishes the cost report",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[5].owner",
+        "id": "S05",
+        "label": "Step owner",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Step owner has not been answered yet.",
+        "missing": [
+          "owner"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[5].systems",
+        "id": "S06",
+        "label": "Systems",
+        "phase": "steps",
+        "status": "proposed",
+        "reason": "",
+        "missing": [],
+        "source": "document",
+        "quote": "in Power BI",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[5].data",
+        "id": "S07",
+        "label": "Data in and out",
+        "phase": "steps",
+        "status": "proposed",
+        "reason": "Data in and out still needs: inputs.",
+        "missing": [
+          "inputs"
+        ],
+        "source": "document",
+        "quote": "publishes the cost report for the CFO",
+        "documentName": "Monthly cost review procedure.docx",
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[5].effort",
+        "id": "S08",
+        "label": "Effort",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Effort still needs: duration, frequency.",
+        "missing": [
+          "duration",
+          "frequency"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[5].pain_points",
+        "id": "S09",
+        "label": "Pain points",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Pain points has not been answered yet.",
+        "missing": [
+          "pain_points"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[5].approvals",
+        "id": "S10",
+        "label": "Approvals",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Approvals still needs: approver role. \"There are none\" is also an answer.",
+        "missing": [
+          "approver_role"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[5].exceptions",
+        "id": "S11",
+        "label": "Exceptions",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Exceptions still needs: description. \"There are none\" is also an answer.",
+        "missing": [
+          "description"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      },
+      {
+        "key": "process.substeps[5].handover",
+        "id": "S12",
+        "label": "Hand-over",
+        "phase": "steps",
+        "status": "empty",
+        "reason": "Hand-over has not been answered yet.",
+        "missing": [
+          "handover"
+        ],
+        "source": null,
+        "quote": null,
+        "documentName": null,
+        "asks": 0
+      }
+    ],
+    "score": {
+      "value": 0.2778,
+      "filledPoints": 5,
+      "totalPoints": 18
+    },
+    "finish": {
+      "ready": false,
+      "blockedBy": "below_gate",
+      "looksLikeTask": false
+    },
+    "scope": null,
+    "clusterProposal": null,
+    "reportStatus": null,
+    "documents": [
+      {
+        "id": "d26e89827",
+        "name": "Monthly cost review procedure.docx",
+        "kind": "docx",
+        "bytes": 38347,
+        "chars": 987,
+        "truncated": false,
+        "uploadedAt": "2026-11-19T10:00:01+00:00",
+        "outcome": "read",
+        "proposals": 29,
+        "pending": 29
+      }
+    ]
+  },
+  "document": {
+    "id": "d26e89827",
+    "name": "Monthly cost review procedure.docx",
+    "kind": "docx",
+    "bytes": 38347,
+    "chars": 987,
+    "truncated": false,
+    "uploadedAt": "2026-11-19T10:00:01+00:00",
+    "outcome": "read",
+    "proposals": 29,
+    "pending": 29
+  },
+  "report": {
+    "documentId": "d26e89827",
+    "outcome": "read",
+    "reader": "model",
+    "documentRole": "whole_process",
+    "targetStep": null,
+    "targetSource": "none",
+    "fromImage": false,
+    "truncated": false,
+    "offered": {
+      "fields": 7,
+      "steps": 5,
+      "cells": 24
+    },
+    "kept": {
+      "fields": 5,
+      "steps": 5,
+      "cells": 24
+    },
+    "dropped": 3,
+    "skipped": [
+      {
+        "key": "process.name",
+        "reason": "confirmed",
+        "items": null
+      },
+      {
+        "key": "process.baseline_metric",
+        "reason": "quote_not_found",
+        "items": null
+      },
+      {
+        "key": "process.substeps[2].systems",
+        "reason": "quote_not_found",
+        "items": 1
+      }
+    ],
+    "stepList": 0,
+    "message": "I read \"Monthly cost review procedure.docx\" and found 5 values and 5 steps for your process. Nothing counts until you confirm it."
+  },
+  "reply": {
+    "id": "e4b7d0e4-e846-4935-98df-e1af1508ab2d",
+    "role": "agent",
+    "text": "From \"Monthly cost review procedure.docx\" I'd fill:\n- Trigger: Month-end close is completed in the ledger\n- End result: The monthly cost report\n- Who uses the result: The CFO uses it to decide on budget corrections\n- Volume: count: 1; period: month; raw: every month for 14 cost centres\nThere is more in it (25 other values); I'll ask about those next.\nShould I fill it like this, or is something wrong?",
+    "at": "2026-11-19T10:00:01+00:00"
+  }
+}

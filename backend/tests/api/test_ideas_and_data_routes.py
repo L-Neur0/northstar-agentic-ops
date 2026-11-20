@@ -40,7 +40,22 @@ def test_ac_15_38_ideas_from_a_turn_are_stored_once_per_name_and_listed(api: Api
     second = api.client.post(path, json={"text": "supplier onboarding, as I said"}, headers=visitor())
     assert (first.json()["ideasAdded"], second.json()["ideasAdded"]) == (1, 0)
     [idea] = api.client.get("/api/ideas", headers=visitor()).json()["ideas"]
-    assert set(idea) == {"id", "name", "words", "status", "fromSessionId", "startedSessionId", "createdAt"}
+    assert set(idea) == {
+        "id",
+        "name",
+        "words",
+        "status",
+        "fromSessionId",
+        "startedSessionId",
+        "createdAt",
+        "signals",
+        "hoursPerYear",
+        "people",
+        "dataScore",
+        "score",
+        "rank",
+        "recommended",
+    }
     assert (idea["name"], idea["status"], idea["fromSessionId"]) == ("Supplier onboarding", "open", seeded.id)
     assert api.client.get("/api/ideas", headers=visitor(KEY_B)).json() == {"ideas": []}
 
@@ -90,3 +105,16 @@ def test_ac_15_45_delete_me_removes_every_document_of_the_caller_only(api: ApiHa
     assert api.client.get("/api/sessions", headers=visitor()).json() == {"sessions": []}
     assert api.client.get(f"/api/sessions/{theirs['id']}", headers=visitor(KEY_B)).status_code == 200
     assert len(api.client.get("/api/ideas", headers=visitor(KEY_B)).json()["ideas"]) == 1
+
+
+def test_the_ideas_list_shows_the_steering_signals_and_the_recommended_flag(api: ApiHarness):
+    """Spec 14 §3.15: a steered idea carries its signals, numbers, rank and the recommended flag."""
+    idea = Idea.model_validate({
+        "owner_id": OWNER_A, "name": "Supplier onboarding", "words": "we onboard suppliers",
+        "from_session_id": "s-0", "created_at": AT, "signals": {"runs": "every week", "inputs": "a PDF form"},
+        "hours_per_year": 120.0, "people": 3.0, "data_score": 0.5, "score": 0.42, "rank": 1, "recommended": True,
+    })  # fmt: skip
+    asyncio.run(api.repo.create_idea(idea))
+    [listed] = api.client.get("/api/ideas", headers=visitor()).json()["ideas"]
+    assert listed["signals"] == {"runs": "every week", "people": None, "time": None, "inputs": "a PDF form"}
+    assert (listed["hoursPerYear"], listed["rank"], listed["recommended"], listed["score"]) == (120.0, 1, True, 0.42)

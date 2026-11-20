@@ -1,11 +1,12 @@
 """Rendered prompt samples for the joint review with the product owner (spec 14 §3.9).
 
 Why: the prompts are drafts; reviewing them as code is hard, so the full system and user messages
-of every call (EXTRACT, CLASSIFY, GUIDE) are written for three sample states into
+of every call (EXTRACT, CLASSIFY, GUIDE) are written for five sample states into
 `tests/fixtures/prompts/`. The messages are captured from real turns through `FakeLLM`, so a sample
 is exactly what the model would receive. No live model is called.
-What: builds the three states (the start in `context`; `find` with a cluster proposal; the step walk
-with a deferred field and a pending document proposal), runs one turn on each, and compares the
+What: builds the five states (the start in `context`; `find` with a cluster proposal; the step walk
+with a deferred field and a pending document proposal; `find` with three candidates and the first
+steering question; `find` with the recommendation, spec 14 §3.15), runs one turn on each, and compares the
 captured messages with the files. Set `UPDATE_PROMPT_SAMPLES=1` to rewrite the files after a prompt
 change. Must not: hold assertions about wording; that is the review's job.
 """
@@ -49,6 +50,19 @@ STATES = {
     1: "start: the context phase, the expert's first answer",
     2: "find: a name agreed and a cluster proposal put to the expert",
     3: "steps: mid-walk, with a deferred field and a pending document proposal",
+    4: "find: three candidates named, the first steering question",
+    5: "find: the last steering answer, the recommendation",
+}
+CANDIDATES = ("the monthly cost review", "chasing site managers", "booking travel")
+STEERED = {
+    "the monthly cost review": {"runs": "every month", "time": "about 3 days", "people": "6 of us"},
+    "chasing site managers": {"runs": "every week", "time": "2 hours", "people": "about 10 site managers"},
+    "booking travel": {"runs": "twice a month", "time": "an hour", "people": "just me"},
+}
+INPUTS = {
+    "the monthly cost review": "site spreadsheets by e-mail",
+    "chasing site managers": "phone calls",
+    "booking travel": "the online booking portal",
 }
 
 
@@ -154,6 +168,45 @@ def state_3(ctx):
     return session, "I compare actuals with the budget and flag what is off by more than 5%"
 
 
+def find_session(ctx, **parts: Any) -> Session:
+    base = apply_changes(empty(ctx), context_changes(), vocab=ctx.vocab, at=AT).profile
+    return new_session(ctx, phase="find", profile=Profile.model_validate(base), **parts)
+
+
+def state_4(ctx):
+    session = find_session(
+        ctx,
+        counters={"find_turns": 1},
+        last_question={"focus": ["process.name"]},
+        messages=[{"role": "agent", "text": "What work comes round again and again in your week?", "at": AT}],
+    )
+    text = "I run the monthly cost review, I chase site managers for explanations, and I book travel for the team"
+    return session, text, {"candidates": [{"name": n, "words": "I do it"} for n in CANDIDATES]}
+
+
+def state_5(ctx):
+    from app.services.process_discovery.interview import steering as st
+
+    steering = st.add_candidates(st.read_steering(None), [{"name": n, "words": "I do it"} for n in CANDIDATES])
+    steering = st.apply_signals(steering, [{"name": n, **v} for n, v in STEERED.items()], ctx.steering)
+    steering = st.rank({**steering, "status": "collecting", "questions": 2}, ctx.steering)
+    session = find_session(
+        ctx,
+        counters={"find_turns": 3},
+        steering=steering,
+        last_question={"focus": ["steer:inputs"]},
+        messages=[
+            {
+                "role": "agent",
+                "text": "Last one: does each start from files or systems, or from paper, phone calls or memory?",
+                "at": AT,
+            }
+        ],
+    )
+    text = "Spreadsheets by e-mail for the cost review, phone calls for the chasing, the booking portal for travel"
+    return session, text, {"candidate_signals": [{"name": n, "inputs": v} for n, v in INPUTS.items()]}
+
+
 def classify_session(ctx, n):
     """CLASSIFY does not run in every state: 1 = a first name (both halves), 2 = a widening answer (scope only),
     3 = a settled scope for a name without a cluster (placement only)."""
@@ -215,12 +268,20 @@ def render(call: RecordedCall, title: str) -> str:
 
 async def samples(ctx) -> dict[str, str]:
     files: dict[str, str] = {}
-    builders = {1: state_1, 2: state_2, 3: state_3}
-    names = {1: "1_context_start", 2: "2_find_cluster_proposal", 3: "3_steps_deferred_and_proposal"}
+    builders = {1: state_1, 2: state_2, 3: state_3, 4: state_4, 5: state_5}
+    names = {
+        1: "1_context_start",
+        2: "2_find_cluster_proposal",
+        3: "3_steps_deferred_and_proposal",
+        4: "4_find_steering_question",
+        5: "5_find_recommendation",
+    }
     for n, build in builders.items():
-        session, text = build(ctx)
+        built = build(ctx)
+        session, text = built[0], built[1]
+        extract = built[2] if len(built) > 2 else {}
         calls = await capture(
-            ctx, session, text, EXTRACT=[{}], GUIDE=["Q?"], CLASSIFY=[{"scope": SCOPE, "placement": PLACEMENT}]
+            ctx, session, text, EXTRACT=[extract], GUIDE=["Q?"], CLASSIFY=[{"scope": SCOPE, "placement": PLACEMENT}]
         )
         for call in calls:
             if call.call_type in (CallType.EXTRACT, CallType.GUIDE):
@@ -242,7 +303,7 @@ async def samples(ctx) -> dict[str, str]:
 async def test_prompt_samples_are_current(ctx):
     """The review samples match what the prompts render today (rewrite with UPDATE_PROMPT_SAMPLES=1)."""
     files = await samples(ctx)
-    assert len(files) == 9
+    assert len(files) == 13
     if os.environ.get("UPDATE_PROMPT_SAMPLES") == "1":
         SAMPLES.mkdir(parents=True, exist_ok=True)
         for name, text in files.items():

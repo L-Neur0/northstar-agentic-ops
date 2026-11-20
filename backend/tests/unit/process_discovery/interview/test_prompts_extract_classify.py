@@ -97,3 +97,13 @@ def test_the_classify_user_message_carries_little(ctx):
     assert "Re-score" in classifier_user("x", profile, widening=True)
     p = apply_changes(empty_profile(), {"department": "IT"}, vocab=ctx.vocab, at=AT).profile
     assert "Role: (none)" in classifier_user("x", p)
+
+
+def test_extract_names_the_steered_candidates_in_find(ctx):
+    """AC-14.66 (live check): the model must reuse the candidate names, so they are listed, fenced."""
+    names = ["monthly cost review", "chase site managers"]
+    system = extractor_system(empty_profile(), "", {}, vocab=ctx.vocab, phase="find", candidates=names)
+    assert "candidate_signals" in system
+    block = system.rsplit("<<<CANDIDATES", 1)[1].split("CANDIDATES>>>", 1)[0]
+    assert all(n in block for n in names)
+    assert "<<<CANDIDATES" not in extractor_system(empty_profile(), "", {}, vocab=ctx.vocab, phase="find")

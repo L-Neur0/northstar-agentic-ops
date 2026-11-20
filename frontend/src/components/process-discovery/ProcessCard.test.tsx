@@ -2,6 +2,7 @@
  * Tests for the five process sections of "Your process" (spec 23 §3.8.2–6; AC-23.28–23.31).
  * Why: the card is how the expert sees the form fill up; each field shows its server status with
  * an icon and words (never colour alone), its formatted value, and proposals with their quote.
+ * Part 2: proposed rows show their source, the quote on request and ✓ / ✎ (AC-23.75, AC-23.76).
  * Rules: sections follow the field view phase; counts tally `complete` views only.
  */
 import { render, screen, within } from '@testing-library/react'
@@ -10,6 +11,7 @@ import { ProcessCard } from './ProcessCard'
 import { defaultSections } from './sectionState'
 import { emptyProfile, processViews, view } from '../../test/fixtures/sessions'
 import type { FieldView } from '../../types/process-discovery'
+import type { ProposalControls } from './ProposalActions'
 
 function renderCard(views: FieldView[], over: Partial<Parameters<typeof ProcessCard>[0]> = {}) {
   const profile = emptyProfile()
@@ -96,20 +98,76 @@ describe('field rows (AC-23.29, AC-23.30)', () => {
   })
 })
 
-describe('proposals (AC-23.31)', () => {
-  it('shows Proposed, the source, the quote and the hint, and does not count it', () => {
-    renderCard([
-      view('process.name', 'proposed', { source: 'expert', quote: 'I chase the site managers every Friday' }),
-      view('process.cluster', 'empty'),
-      view('process.trigger', 'proposed', { source: 'document', documentName: 'notes.docx', quote: 'Starts when the ledger closes' }),
-    ])
-    const name = field('Process name')
-    expect(within(name).getByText('Proposed')).toBeInTheDocument()
-    expect(within(name).getByText('from your idea')).toBeInTheDocument()
-    expect(within(name).getByText('I chase the site managers every Friday').closest('blockquote')).not.toBeNull()
-    expect(within(name).getByText('Say yes in the chat to confirm, or give the right answer.')).toBeInTheDocument()
-    expect(within(field('Trigger')).getByText('from notes.docx')).toBeInTheDocument()
+describe('proposals with ✓ / ✎ (AC-23.31, AC-23.75, AC-23.76; replaces the part 1 read-only hint)', () => {
+  const views = () => [
+    view('process.name', 'proposed', { source: 'expert', quote: 'I chase the site managers every Friday' }),
+    view('process.cluster', 'empty'),
+    view('process.trigger', 'proposed', { source: 'document', documentName: 'notes.docx', quote: 'Starts when the ledger closes' }),
+    view('process.end_result', 'proposed', { source: 'document', documentName: null, quote: 'Ends with a report' }),
+  ]
+  const controls = (over: Partial<ProposalControls> = {}): ProposalControls => ({
+    canAct: true,
+    disabled: false,
+    pending: null,
+    openQuotes: new Set(),
+    onToggleQuote: vi.fn(),
+    onConfirm: vi.fn(),
+    onReject: vi.fn(),
+    ...over,
+  })
+
+  it('shows the source line for a document, a removed document and an idea, and does not count proposals', () => {
+    renderCard(views())
+    expect(within(field('Process name')).getByText('Proposed · from your idea')).toBeInTheDocument()
+    expect(within(field('Trigger')).getByText('Proposed · from notes.docx')).toBeInTheDocument()
+    expect(within(field('End result')).getByText('Proposed · from a removed document')).toBeInTheDocument()
+    expect(within(field('Process name')).getByRole('img', { name: 'Proposed' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /^The process/ })).toHaveTextContent('0/2')
+  })
+
+  it('marks a proposal read from an image "(from an image)" (spec 17 §3.19 I5)', () => {
+    renderCard(views(), { proposals: controls({ imageDocuments: new Set(['notes.docx']) }) })
+    expect(within(field('Trigger')).getByText('Proposed · from notes.docx (from an image)')).toBeInTheDocument()
+    expect(within(field('End result')).getByText('Proposed · from a removed document')).toBeInTheDocument()
+  })
+
+  it('Show quote reveals the quote in a blockquote (local state without controls)', async () => {
+    renderCard(views())
+    const row = field('Trigger')
+    const toggle = within(row).getByRole('button', { name: 'Show quote' })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(within(row).getByText('Starts when the ledger closes')).not.toBeVisible()
+    await userEvent.click(toggle)
+    expect(within(row).getByRole('button', { name: 'Hide quote' })).toHaveAttribute('aria-expanded', 'true')
+    expect(within(row).getByText('Starts when the ledger closes').closest('blockquote')).toBeVisible()
+  })
+
+  it('with controls the quote state comes from the page, so it survives a new response', () => {
+    renderCard(views(), { proposals: controls({ openQuotes: new Set(['process.trigger']) }) })
+    expect(within(field('Trigger')).getByRole('button', { name: 'Hide quote' })).toHaveAttribute('aria-expanded', 'true')
+  })
+
+  it('✓ confirms the one key and ✎ rejects it with its label', async () => {
+    const c = controls()
+    renderCard(views(), { proposals: c })
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm Trigger' }))
+    expect(c.onConfirm).toHaveBeenCalledWith(['process.trigger'])
+    await userEvent.click(screen.getByRole('button', { name: 'Reject Trigger' }))
+    expect(c.onReject).toHaveBeenCalledWith('process.trigger', 'Trigger')
+    expect(screen.getByRole('button', { name: 'Confirm Trigger' })).toHaveAttribute('title', 'Confirm: this is right')
+    expect(screen.getByRole('button', { name: 'Reject Trigger' })).toHaveAttribute('title', 'Not right: the agent will ask you')
+  })
+
+  it('✓ / ✎ are disabled during a write and hidden when the session is not active', () => {
+    renderCard(views(), { proposals: controls({ disabled: true }) })
+    expect(screen.getByRole('button', { name: 'Confirm Trigger' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Reject Trigger' })).toBeDisabled()
+  })
+
+  it('without the right to act there are no ✓ / ✎ buttons', () => {
+    renderCard(views(), { proposals: controls({ canAct: false }) })
+    expect(screen.queryByRole('button', { name: /^Confirm / })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Reject / })).not.toBeInTheDocument()
   })
 })
 

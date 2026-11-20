@@ -3,18 +3,21 @@
 Why: the nodes, the graph, the prompts and the turn entry points all name the same shapes, and
 naming them without importing the logic that fills them keeps the dependencies one-way. The saved
 keys mirror the session (spec 12); the turn-local ones are dropped after the turn, so the
-conversation's cross-turn state lives only in `counters`, `scope`, `placement` and `last_question`.
+conversation's cross-turn state lives only in `counters`, `scope`, `placement`, `last_question` and
+`steering` (§3.15).
 What: `TurnState` (a `TypedDict`, total=False, every key LangGraph may merge), `InterviewSettings`,
-`InterviewContext` (vocabulary, lexicon, settings, product name; built once in the lifespan) and
+`InterviewContext` (vocabulary, lexicon, settings, product name, steering config; built once in the lifespan) and
 `Ask` (the one thing the next question is about, chosen by code).
 Must not: hold logic, read the environment, or create anything at import time.
-Spec 14 §3.2, §4.
+Spec 14 §3.2, §3.15, §4.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypedDict
+
+from app.core.config import SteeringConfig
 
 from ..domain.field_spec import Vocabulary
 
@@ -34,12 +37,13 @@ class TurnState(TypedDict, total=False):
     scope: dict[str, Any]
     placement: dict[str, Any]
     last_question: dict[str, Any]
+    steering: dict[str, Any]
     # turn-local
     user_input: str
     now: str
     deadline: float
     reply: str
-    ideas: list[dict[str, str]]
+    ideas: list[dict[str, Any]]
     classified: bool
     documents: list[dict[str, str]]
     log: dict[str, Any]
@@ -63,14 +67,16 @@ class InterviewContext:
     lexicon: Lexicon
     settings: InterviewSettings = field(default_factory=InterviewSettings)
     product_name: str = "Discovery Agent"
+    #: Steering toward value and ready data (§3.15); `None` turns it off.
+    steering: SteeringConfig | None = None
 
 
-AskKind = Literal["widening", "proposals", "cluster", "field", "cell", "rollups", "wrap_up"]
+AskKind = Literal["widening", "proposals", "steer", "recommend", "cluster", "field", "cell", "rollups", "wrap_up"]
 
 
 class Ask(NamedTuple):
-    """The one ask target of a turn: its kind, the keys it is about, and the cluster question mode."""
+    """The one ask target of a turn: its kind, the keys it is about, and the cluster or recommendation mode."""
 
     kind: AskKind
     keys: tuple[str, ...] = ()
-    mode: Literal["propose", "picker"] | None = None
+    mode: Literal["propose", "picker", "recommend", "pick"] | None = None

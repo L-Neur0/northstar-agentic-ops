@@ -5,32 +5,45 @@ second browser tab would overwrite each other. Here every write follows one patt
 caller's session (missing → `SessionNotFound`), refuse a closed one (`SessionClosed`), work on a
 new object (inputs are never mutated), stamp `updated_at` (the service owns time), and save the
 whole document once with the etag it was read with (a stale etag raises the store's
-`ConflictError`; nothing is retried).
-What: `DiscoveryService` (create, list, get, delete, turn, confirm, cluster picker, close, finish,
-ideas, delete my data, and `view`, which builds the `SessionOut` wire model), its errors,
+`ConflictError`; nothing is retried, except the one reload of *Finish*).
+What: `DiscoveryService` (create, list, get, delete, turn, confirm, cluster picker, close, finish
+(gate, budget, the four assessment calls in parallel through `artifacts.assess`, one save that
+re-tries once on a conflict without a second set of calls, spec 20 §3.2), the report and its PDF
+(built on request from the stored session, spec 20 §3.3–3.5), ideas (a steered idea keeps its
+signals and is updated when heard again, spec 14 §3.15), delete my data, the document use cases: upload, list, remove, confirm and reject proposals
+(spec 17 §3.1, §3.13), and `view` / `upload_view`, which build the wire models), its errors,
 `build_context` (the interview context from the company config and settings, built once in the
 lifespan), and the LLM names the shell needs (`create_llm`, `build_graph`, the errors), so routes
 and the lifespan import only the facade. One `service_call` log line per use case: use case,
 session id, 8-character owner prefix, outcome, duration; never text.
-Must not: call the model outside `process_turn`, decide anything the profile or interview layers
-decide, or log message, profile or document text. Spec 15 AC-15.27 to AC-15.45.
+Must not: call the model outside `process_turn`, `upload_document` (one READ_DOCUMENT) and `finish`
+(the four assessment calls; the report and the PDF never call it), keep
+an uploaded file's bytes beyond the upload call, decide anything the profile or interview layers
+decide, or log message, profile or document text. Spec 15 AC-15.27 to AC-15.45; spec 20 AC-20.13
+to AC-20.17, AC-20.44.
 """
 
 from __future__ import annotations
 
+import asyncio
 import logging
+import re
 import time
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 from langgraph.graph.state import CompiledStateGraph
 
-from app.core.config import CompanyConfig
+from app.core.config import CompanyConfig, DocumentsConfig
 from app.core.logging import log_event
 from app.core.rate_limit import usage_scope
 from app.core.settings import Settings
 from app.models.process_discovery_schemas import (
+    Assessment,
+    CandidateSignals,
     ClusterOut,
     Cost,
     FieldView,
@@ -44,7 +57,16 @@ from app.models.process_discovery_schemas import (
     Session,
     SessionStatus,
 )
-from app.models.process_discovery_wire import MessageOut, ScopeOut, ScoreOut, SessionOut
+from app.models.process_discovery_wire import (
+    DiscoveryReport,
+    DocumentOut,
+    DocumentReportOut,
+    DocumentUploadOut,
+    MessageOut,
+    ScopeOut,
+    ScoreOut,
+    SessionOut,
+)
 from app.services.store.repository import (
     ConflictError,
     DeletedCounts,
@@ -54,27 +76,45 @@ from app.services.store.repository import (
 )
 from app.utils.prompt_safety import contains_injection_pattern
 
+from .artifacts.assess import assess
+from .artifacts.fingerprint import ai_input_fingerprint, map_fingerprint
+from .artifacts.report import build_report
+from .documents import (
+    DocumentNotFound,
+    DocumentRejected,
+    DocumentReport,
+    document_views,
+    read_document,
+    reading_context,
+    remove_document,
+)
 from .domain.field_spec import META_KEY, SKIPPED_KEY, Vocabulary
+from .export.branding import Brand
+from .export.report_pdf import write_pdf
+from .interview.doc_question import document_question
 from .interview.graph import build_graph
 from .interview.replies import Lexicon, cluster_armed
 from .interview.turn import TurnResult, after_action, run_turn, welcome
 from .interview.types import InterviewContext, InterviewSettings
-from .llm import LLM, LLMBudgetExceededError, LLMConfigError, create_llm
+from .llm import LLM, CallType, LLMBudgetExceededError, LLMConfigError, create_llm
 from .profile.mutate import UnknownClusterError, close_steps, confirm_rollup
 from .profile.mutate import set_cluster as write_cluster
-from .profile.proposals import propose_from_idea
+from .profile.proposals import apply_proposals, confirm_proposals, propose_from_idea, reject_proposals
 from .profile.scoring import FinishCheck, finish_check
 from .profile.views import field_views
 
 __all__ = [
     "ConflictError",
     "DiscoveryService",
+    "DocumentNotFound",
+    "DocumentRejected",
     "IdeaAlreadyStarted",
     "IdeaNotFound",
     "LLMBudgetExceededError",
     "LLMConfigError",
     "MapIncomplete",
     "NotFound",
+    "ReportNotReady",
     "SessionClosed",
     "SessionNotFound",
     "TurnResult",
@@ -122,6 +162,10 @@ class MapIncomplete(Exception):
         self.reason = reason
 
 
+class ReportNotReady(Exception):
+    """The report exists only after *Finish*."""
+
+
 class UnknownCluster(Exception):
     """The picker sent a code the company taxonomy does not declare."""
 
@@ -146,7 +190,29 @@ def build_context(company: CompanyConfig, settings: Settings) -> InterviewContex
             placement_min_margin=settings.placement_min_margin,
         ),
         product_name=company.organisation.product_name,
+        steering=company.steering,
     )
+
+
+def _slug(name: str) -> str:
+    """A file-name-safe form of the process name: "monthly-cost-review"."""
+    slug = re.sub(r"[^a-z0-9]+", "-", name.casefold()).strip("-")[:60].strip("-")
+    return slug or "process"
+
+
+def _idea_fields(item: dict[str, Any]) -> dict[str, Any]:
+    """The stored fields of one idea heard in a turn: the expert's words and the steering signals (spec 14 §3.15)."""
+    signals = item.get("signals")
+    return {
+        "words": str(item.get("words") or ""),
+        "signals": CandidateSignals.model_validate(signals if isinstance(signals, dict) else {}),
+        "hours_per_year": item.get("hours_per_year"),
+        "people": item.get("people"),
+        "data_score": item.get("data_score"),
+        "score": item.get("score"),
+        "rank": item.get("rank"),
+        "recommended": bool(item.get("recommended")),
+    }
 
 
 def _strip_internals(value: Any) -> Any:
@@ -156,6 +222,77 @@ def _strip_internals(value: Any) -> Any:
     if isinstance(value, list):
         return [_strip_internals(v) for v in value]  # pyright: ignore[reportUnknownVariableType]
     return value
+
+
+async def upload_into(
+    session: Session,
+    *,
+    filename: str,
+    data: bytes,
+    llm: LLM,
+    config: DocumentsConfig,
+    ctx: InterviewContext,
+    now: str,
+) -> tuple[Session, DocumentReport]:
+    """The upload's steps on a session, without the store (the service saves the result once; `make chat` too).
+
+    Read in the interview's context (spec 17 §3.18), apply the proposals (spec 13), recompute score
+    and phase, then the agent's question (spec 14 §3.16, built by code): appended as an agent message,
+    its group stored in `last_question.proposals`, so a plain yes in the chat confirms it.
+    """
+    with usage_scope() as usage:
+        read = await read_document(
+            session,
+            filename=filename,
+            data=data,
+            llm=llm,
+            config=config,
+            document_id=f"d{uuid4().hex[:8]}",
+            now=now,
+            vocab=ctx.vocab,
+            context=reading_context(session, vocab=ctx.vocab),
+        )
+    profile = session.profile.model_dump(mode="json", by_alias=True)
+    result = apply_proposals(profile, read.diff, vocab=ctx.vocab, at=now)
+    record = read.record.model_copy(update={"proposals": len(result.applied)})
+    cost = session.cost
+    new = session.model_copy(
+        update={
+            "documents": [*session.documents, record],
+            "profile": Profile.model_validate(result.profile),
+            "cost": cost.model_copy(
+                update={"tokens_in": cost.tokens_in + usage.tokens_in, "tokens_out": cost.tokens_out + usage.tokens_out}
+            ),
+        }
+    )
+    new = after_action(new, ctx=ctx)
+    question = document_question(
+        new,
+        document_id=record.id,
+        name=record.name,
+        from_image=read.from_image,
+        role=read.role,
+        target_step=read.target_step,
+        outcome=record.outcome,
+        extras=read.extras,
+        report_sentence=read.report.message,
+        ctx=ctx,
+    )
+    update: dict[str, Any] = {"messages": [*new.messages, Message(role=MessageRole.AGENT, text=question.text, at=now)]}
+    if question.last_question is not None:
+        update["last_question"] = question.last_question
+    log_event(
+        logger,
+        "document_question",
+        session_id=session.id,
+        document_id=record.id,
+        phase=new.phase.value,
+        keys=len(question.keys),
+        remaining=question.remaining,
+        from_image=read.from_image,
+        outcome=record.outcome,
+    )
+    return new.model_copy(update=update), read.report
 
 
 class DiscoveryService:
@@ -169,12 +306,20 @@ class DiscoveryService:
         graph: CompiledStateGraph[Any, Any, Any, Any] | None,
         *,
         clock: Callable[[], str],
+        company: CompanyConfig | None = None,
+        config_dir: Path | None = None,
+        budget_guard: Callable[[Any], bool] | None = None,
+        assessment_timeout: float = 60.0,
     ) -> None:
         self.repo = repo
         self.llm = llm
         self.ctx = ctx
         self.graph = graph
         self.clock = clock
+        self.company = company
+        self.config_dir = config_dir
+        self.budget_guard = budget_guard
+        self.assessment_timeout = assessment_timeout
 
     # --- helpers ---
 
@@ -191,6 +336,7 @@ class DiscoveryService:
                 UnsafeInput: "unsafe_input",
                 LLMBudgetExceededError: "budget",
                 MapIncomplete: "map_incomplete",
+                ReportNotReady: "report_not_ready",
             }.get(type(exc), type(exc).__name__)
             raise
         finally:
@@ -305,22 +451,33 @@ class DiscoveryService:
             return TurnResult(saved, result.reply, result.finish, added)
 
     async def _store_ideas(
-        self, owner: str, session_id: str, ideas: list[dict[str, str]], now: str
-    ) -> list[dict[str, str]]:
-        """Each idea name once per session (any status counts, so a dismissed idea does not come back)."""
+        self, owner: str, session_id: str, ideas: list[dict[str, Any]], now: str
+    ) -> list[dict[str, Any]]:
+        """Each idea name once per session: a new name is stored, a known one is updated with its new signals.
+
+        A dismissed idea is left alone (it does not come back). Returns the ideas that were new.
+        """
         if not ideas:
             return []
-        known = {i.name.casefold() for i in await self.repo.list_ideas(owner) if i.from_session_id == session_id}
-        added: list[dict[str, str]] = []
+        known = {i.name.casefold(): i for i in await self.repo.list_ideas(owner) if i.from_session_id == session_id}
+        added: list[dict[str, Any]] = []
         for item in ideas:
-            name = item["name"]
-            if name.casefold() in known:
+            name = str(item.get("name") or "").strip()
+            if not name:
                 continue
-            known.add(name.casefold())
-            await self.repo.create_idea(
-                Idea(owner_id=owner, name=name, words=item.get("words", ""), from_session_id=session_id, created_at=now)
-            )
-            added.append(item)
+            fields = _idea_fields(item)
+            old = known.get(name.casefold())
+            if old is None:
+                known[name.casefold()] = await self.repo.create_idea(
+                    Idea(owner_id=owner, name=name, from_session_id=session_id, created_at=now, **fields)
+                )
+                added.append(item)
+            elif old.status != "dismissed":
+                if not fields["words"]:
+                    del fields["words"]  # a later mention without words keeps the first ones
+                changed = old.model_copy(update=fields)
+                if changed != old:
+                    known[name.casefold()] = await self.repo.replace_idea(changed)
         return added
 
     # --- actions outside a turn (no model call) ---
@@ -361,22 +518,91 @@ class DiscoveryService:
             return await self._save(closed, now)
 
     async def finish(self, owner: str, session_id: str) -> Session:
-        """*Finish*: refused with the first blocker, else the map is stored as finished and `mapped`."""
+        """*Finish* (spec 20 §3.2): gate, budget, the assessment (four calls in parallel), one save.
+
+        A session that is already finished is returned as stored (no model call, no write). Without a
+        company configuration (some unit harnesses) the map is closed with no assessment.
+        """
         async with self._track("finish", owner, session_id):
-            session = await self._load_active(owner, session_id)
+            session = await self._load(owner, session_id)
+            if session.status == SessionStatus.FINISHED:
+                return session
+            if session.status != SessionStatus.ACTIVE:
+                raise SessionClosed(session_id)
             check = self._finish(session)
             if not check.ready:
                 raise MapIncomplete(check.blocked_by or "below_gate")
             now = self.clock()
-            finished = session.model_copy(
-                update={
-                    "status": SessionStatus.FINISHED,
-                    "phase": Phase.FINISHED,
-                    "finished_at": now,
-                    "report": ReportState(status="mapped"),
-                }
-            )
-            return await self._save(finished, now)
+            if self.company is None:
+                return await self._save(self._closed(session, None, now), now)
+            if self.budget_guard is not None and not self.budget_guard(CallType.OPPORTUNITIES):
+                raise LLMBudgetExceededError("the daily budget cannot cover the assessment")
+            if self.llm is None:
+                raise LLMConfigError("no model endpoint is configured")
+            profile = self._profile(session)
+            with usage_scope() as usage:
+                assessment, _outcomes = await assess(
+                    profile, None, self.llm, self.company.rates, self.company.readiness, now,
+                    catalogue=self.company.solutions, vocab=self.ctx.vocab,
+                    documents=[{"id": d.id, "name": d.name} for d in session.documents],
+                    timeout=self.assessment_timeout,
+                )  # fmt: skip
+            spent = Cost(tokens_in=usage.tokens_in, tokens_out=usage.tokens_out)
+            try:
+                return await self._save(self._closed(session, assessment, now, spent), now)
+            except ConflictError:
+                fresh = await self._load(owner, session_id)
+                if fresh.status == SessionStatus.FINISHED:
+                    return fresh
+                fresh_profile = self._profile(fresh)
+                unchanged = ai_input_fingerprint(fresh_profile) == ai_input_fingerprint(profile) and map_fingerprint(
+                    fresh_profile
+                ) == map_fingerprint(profile)
+                if fresh.status != SessionStatus.ACTIVE or not self._finish(fresh).ready or not unchanged:
+                    raise
+                return await self._save(self._closed(fresh, assessment, now, spent), now)
+
+    @staticmethod
+    def _closed(session: Session, assessment: Assessment | None, now: str, spent: Cost | None = None) -> Session:
+        """Step 6 of *Finish*: finished, no TTL, the assessment and the report state `mapped`."""
+        cost = session.cost
+        if spent is not None:
+            cost = cost.model_copy(update={"tokens_in": cost.tokens_in + spent.tokens_in,
+                                           "tokens_out": cost.tokens_out + spent.tokens_out})  # fmt: skip
+        return session.model_copy(
+            update={
+                "status": SessionStatus.FINISHED,
+                "phase": Phase.FINISHED,
+                "finished_at": now,
+                "ttl": None,
+                "assessment": assessment,
+                "report": ReportState(status="mapped"),
+                "cost": cost,
+            }
+        )
+
+    # --- the report (spec 20 §3.3–3.5; no model call) ---
+
+    async def report(self, owner: str, session_id: str) -> DiscoveryReport:
+        """The report model of a finished session, built on request (nothing is stored)."""
+        async with self._track("report", owner, session_id):
+            session = await self._load(owner, session_id)
+            return self._report(session)
+
+    async def report_pdf(self, owner: str, session_id: str) -> tuple[bytes, str]:
+        """The report as PDF bytes (rendered in a worker thread) and its file name."""
+        async with self._track("report_pdf", owner, session_id):
+            report = self._report(await self._load(owner, session_id))
+            company = self.company
+            assert company is not None  # `_report` checked it
+            brand = Brand.from_config(company.organisation, self.config_dir)
+            pdf = await asyncio.to_thread(write_pdf, report, brand)
+            return pdf, f"discovery-report-{_slug(report.cover.process_name)}.pdf"
+
+    def _report(self, session: Session) -> DiscoveryReport:
+        if session.status != SessionStatus.FINISHED or self.company is None:
+            raise ReportNotReady(session.id)
+        return build_report(session, self.company.organisation, self.ctx.vocab, self.company.solutions)
 
     # --- ideas and data ---
 
@@ -404,7 +630,62 @@ class DiscoveryService:
         async with self._track("delete_owner_data", owner):
             return await self.repo.delete_owner_data(owner)
 
+    # --- documents and proposals (spec 17 §3.1, §3.13; spec 13 §3.6) ---
+
+    async def upload_document(
+        self, owner: str, session_id: str, *, filename: str, data: bytes, config: DocumentsConfig
+    ) -> tuple[Session, DocumentReport]:
+        """Read one upload in the interview's context, apply its proposals, ask about them, save once.
+
+        A refused upload raises `DocumentRejected` and stores nothing; a failed reading is kept with no
+        proposals. The agent's question (spec 14 §3.16, built by code) is appended to the messages and
+        its group stored in `last_question.proposals`, so a plain yes in the chat confirms it.
+        """
+        async with self._track("upload_document", owner, session_id):
+            session = await self._load_active(owner, session_id)
+            if self.llm is None:
+                raise LLMConfigError("no model endpoint is configured")
+            now = self.clock()
+            new, report = await upload_into(
+                session, filename=filename, data=data, llm=self.llm, config=config, ctx=self.ctx, now=now
+            )
+            return await self._save(new, now), report
+
+    async def remove_document(self, owner: str, session_id: str, document_id: str) -> Session:
+        """Drop the record and its open proposals; values the expert confirmed from it stay (spec 17 §3.13)."""
+        async with self._track("remove_document", owner, session_id):
+            session = await self._load_active(owner, session_id)
+            now = self.clock()
+            new, _removed = remove_document(session, document_id, vocab=self.ctx.vocab, now=now)
+            return await self._save(after_action(new, ctx=self.ctx), now)
+
+    async def confirm_proposals(self, owner: str, session_id: str, keys: list[str]) -> Session:
+        """✓: the proposed keys now count; keys that are not proposals are ignored (spec 13 §3.6)."""
+        async with self._track("confirm_proposals", owner, session_id):
+            session = await self._load_active(owner, session_id)
+            result = confirm_proposals(self._profile(session), keys, vocab=self.ctx.vocab, at=self.clock())
+            return await self._with_profile(session, result.profile)
+
+    async def reject_proposals(self, owner: str, session_id: str, keys: list[str]) -> Session:
+        """✎: the proposed keys are cleared, so the interview asks for them (spec 13 §3.6)."""
+        async with self._track("reject_proposals", owner, session_id):
+            session = await self._load_active(owner, session_id)
+            result = reject_proposals(self._profile(session), keys, vocab=self.ctx.vocab, at=self.clock())
+            return await self._with_profile(session, result.profile)
+
     # --- the view ---
+
+    def document_list(self, session: Session) -> list[DocumentOut]:
+        """The session's documents as listed to the expert: counts only, never the text."""
+        return [DocumentOut.model_validate(v.model_dump()) for v in document_views(session)]
+
+    def upload_view(self, session: Session, report: DocumentReport) -> DocumentUploadOut:
+        """The upload response: the new session, the new document, its report and the agent's question (spec 14 §3.16)."""
+        view = self.view(session)
+        document = next(d for d in view.documents if d.id == report.document_id)
+        dropped = sum(skip.items or 1 for skip in report.skipped)
+        out = DocumentReportOut.model_validate({**report.model_dump(), "dropped": dropped})
+        return DocumentUploadOut(session=view, document=document, report=out, reply=view.messages[-1])
 
     def view(self, session: Session) -> SessionOut:
         """The session as the client sees it: no counters, no last question, no sidecars."""
@@ -446,4 +727,5 @@ class DiscoveryService:
                 ClusterOut(code=cluster.code, name=cluster.name, description=cluster.description) if cluster else None
             ),
             report_status=session.report.status if session.report else None,
+            documents=self.document_list(session),
         )

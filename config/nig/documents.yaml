@@ -1,5 +1,9 @@
-# Upload limits for "start from your documents" (spec 17).
-allowed_types: [pdf, docx, xlsx, csv, txt, md, bpmn, xml]
-max_files_per_session: 5
+# Upload limits for "start from your documents" (spec 17; amendment §3.18-§3.19 and decisions of 2026-11-20).
+# Images (png, jpg, jpeg) are read by the model; remove them here to turn image reading off.
+allowed_types: [pdf, docx, xlsx, pptx, csv, txt, md, eml, bpmn, xml, png, jpg, jpeg]
+max_files_per_session: 10
 max_file_mb: 10
 text_budget_chars: 60000
+max_image_mb: 5
+max_image_pixels: 40000000
+image_send_side: 2048

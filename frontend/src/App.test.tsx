@@ -17,7 +17,7 @@ describe('routes (AC-23.6)', () => {
     ['/', 'My processes'],
     ['/process-discovery', 'Discovery conversation'],
     ['/process-discovery/abc', 'Discovery conversation'],
-    ['/report/abc', 'Your discovery report'],
+    ['/report/abc', 'Back to My processes'],
     ['/nowhere', 'My processes'],
   ])('%s renders its page under the plain header', async (route, landmark) => {
     renderWithProviders(<App />, { route })

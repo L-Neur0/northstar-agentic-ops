@@ -1,0 +1,17 @@
+{
+  "document_role": "step_output_example",
+  "target_step": 3,
+  "target_named_by": "focus",
+  "file_description": {
+    "value": "Excel cost report per site with variance comments, one tab per site",
+    "quote": "Site | Cost centre | Budget | Actual | Variance | Comment"
+  },
+  "target_cells": {
+    "exceptions": [],
+    "systems": [],
+    "data": null
+  },
+  "steps": [],
+  "trigger": null,
+  "end_result": null
+}

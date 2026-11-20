@@ -1,0 +1,846 @@
+{
+  "id": "aa2ee74c-066e-4f9d-8404-560ae9b8e6aa",
+  "status": "active",
+  "phase": "confirm",
+  "displayName": "Anna",
+  "createdAt": "2026-11-19T10:00:00+00:00",
+  "updatedAt": "2026-11-19T10:00:14+00:00",
+  "finishedAt": null,
+  "messages": [
+    {
+      "id": "4e92b8ce-c748-46ca-ba11-825bdee28877",
+      "role": "agent",
+      "text": "Hi Anna! I'm the Discovery Agent. Together we'll find a piece of recurring work in your week that is worth mapping, and map it step by step; it takes about 15–20 minutes. You don't need a process in mind, we'll find one by talking through your week. You can add a document (a procedure, a process map, an example report) at any time; I'll read it and you confirm what I found. The tool maps processes, not people: it never reports anyone's individual time. The transformation team may read this conversation to improve the tool. To start: Which department are you in?",
+      "at": "2026-11-19T10:00:00+00:00"
+    },
+    {
+      "id": "735acc0e-cb5d-42d0-bfdb-7b114c836f36",
+      "role": "expert",
+      "text": "I work in Finance.",
+      "at": "2026-11-19T10:00:01+00:00"
+    },
+    {
+      "id": "40dcda34-f6bf-489e-b013-58f9f67c07fb",
+      "role": "agent",
+      "text": "Could you tell me more?",
+      "at": "2026-11-19T10:00:01+00:00"
+    },
+    {
+      "id": "a2721908-4ebf-4b1c-98b6-ba81d84aed9f",
+      "role": "expert",
+      "text": "I am a cost controller.",
+      "at": "2026-11-19T10:00:02+00:00"
+    },
+    {
+      "id": "9bd89793-50ce-4ee1-a60e-26d7e4db780d",
+      "role": "agent",
+      "text": "Could you tell me more?",
+      "at": "2026-11-19T10:00:02+00:00"
+    },
+    {
+      "id": "5aef2d09-fb96-4e69-a017-e3fa5e95ee2b",
+      "role": "expert",
+      "text": "Europe.",
+      "at": "2026-11-19T10:00:03+00:00"
+    },
+    {
+      "id": "d487d867-0226-4353-b1a0-67e69024022b",
+      "role": "agent",
+      "text": "Could you tell me more?",
+      "at": "2026-11-19T10:00:03+00:00"
+    },
+    {
+      "id": "fc5f7804-8d2c-4171-80ea-c8116248450f",
+      "role": "expert",
+      "text": "The monthly cost review. We also onboard suppliers, but that is another story.",
+      "at": "2026-11-19T10:00:04+00:00"
+    },
+    {
+      "id": "38753e42-5867-4201-a5a2-50ac4fd7d955",
+      "role": "agent",
+      "text": "Could you tell me more?",
+      "at": "2026-11-19T10:00:04+00:00"
+    },
+    {
+      "id": "3e787169-0c10-40e9-9f67-d028a80d497d",
+      "role": "expert",
+      "text": "It starts when the month-end close is done in the ledger.",
+      "at": "2026-11-19T10:00:05+00:00"
+    },
+    {
+      "id": "5bebb453-d639-4f0e-b34e-f921a4ed5e63",
+      "role": "agent",
+      "text": "Could you tell me more?",
+      "at": "2026-11-19T10:00:05+00:00"
+    },
+    {
+      "id": "bbee128f-1c76-4b9d-82cd-a1f69d295ef0",
+      "role": "expert",
+      "text": "At the end there is the monthly cost report, and the CFO uses it.",
+      "at": "2026-11-19T10:00:06+00:00"
+    },
+    {
+      "id": "4b5be73a-ec2b-4877-95a1-0237149718cc",
+      "role": "agent",
+      "text": "Could you tell me more?",
+      "at": "2026-11-19T10:00:06+00:00"
+    },
+    {
+      "id": "2308d286-71cb-4d00-8681-dde31ca84b31",
+      "role": "expert",
+      "text": "Once a month; the Head of Controlling owns it; it takes about 4 days.",
+      "at": "2026-11-19T10:00:07+00:00"
+    },
+    {
+      "id": "831b178f-2443-4bad-ba26-a6eee8a9e969",
+      "role": "agent",
+      "text": "Could you tell me more?",
+      "at": "2026-11-19T10:00:07+00:00"
+    },
+    {
+      "id": "0ac92da6-f3bc-4635-b235-0ac911f0447d",
+      "role": "expert",
+      "text": "We want 2 days. It is the same every month.",
+      "at": "2026-11-19T10:00:08+00:00"
+    },
+    {
+      "id": "d75f71d7-13a2-4d5d-8ee0-5028a41efc4f",
+      "role": "agent",
+      "text": "Could you tell me more?",
+      "at": "2026-11-19T10:00:08+00:00"
+    },
+    {
+      "id": "30de1c37-5af9-43b1-beea-a12f8d5145d2",
+      "role": "expert",
+      "text": "Same everywhere; no personal data.",
+      "at": "2026-11-19T10:00:09+00:00"
+    },
+    {
+      "id": "a3f22e3d-74b9-4bd7-a7e8-7941eb9f6c59",
+      "role": "agent",
+      "text": "Could you tell me more?",
+      "at": "2026-11-19T10:00:09+00:00"
+    },
+    {
+      "id": "d14d35a3-e33f-4c56-85fe-83912e2ccb57",
+      "role": "expert",
+      "text": "Two steps.",
+      "at": "2026-11-19T10:00:10+00:00"
+    },
+    {
+      "id": "2c0e32aa-017c-418e-b17c-b92c45c44b50",
+      "role": "agent",
+      "text": "Could you tell me more?",
+      "at": "2026-11-19T10:00:10+00:00"
+    },
+    {
+      "id": "5dac32b8-33f9-4285-9f61-4a2b22c3b725",
+      "role": "expert",
+      "text": "First we export and check the actuals.",
+      "at": "2026-11-19T10:00:11+00:00"
+    },
+    {
+      "id": "d86f0503-32af-4e79-941d-da10d85cdd31",
+      "role": "agent",
+      "text": "Could you tell me more?",
+      "at": "2026-11-19T10:00:11+00:00"
+    },
+    {
+      "id": "badb35cf-ce39-4ca7-9a34-dfa66dcce035",
+      "role": "expert",
+      "text": "Then we write and send the report.",
+      "at": "2026-11-19T10:00:12+00:00"
+    },
+    {
+      "id": "204d45d1-1131-42ce-8456-849874fc0854",
+      "role": "agent",
+      "text": "Could you tell me more?",
+      "at": "2026-11-19T10:00:12+00:00"
+    }
+  ],
+  "profile": {
+    "department": "Finance",
+    "user_function": "Cost controller",
+    "region": "Europe",
+    "process": {
+      "name": "Monthly cost review",
+      "cluster": {
+        "code": "FIN",
+        "name": "Finance",
+        "decided_by": "picker"
+      },
+      "trigger": "Month-end close is completed in the ledger",
+      "end_result": "The monthly cost report",
+      "value_at_end": "The CFO uses it to decide on budget corrections",
+      "business_pain": "Chasing explanations takes days",
+      "volume": {
+        "count": 1,
+        "period": "month",
+        "raw": ""
+      },
+      "process_owner": {
+        "role": "Head of Controlling",
+        "none_identified": false
+      },
+      "baseline_metric": {
+        "value": "4",
+        "unit": "days",
+        "qualitative": "",
+        "estimated": false
+      },
+      "target_metric": {
+        "value": "2",
+        "unit": "days"
+      },
+      "variation": {
+        "same": "yes",
+        "differences": ""
+      },
+      "sensitive_data": [
+        {
+          "none": true
+        }
+      ],
+      "substep_count": 2,
+      "substep_count_rejected": null,
+      "substeps": [
+        {
+          "name": "Step 1",
+          "goal": "Step 1 is done",
+          "activities": [
+            "export",
+            "check"
+          ],
+          "roles": [
+            {
+              "role": "Controller",
+              "contribution": "checks"
+            }
+          ],
+          "owner": "Controller",
+          "systems": [
+            "SAP"
+          ],
+          "data": {
+            "inputs": [
+              "actuals"
+            ],
+            "outputs": [
+              "report"
+            ]
+          },
+          "effort": {
+            "duration": "2 hours",
+            "frequency": "monthly"
+          },
+          "pain_points": [
+            "slow"
+          ],
+          "approvals": [
+            {
+              "none": true
+            }
+          ],
+          "exceptions": [
+            {
+              "none": true
+            }
+          ],
+          "handover": "by e-mail"
+        },
+        {
+          "name": "Step 2",
+          "goal": "Step 2 is done",
+          "activities": [
+            "export",
+            "check"
+          ],
+          "roles": [
+            {
+              "role": "Controller",
+              "contribution": "checks"
+            }
+          ],
+          "owner": "Controller",
+          "systems": [
+            "SAP"
+          ],
+          "data": {
+            "inputs": [
+              "actuals"
+            ],
+            "outputs": [
+              "report"
+            ]
+          },
+          "effort": {
+            "duration": "2 hours",
+            "frequency": "monthly"
+          },
+          "pain_points": [
+            "slow"
+          ],
+          "approvals": [
+            {
+              "none": true
+            }
+          ],
+          "exceptions": [
+            {
+              "none": true
+            }
+          ],
+          "handover": "by e-mail"
+        }
+      ],
+      "all_roles": [
+        "Controller"
+      ],
+      "all_tools": [
+        "SAP"
+      ],
+      "substeps_complete": true,
+      "roles_confirmed": false,
+      "tools_confirmed": false
+    }
+  },
+  "fieldViews": [
+    {
+      "key": "department",
+      "id": "P01",
+      "label": "Department",
+      "phase": "context",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 1
+    },
+    {
+      "key": "user_function",
+      "id": "P02",
+      "label": "Role",
+      "phase": "context",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 1
+    },
+    {
+      "key": "region",
+      "id": "P03",
+      "label": "Region",
+      "phase": "context",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 1
+    },
+    {
+      "key": "process.name",
+      "id": "P04",
+      "label": "Process name",
+      "phase": "find",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.cluster",
+      "id": "P05",
+      "label": "Cluster",
+      "phase": "find",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 3
+    },
+    {
+      "key": "process.trigger",
+      "id": "P06",
+      "label": "Trigger",
+      "phase": "boundaries",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.end_result",
+      "id": "P07",
+      "label": "End result",
+      "phase": "boundaries",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.value_at_end",
+      "id": "P08",
+      "label": "Who uses the result",
+      "phase": "boundaries",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.business_pain",
+      "id": "P09",
+      "label": "Business pain",
+      "phase": "boundaries",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.volume",
+      "id": "P10",
+      "label": "Volume",
+      "phase": "measure",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.process_owner",
+      "id": "P11",
+      "label": "Process owner",
+      "phase": "measure",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.baseline_metric",
+      "id": "P12",
+      "label": "Time today",
+      "phase": "measure",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.target_metric",
+      "id": "P13",
+      "label": "Target",
+      "phase": "measure",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.variation",
+      "id": "P14",
+      "label": "Same way everywhere",
+      "phase": "measure",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 1
+    },
+    {
+      "key": "process.sensitive_data",
+      "id": "P15",
+      "label": "Sensitive data or regulation",
+      "phase": "measure",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.substep_count",
+      "id": "P16",
+      "label": "Number of main steps",
+      "phase": "step_count",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 1
+    },
+    {
+      "key": "process.substeps[1].name",
+      "id": "S01",
+      "label": "Step name",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 1
+    },
+    {
+      "key": "process.substeps[1].goal",
+      "id": "S02",
+      "label": "Goal",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.substeps[1].activities",
+      "id": "S03",
+      "label": "Activities",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.substeps[1].roles",
+      "id": "S04",
+      "label": "Roles involved",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.substeps[1].owner",
+      "id": "S05",
+      "label": "Step owner",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.substeps[1].systems",
+      "id": "S06",
+      "label": "Systems",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.substeps[1].data",
+      "id": "S07",
+      "label": "Data in and out",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.substeps[1].effort",
+      "id": "S08",
+      "label": "Effort",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.substeps[1].pain_points",
+      "id": "S09",
+      "label": "Pain points",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.substeps[1].approvals",
+      "id": "S10",
+      "label": "Approvals",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.substeps[1].exceptions",
+      "id": "S11",
+      "label": "Exceptions",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.substeps[1].handover",
+      "id": "S12",
+      "label": "Hand-over",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.substeps[2].name",
+      "id": "S01",
+      "label": "Step name",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 1
+    },
+    {
+      "key": "process.substeps[2].goal",
+      "id": "S02",
+      "label": "Goal",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.substeps[2].activities",
+      "id": "S03",
+      "label": "Activities",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.substeps[2].roles",
+      "id": "S04",
+      "label": "Roles involved",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.substeps[2].owner",
+      "id": "S05",
+      "label": "Step owner",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.substeps[2].systems",
+      "id": "S06",
+      "label": "Systems",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.substeps[2].data",
+      "id": "S07",
+      "label": "Data in and out",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.substeps[2].effort",
+      "id": "S08",
+      "label": "Effort",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.substeps[2].pain_points",
+      "id": "S09",
+      "label": "Pain points",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.substeps[2].approvals",
+      "id": "S10",
+      "label": "Approvals",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.substeps[2].exceptions",
+      "id": "S11",
+      "label": "Exceptions",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.substeps[2].handover",
+      "id": "S12",
+      "label": "Hand-over",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    }
+  ],
+  "score": {
+    "value": 1.0,
+    "filledPoints": 40,
+    "totalPoints": 40
+  },
+  "finish": {
+    "ready": false,
+    "blockedBy": "roles_not_confirmed",
+    "looksLikeTask": true
+  },
+  "scope": {
+    "verdict": "borderline",
+    "widened": true
+  },
+  "clusterProposal": null,
+  "reportStatus": null,
+  "documents": []
+}

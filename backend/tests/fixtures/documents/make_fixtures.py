@@ -7,13 +7,15 @@ dates, so running it twice gives the same bytes (encrypted PDFs excepted: encryp
 What: `build(target)` writes every file listed in spec 17 §7 into `target` (default: this folder).
 Run it with `uv run python tests/fixtures/documents/make_fixtures.py` from `backend/`.
 Must not: download anything, read the clock into a file, or write outside its target folder.
-Spec 17 §7 (fixtures); used by AC-17.4 to AC-17.19, AC-17.32 and AC-17.34.
+Spec 17 §7 (fixtures); used by AC-17.4 to AC-17.19, AC-17.32 and AC-17.34; the amendment's
+fixtures (site report, slides, e-mails, images) by AC-17.49, AC-17.54 to AC-17.59, AC-17.66, AC-17.67.
 """
 
 from __future__ import annotations
 
 import datetime as dt
 import io
+import json
 import re
 import sys
 import zipfile
@@ -378,6 +380,176 @@ def long_procedure() -> str:
     return "\n".join(lines) + "\n"
 
 
+# --- Amendment 2026-11-20: example outputs, slides, e-mail, images (spec 17 §3.18-§3.19) -----------
+
+
+SITE_REPORT = {
+    "North": ("North", "CC-101", 120000, 131500, 11500, "Extra scaffolding rental after storm"),
+    "South": ("South", "CC-204", 98000, 97100, -900, None),
+}
+SITE_HEADER = ("Site", "Cost centre", "Budget", "Actual", "Variance", "Comment")
+
+
+def site_report_xlsx() -> bytes:
+    """Worked example 4: the cost report a site sends back in step 3, one sheet per site."""
+    from openpyxl import Workbook
+
+    workbook = Workbook()
+    workbook.properties.created = FIXED
+    workbook.properties.modified = FIXED
+    first = workbook.active
+    assert first is not None
+    workbook.remove(first)
+    for title, row in SITE_REPORT.items():
+        sheet = workbook.create_sheet(title)
+        sheet.append(list(SITE_HEADER))
+        sheet.append(list(row))
+    buffer = io.BytesIO()
+    workbook.save(buffer)
+    return _stamp_xlsx(buffer.getvalue())
+
+
+def _stamp_xlsx(data: bytes) -> bytes:
+    out = io.BytesIO()
+    with zipfile.ZipFile(io.BytesIO(data)) as source, zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as target:
+        for info in source.infolist():
+            blob = source.read(info.filename)
+            if info.filename == "docProps/core.xml":
+                blob = re.sub(rb"(<dcterms:modified[^>]*>)[^<]*", rb"\g<1>2026-01-01T00:00:00Z", blob)
+            target.writestr(zipfile.ZipInfo(info.filename, date_time=ZIP_DATE), blob, zipfile.ZIP_DEFLATED)
+    return out.getvalue()
+
+
+SITE_REPLY = {
+    "document_role": "step_output_example",
+    "target_step": 3,
+    "target_named_by": "focus",
+    "file_description": {
+        "value": "Excel cost report per site with variance comments, one tab per site",
+        "quote": "Site | Cost centre | Budget | Actual | Variance | Comment",
+    },
+    "target_cells": {"exceptions": [], "systems": [], "data": None},
+    "steps": [],
+    "trigger": None,
+    "end_result": None,
+}
+
+
+def slides_pptx() -> bytes:
+    """Two slides: a title, a text box, a table and speaker notes; one picture that must be ignored."""
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    deck = Presentation()
+    deck.core_properties.created = FIXED
+    deck.core_properties.modified = FIXED
+    deck.core_properties.last_modified_by = ""
+    deck.core_properties.author = ""
+    one = deck.slides.add_slide(deck.slide_layouts[5])
+    assert one.shapes.title is not None
+    one.shapes.title.text = "Monthly cost review"
+    box = one.shapes.add_textbox(Inches(1), Inches(2), Inches(6), Inches(1))
+    box.text_frame.text = "The review starts once month-end close is completed in the ledger."
+    one.notes_slide.notes_text_frame.text = "Speaker note: mention the three working days."  # pyright: ignore[reportOptionalMemberAccess]
+    two = deck.slides.add_slide(deck.slide_layouts[5])
+    assert two.shapes.title is not None
+    two.shapes.title.text = "Steps"
+    table = two.shapes.add_table(3, 2, Inches(1), Inches(2), Inches(6), Inches(1.5)).table
+    for r, (a, b) in enumerate((("Step", "Name"), ("1", "Export actuals"), ("2", "Compare with budget"))):
+        table.cell(r, 0).text = a
+        table.cell(r, 1).text = b
+    two.shapes.add_picture(io.BytesIO(_png(40, 20, "PIC-SENTINEL")), Inches(1), Inches(4))
+    buffer = io.BytesIO()
+    deck.save(buffer)
+    return restamp(buffer.getvalue())
+
+
+LATE_MAIL = (
+    "From: Cost Controller <controller@example.org>\r\n"
+    "To: Site Manager North <north.manager@example.org>\r\n"
+    "Subject: Missing variance explanation for CC-101\r\n"
+    "Date: Mon, 02 Mar 2026 09:00:00 +0100\r\n"
+    "MIME-Version: 1.0\r\n"
+    'Content-Type: multipart/mixed; boundary="b1"\r\n'
+    "\r\n"
+    "--b1\r\n"
+    "Content-Type: text/plain; charset=utf-8\r\n"
+    "\r\n"
+    "Please send the explanation for the variance on CC-101 within three working days.\r\n"
+    "--b1\r\n"
+    'Content-Type: application/pdf; name="site_report.pdf"\r\n'
+    'Content-Disposition: attachment; filename="site_report.pdf"\r\n'
+    "Content-Transfer-Encoding: base64\r\n"
+    "\r\n"
+    "JVBERi0xLjQK\r\n"
+    "--b1--\r\n"
+)
+HTML_MAIL = (
+    "From: someone@example.org\r\n"
+    "Subject: Reminder\r\n"
+    "Date: Tue, 03 Mar 2026 10:00:00 +0100\r\n"
+    "Content-Type: text/html; charset=utf-8\r\n"
+    "\r\n"
+    "<html><body><p>The <b>cost report</b> is due on Friday.</p></body></html>\r\n"
+)
+
+
+def _png(width: int, height: int, text: str = "", *, lines: tuple[str, ...] = ()) -> bytes:
+    from PIL import Image, ImageDraw
+
+    image = Image.new("RGB", (width, height), "white")
+    draw = ImageDraw.Draw(image)
+    for i, line in enumerate((text, *lines) if text else lines):
+        draw.text((10, 10 + 22 * i), line, fill="black")
+    out = io.BytesIO()
+    image.save(out, "PNG")
+    return out.getvalue()
+
+
+PLANNING_LINES = (
+    "Planning tool - Budget vs actuals",
+    "Cost centre    Budget    Actual    Variance",
+    "CC-101         120000    131500    11500",
+    "CC-204          98000     97100     -900",
+    "Export to Excel",
+)
+
+
+def planning_png() -> bytes:
+    """A screenshot-like PNG of a planning tool with readable text."""
+    return _png(520, 160, lines=PLANNING_LINES)
+
+
+def photo_jpeg() -> bytes:
+    """A 4,000 x 3,000 JPEG with EXIF GPS data and orientation 6 (rotate 90 degrees)."""
+    from PIL import Image
+
+    image = Image.new("RGB", (4000, 3000), (200, 210, 220))
+    exif = Image.Exif()
+    exif[0x0112] = 6  # orientation
+    exif[0x8825] = {1: "N", 2: (48.0, 8.0, 0.0)}  # GPS IFD
+    out = io.BytesIO()
+    image.save(out, "JPEG", quality=70, exif=exif)
+    return out.getvalue()
+
+
+def animated_png() -> bytes:
+    from PIL import Image
+
+    frames = [Image.new("RGB", (80, 60), c) for c in ("red", "blue")]
+    out = io.BytesIO()
+    frames[0].save(out, "PNG", save_all=True, append_images=frames[1:])
+    return out.getvalue()
+
+
+def gif_bytes() -> bytes:
+    from PIL import Image
+
+    out = io.BytesIO()
+    Image.new("RGB", (10, 10), "white").save(out, "GIF")
+    return out.getvalue()
+
+
 # --- Everything --------------------------------------------------------------------------------------
 
 
@@ -410,6 +582,17 @@ def build(target: Path = HERE) -> list[Path]:
         "zip_bomb.docx": zip_bomb_docx(docx),
         "injection.txt": INJECTION.encode("utf-8"),
         "long_procedure.txt": long_procedure().encode("utf-8"),
+        "site_report_march.xlsx": site_report_xlsx(),
+        "site_report_march.reply.json": (json.dumps(SITE_REPLY, indent=2) + "\n").encode("utf-8"),
+        "cost_review_slides.pptx": slides_pptx(),
+        "late_explanation.eml": LATE_MAIL.encode("utf-8"),
+        "html_only.eml": HTML_MAIL.encode("utf-8"),
+        "planning_tool.png": planning_png(),
+        "site_report_photo.jpg": photo_jpeg(),
+        "animated.png": animated_png(),
+        "truncated.png": planning_png()[:200],
+        "gif_as.jpg": gif_bytes(),
+        "text_as.png": b"This is plain text, not a picture.\n",
     }
     written: list[Path] = []
     for name, data in files.items():

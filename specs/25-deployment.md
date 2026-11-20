@@ -1,6 +1,6 @@
 # 25 · Deployment: container image, Azure infrastructure, CI/CD
 
-> **Status:** approved · **Implements:** architecture §2 (`Dockerfile`, `azure.yaml`, `infra/`), §5 (database resources), §6.5 (model deployments), §7 (deployment); implementation plan WS5 · **Depends on:** specs 10 (settings, stages, health route, frontend serving, CI), 11 (LLM settings and credentials)
+> **Status:** built (not yet deployed) · **Implements:** architecture §2 (`Dockerfile`, `azure.yaml`, `infra/`), §5 (database resources), §6.5 (model deployments), §7 (deployment); implementation plan WS5 · **Depends on:** specs 10 (settings, stages, health route, frontend serving, CI), 11 (LLM settings and credentials)
 > **Code:** `Dockerfile`, `.dockerignore`, `azure.yaml`, `infra/main.bicep`, `infra/main.parameters.json`, `infra/bicepconfig.json`, `infra/modules/*.bicep`, `infra/scripts/*.sh`, `.github/workflows/ci.yml` · **Tests:** `infra/tests/test_*.py`, `infra/scripts/check-image.sh`, `infra/scripts/smoke.sh`
 
 ## 1. Purpose

@@ -363,3 +363,39 @@ async def test_delete_session_twice_is_not_found(h: Harness):
     await h.service.delete_session(OWNER, seeded.id)
     with pytest.raises(SessionNotFound):
         await h.service.delete_session(OWNER, seeded.id)
+
+
+# --- steering ideas (spec 14 §3.15) -----------------------------------------------------------------
+
+
+def test_build_context_turns_steering_on_from_the_company_config(company: CompanyConfig):
+    ctx = build_context(company, Settings(_env_file=None))  # pyright: ignore[reportCallIssue]
+    assert ctx.steering == company.steering
+
+
+def _steered(name: str, hours: float | None, rank: int, recommended: bool, words: str = "we onboard suppliers"):
+    return {"name": name, "words": words, "signals": {"runs": "every week", "people": "3 buyers", "time": None,
+            "inputs": "a PDF form"}, "hours_per_year": hours, "people": 3.0, "data_score": 0.5,
+            "score": 0.4, "rank": rank, "recommended": recommended}  # fmt: skip
+
+
+async def test_store_ideas_keeps_the_signals_and_updates_a_known_name(h: Harness):
+    added = await h.service._store_ideas(OWNER, "s-1", [_steered("Supplier onboarding", None, 2, False)], AT)  # pyright: ignore[reportPrivateUsage]
+    assert [i["name"] for i in added] == ["Supplier onboarding"]
+    again = await h.service._store_ideas(  # pyright: ignore[reportPrivateUsage]
+        OWNER, "s-1", [_steered("supplier onboarding", 120.0, 1, True, words="")], AT
+    )
+    assert again == []  # updated, not added
+    [idea] = await h.service.list_ideas(OWNER)
+    assert (idea.hours_per_year, idea.rank, idea.recommended) == (120.0, 1, True)
+    assert idea.signals.runs == "every week" and idea.signals.inputs == "a PDF form"
+    assert idea.words == "we onboard suppliers"  # a mention without words keeps the first ones
+
+
+async def test_store_ideas_leaves_a_dismissed_idea_alone(h: Harness):
+    await h.service._store_ideas(OWNER, "s-1", [_steered("Supplier onboarding", None, 2, False)], AT)  # pyright: ignore[reportPrivateUsage]
+    [idea] = await h.service.list_ideas(OWNER)
+    await h.service.dismiss_idea(OWNER, idea.id)
+    await h.service._store_ideas(OWNER, "s-1", [_steered("Supplier onboarding", 99.0, 1, True)], AT)  # pyright: ignore[reportPrivateUsage]
+    stored = await h.repo.get_idea(OWNER, idea.id)
+    assert stored is not None and stored.status == "dismissed" and stored.hours_per_year is None

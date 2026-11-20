@@ -6,12 +6,15 @@ what the last question was about, what the last agent message said. Leaving it t
 sessions loop ("yes" three times, nothing confirmed). So code reads it, with the configured yes/no
 words of every language (union), and the model is never asked what the expert meant.
 What: `Lexicon` (from `language.yaml`), `normalise_reply`, `mentions` (whole-word, look-arounds),
-`cluster_armed` / `read_cluster_reply`, `read_proposal_reply`, `read_rollup_reply`, and the
+`cluster_armed` / `read_cluster_reply`, `recommendation_armed` / `read_recommendation_reply` (§3.15
+item 9), `read_proposal_reply`, `read_rollup_reply`, and the
 message readers `last_agent_message` / `recent_agent_messages`.
 Rules it protects: "ok", "okay", "sure" and "fine" are never a yes (the config loader rejects
-them); a reply longer than 6 words decides nothing; a correction in the same message outranks a
-yes. Must not: write the profile (the extract node applies what these return), call a model, or
-read a clock. Spec 14 §3.7; AC-14.6 to AC-14.19.
+them); a reply longer than 6 words decides nothing unless its opening clause is a yes word and the
+rest holds no no word (and, for the cluster, names no other cluster): "Yes, that cluster fits." is a
+yes, "well yes, but" is not; a correction in the same message outranks a yes.
+Must not: write the profile (the extract node applies what these return), call a model, or read a
+clock. Spec 14 §3.7, §3.15 item 9; AC-14.6 to AC-14.19, AC-14.72.
 """
 
 from __future__ import annotations
@@ -31,6 +34,8 @@ from ..profile.verdicts import field_counts
 
 REPLY_MAX_WORDS = 6
 CUE_LOOKBACK = 2
+#: Where the opening clause of a reply ends: a sentence or clause mark, or a spaced dash.
+_CLAUSE_END = re.compile(r"[.,;:!?\u2013\u2014]|\s-\s")
 AGENT, EXPERT = "agent", "expert"
 
 
@@ -47,6 +52,12 @@ def mentions(haystack: str | None, needle: str | None) -> bool:
     if not word:
         return False
     return re.search(rf"(?<!\w){re.escape(word)}(?!\w)", haystack or "", re.IGNORECASE) is not None
+
+
+def opening_clause(text: str | None) -> tuple[str, str]:
+    """The reply's opening clause and the rest, both normalised ("Yes, that fits." → ("yes", "that fits"))."""
+    parts = _CLAUSE_END.split(text or "", maxsplit=1)
+    return normalise_reply(parts[0]), normalise_reply(parts[1] if len(parts) > 1 else "")
 
 
 @dataclass(frozen=True)
@@ -74,7 +85,11 @@ class Lexicon:
         return reply if reply and len(reply.split()) <= REPLY_MAX_WORDS else ""
 
     def is_yes(self, text: str | None) -> bool:
-        return self.short(text) in self.yes
+        """A short reply equal to a yes word, or a reply whose opening clause is one and whose rest says no no word."""
+        if self.short(text) in self.yes:
+            return True
+        head, rest = opening_clause(text)
+        return bool(rest) and head in self.yes and not any(mentions(rest, w) for w in self.no)
 
     def is_no(self, text: str | None) -> bool:
         return self.short(text) in self.no
@@ -159,6 +174,15 @@ def cluster_armed(state: Mapping[str, Any], *, vocab: Vocabulary) -> str | None:
     return code if named else None
 
 
+def _names_another_cluster(text: str | None, code: str, vocab: Vocabulary) -> bool:
+    """Whether the reply names a cluster other than `code` (its name in any case, or its code in capitals)."""
+    return any(
+        mentions(text, c.name) or re.search(rf"(?<!\w){re.escape(c.code)}(?!\w)", text or "") is not None
+        for c in vocab.taxonomy.clusters
+        if c.code != code
+    )
+
+
 def read_cluster_reply(
     state: Mapping[str, Any], text: str | None, *, vocab: Vocabulary, lexicon: Lexicon
 ) -> ClusterReply:
@@ -172,11 +196,38 @@ def read_cluster_reply(
     armed = cluster_armed(state, vocab=vocab)
     if armed is None:
         return NO_CLUSTER_REPLY
-    if lexicon.is_yes(text):
+    if lexicon.is_yes(text) and not _names_another_cluster(text, armed, vocab):
         return ClusterReply(True, "lexicon", armed)
     if lexicon.is_no(text):
         return ClusterReply(False, "lexicon", None)
     return NO_CLUSTER_REPLY
+
+
+# --- The steering recommendation (§3.15 item 9) -------------------------------------------------------------
+
+
+def recommendation_armed(state: Mapping[str, Any], *, vocab: Vocabulary) -> str | None:
+    """The id of the recommended candidate the last question put to the expert, while P04 does not count."""
+    steering = as_mapping(state.get("steering")) or {}
+    recommended = steering.get("recommended_id")
+    profile = as_mapping(state.get("profile")) or {}
+    if _last_question(state).get("confirm") != "recommendation" or not isinstance(recommended, str) or not recommended:
+        return None
+    return None if field_counts(profile, "process.name", vocab=vocab) else recommended
+
+
+def read_recommendation_reply(
+    state: Mapping[str, Any], text: str | None, *, vocab: Vocabulary, lexicon: Lexicon
+) -> tuple[Literal["yes", "no"] | None, str | None]:
+    """A yes or a short no to an armed recommendation, with the candidate id; anything else decides nothing."""
+    armed = recommendation_armed(state, vocab=vocab)
+    if armed is None:
+        return None, None
+    if lexicon.is_yes(text):
+        return "yes", armed
+    if lexicon.is_no(text):
+        return "no", armed
+    return None, None
 
 
 # --- Proposals ----------------------------------------------------------------------------------------

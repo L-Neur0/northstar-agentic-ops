@@ -1,6 +1,6 @@
 # 14 · Interview: the turn, phases, limits, replies, prompts
 
-> **Status:** approved (built) · **§3.15 amendment: draft, 2026-11-19** · **Implements:** F-02, F-03, F-06, F-07, F-08, F-09, F-10, F-24 (product); the chat side of F-04.5 (confirming proposals) and F-11 (*Finish* state in the conversation); architecture §3.3 (one turn), §6.2 (EXTRACT, CLASSIFY, GUIDE), §6.3 (prompt conventions), AD-1 · **Depends on:** specs 10, 11, 12, 13
+> **Status:** approved (built) · **§3.15 amendment: draft, 2026-11-19** · **§3.16 amendment (document proposals in the chat): built 2026-11-20** (deviations at the end of §3.16) · **Implements:** F-02, F-03, F-06, F-07, F-08, F-09, F-10, F-24 (product); the chat side of F-04.5 (confirming proposals) and F-11 (*Finish* state in the conversation); architecture §3.3 (one turn), §6.2 (EXTRACT, CLASSIFY, GUIDE), §6.3 (prompt conventions), AD-1 · **Depends on:** specs 10, 11, 12, 13
 > **Code:** `backend/app/services/process_discovery/interview/{types,phases,gates,replies,nodes,graph,turn}.py`, `interview/prompts/{common,extractor,classifier,guide,phase_text,posture}.py`, `backend/scripts/chat.py`
 > **Tests:** `backend/tests/unit/process_discovery/interview/`
 
@@ -340,6 +340,8 @@ One line per turn, event `interview_turn`, through `log_event` (spec 10), writte
 
 ### 3.15 Amendment: steering toward value and ready data
 
+> **Built 2026-11-19, with three refinements found in live runs:** (1) a candidate name matches another when one sits inside the other and only one candidate matches (names shortened by the model); (2) EXTRACT lists the candidate names (fenced) and, with several candidates and none chosen, returns no process name; (3) after steering, a cluster proposal is always put once before the picker can be forced.
+
 > **Status:** draft amendment, 2026-11-19 (product F-03 items 2–3). Sections §3.1–§3.12 are built; the code follows this section later. Where it differs from §3.4 step 6, §3.8 or §3.9, this section wins.
 
 **Why.** When the expert names several candidate processes, the agent should not just list them back. It asks a few quick questions about each, **code** ranks them by business value signals and data readiness, and the agent **recommends** the best one with a one-line why. The expert decides and may pick another. The model never ranks. The find phase must stay short.
@@ -474,7 +476,163 @@ solo_phrases: ["just me", "only me", "myself", "on my own"]
 | `backend/tests/unit/process_discovery/interview/test_guide_node.py` | AC-14.78 |
 | `backend/tests/unit/process_discovery/interview/test_turn.py`, `test_turn_log.py` | AC-14.75, 14.80 |
 
-**Contract changes this amendment needs** (lead to apply): spec 12 `Session.steering` (`SteeringState`), `Idea` optional signal fields, `LastQuestion.confirm` gains `"recommendation"`; spec 10 `CompanyConfig.steering`; spec 19 `value_parse.py` lives in `domain/` (so `interview` may use it); spec 15 upserts ideas by name per session.
+**Build notes and deviations (2026-11-20).**
+
+| # | Spec says | Built | Why |
+|---|---|---|---|
+| 1 | Item 1: the service composes the upload | The composition is one module function, `service.upload_into(session, …)`, used by `DiscoveryService.upload_document` (which loads and saves once) and by `make chat` `/upload` (R7) | One code path for both, as R7 asks |
+| 2 | Item 3 table, `whole_process` "else the cells of the first step that has any" | Capped at 4 keys like the other groups | The table header says "at most 4 keys, except the step names" |
+| 3 | Item 4, S07 line labels "Inputs"/"Outputs" | The sub-field label (or key) with a capital first letter | Labels come from the registry |
+| 4 | Item 4 "Values rendered as `render_profile` renders them" | `text_value` (the same renderer): a volume reads "count: 14; period: …; raw: …" | As specified; wording to polish later |
+| 5 | R5: image proposals are marked | In the web panel the mark is matched by document **name** (the wire `FieldView` carries `documentName`, not the id) | No wire change needed; two files with the same name would share the mark |
+| 6 | Item 1: no turn runs | In phase `context` the GUIDE never presents proposals (§3.8), so after a yes to the upload question the next question is the context field; the remaining proposals come back from `boundaries` on | As specified; noted from the live check |
+
+**Contract changes this amendment needs** (lead to apply; applied 2026-11-20 in the build: `DocumentUploadOut.reply`, `DocumentReportOut.documentRole/targetStep/targetSource/fromImage`, `GET /api/config` `maxImageMb`, `hydrate` passes `kind`): spec 12 `Session.steering` (`SteeringState`), `Idea` optional signal fields, `LastQuestion.confirm` gains `"recommendation"`; spec 10 `CompanyConfig.steering`; spec 19 `value_parse.py` lives in `domain/` (so `interview` may use it); spec 15 upserts ideas by name per session.
+
+### 3.16 Amendment: document proposals in the chat
+
+> **Status:** built 2026-11-20 (product F-04 item 5, product owner decision of 2026-11-20). Depends on spec 17 §3.18–§3.19. Where it differs from §3.8 or §3.12, this section wins.
+
+**Why.** After an upload the expert should not have to find the proposals in the panel or type anything to get going. The agent's very next message names the file, says what it would fill, and asks plainly whether that is right. The expert answers in the chat as for any other question; ✓ and ✎ in the panel stay as shortcuts. Nothing counts until confirmed.
+
+**1. How the upload starts it (decision).** The **upload response carries the agent's question, built by code, with no model call**, like `welcome` (§3.12). The service, inside the same upload request and the same single save: reads the document (spec 17), applies the proposals (spec 13), runs `after_action`, then calls `document_question` (below), appends its text to `session.messages` as an agent message and stores its `LastQuestion`. No turn runs: there is no expert text, so there is nothing for EXTRACT to read, and a GUIDE call would add cost, a second wait after the reading, and wording code cannot check.
+
+| Option | Taken | Reason |
+|---|---|---|
+| Upload response returns a code-built agent message | **Yes** | No model call; exact names and values; one save; same pattern as `welcome` |
+| The service starts a turn with no text (GUIDE only) | No | A second model call after a reading of up to 30 s; free wording; can fail |
+
+**2. The function** (`interview/doc_question.py`, pure, no clock or model):
+
+```python
+@dataclass(frozen=True)
+class DocumentQuestion:
+    text: str
+    last_question: LastQuestion | None   # None = keep the session's last_question
+    keys: tuple[str, ...]                # the proposals asked now
+    remaining: int                       # this document's other proposals, asked later
+
+def document_question(session: Session, *, document_id: str, name: str, from_image: bool,
+                      role: str, target_step: int | None, outcome: Literal["read", "failed"],
+                      extras: Sequence[str], report_sentence: str, ctx: InterviewContext) -> DocumentQuestion
+# extras = the added sentences of spec 17 §3.12 (truncated, step list, steps already given, no target step)
+```
+
+`interview` still never imports `documents`: the service passes plain values from `DocumentRead`.
+
+**3. Which proposals are asked now** (`phases.document_group`, pure). Candidates: the keys of `proposed_keys(profile)` whose meta `documentId` is this document, in ask order. Given-up and skipped keys are left out; **deferred keys are included** (the expert brought the file up now).
+
+| Role (spec 17 §3.18) | The group (at most `PROPOSAL_GROUP_MAX` = 4 keys, except the step names) |
+|---|---|
+| `whole_process` | The §3.8 order restricted to this document: process fields (≤ 4); else all proposed step names together; else the cells of the first step that has any |
+| Step-scoped (`step_output_example`, `step_input_example`, `step_material`, `other`) | The target step's cells first (S leaves in registry order), then process fields, up to 4 keys in total |
+
+`remaining` = this document's candidates not in the group. They are presented later by the normal `proposals` ask (§3.8 priority 2).
+
+**4. The message** (English, built by code; never "noted", "saved" or "recorded").
+
+```
+From "<name>" I'd fill:
+- <line>
+- <line>
+There is more in it (<remaining> other values); I'll ask about those next.     ← only when remaining > 0
+<extras, each as one sentence>                                                    ← only when any
+Should I fill it like this, or is something wrong?
+```
+
+| Line kind | Format |
+|---|---|
+| Process field | `<Label>: <value>` |
+| Step cell | `Step <k> "<step name>" – <Label>: <value>` |
+| Step cell S07 `data` | One line per non-empty list: `Step <k> "<step name>" – Inputs: <a>; <b>` and `… – Outputs: …` (one key) |
+| Step names group | `The steps: 1 <name> · 2 <name> · …` |
+| From an image | Every line ends with ` (from an image)` |
+
+Values are rendered as `render_profile` renders them, `single_line`, at most 200 characters (cut with `…`). The name is `single_line(name, 120)`. Proposal values were already screened by spec 17.
+
+**5. Other outcomes.**
+
+| Outcome | Message | `last_question` |
+|---|---|---|
+| Proposals kept | Item 4 | `LastQuestion(focus=[], proposals=[group keys])` |
+| Read, nothing new (incl. `no_target_step` with nothing else) | The spec 17 report sentence + ` Let's carry on where we left off.` | Unchanged |
+| Reading failed | The spec 17 §3.7 sentence + ` Let's carry on where we left off.` | Unchanged |
+| Refused at intake | No message (an error response; nothing stored) | Unchanged |
+
+**6. The reply** (existing code, §3.7 `read_proposal_reply`, no change):
+
+| Expert says | Result |
+|---|---|
+| A short yes ("yes", "that's right", "stimmt") | `confirm_proposals` on exactly the group keys; they now count |
+| A correction ("It's a PDF, not Excel") | EXTRACT reads it (it sees the question fenced and the keys); the corrected key gets the expert's value (AC-14.15); the other group keys stay proposed and are charged one ask |
+| A short no | `reject_proposals` on the group keys: cleared, asked later as normal fields |
+| Anything else | Nothing decided; each group key is charged one ask (§3.6); asked again later by the `proposals` ask |
+
+**7. Rules around it.**
+
+| # | Rule |
+|---|---|
+| R1 | Allowed in **every active phase, including `context`** (the §3.8 rule "not in `context`" applies to GUIDE asks only). Uploads on a closed session are refused by the service |
+| R2 | The upload charges no counter. The reply is charged as any reply to a `proposals` question (§3.6; F-09 limits apply) |
+| R3 | The question **replaces** the stored `last_question`. An armed cluster proposal or recommendation is no longer armed; `next_ask` puts it again later and it is not counted as asked |
+| R4 | A later upload before the expert replies replaces the question again; the first document's proposals stay proposed and come back through the `proposals` ask |
+| R5 | GUIDE and the fallback mark image proposals too: `_proposals_block` and the STILL MISSING line add ` (from an image)`; the `proposals` fallback says "I saw this in your image: …" when every key in the group is from an image. "From an image" = the document's `kind` is `png` or `jpeg`; `hydrate` passes `{id, name, kind}` per document |
+| R6 | One INFO log line `document_question` from the service: `session_id`, `document_id`, `phase`, `keys` (count), `remaining`, `from_image`, `outcome`. No name, value or text |
+| R7 | `make chat` gains `/upload PATH`: the same service steps, printing the agent's question |
+
+**8. Examples.**
+
+*Example 1 (spec 17 worked example 4, an output example during the walk).*
+
+```
+From "site_report_march.xlsx" I'd fill:
+- Step 3 "Collect explanations" – Outputs: Excel cost report per site with variance comments, one tab per site
+Should I fill it like this, or is something wrong?
+```
+
+`last_question = {focus: [], proposals: ["process.substeps[3].data"]}`. The expert answers "yes" → the cell is confirmed. Next turn: the walk goes on with step 3's next missing cell.
+
+*Example 2 (the 5-step procedure of spec 17 §3.15, in `boundaries`).*
+
+```
+From "Monthly cost review procedure.docx" I'd fill:
+- Trigger: Month-end close is completed in the ledger
+- End result: The monthly cost report
+- Value at the end: The CFO uses it to decide on budget corrections
+- Volume: every month for 14 cost centres
+There is more in it (33 other values); I'll ask about those next.
+Should I fill it like this, or is something wrong?
+```
+
+Illustrative: labels and the volume wording come from the registry and `render_profile`. The 5 kept fields and 32 kept cells of spec 17 §3.17 give 37 proposals: 4 asked now, 33 later (the step names next, as one group).
+
+*Example 3 (a screenshot in `steps`, focus step 2).* `From "planning_tool.png" I'd fill:` / `- Step 2 "Compare with budget" – Systems: Planning tool (from an image)` / `Should I fill it like this, or is something wrong?`
+
+#### Acceptance criteria (amendment §3.16)
+
+| ID | Given / when / then |
+|---|---|
+| AC-14.81 | Given the session of spec 17 worked example 4 after the proposals are applied, `document_question` returns exactly the text of example 1, `last_question.proposals == ["process.substeps[3].data"]`, `focus == []`, `remaining == 0`, and `FakeLLM` records no call |
+| AC-14.82 | After the upload question, a reply "yes" confirms exactly the group keys; "no" rejects exactly them; "It's a PDF, not Excel" with a scripted EXTRACT writing `process.substeps[3].data` keeps the expert's value with expert meta and confirms nothing; "ok" decides nothing and charges one ask per group key |
+| AC-14.83 | Group: a step-scoped reading with 2 target-step cells and 3 process fields gives the 2 cells then 2 fields, `remaining = 1`; a `whole_process` reading gives the §3.8 order restricted to the document; proposals of another document are never in the group; a deferred key is included; a given-up or skipped key is not |
+| AC-14.84 | Message format: process field, step cell, S07 with both lists (two lines, one key), step names group and the "There is more in it (n other values)" line render as item 4; a 300-character value is cut to 200 with `…`; extras appear before the closing question; no message contains "noted", "saved" or "recorded" |
+| AC-14.85 | For an image document every line ends with `(from an image)`; the GUIDE proposal lines and STILL MISSING lines for its keys carry the same mark, and the `proposals` fallback says "I saw this in your image" |
+| AC-14.86 | A reading with no kept proposals, and a failed reading, give the report sentence plus "Let's carry on where we left off.", `last_question` unchanged, and the next reply is charged as it would have been without the upload |
+| AC-14.87 | In phase `context` the upload question is asked and a yes confirms the group; with an armed cluster proposal, after the upload a yes confirms the document group and not the cluster, and the cluster is proposed again by `next_ask` with `field_asks["process.cluster"]` unchanged |
+| AC-14.88 | Service: the upload response's `reply` equals the last message of `session.messages` (role agent); the session is saved once per upload; a refused upload adds no message |
+| AC-14.89 | One `document_question` log line per successful upload with the fields of R6; a sentinel in the file name, a value and the description appears in no log line |
+| AC-14.90 | `scripts/chat.py --fake` with `/upload <fixture>` prints the upload question and a following "yes" confirms the group |
+
+| Test file | Covers |
+|---|---|
+| `backend/tests/unit/process_discovery/interview/test_doc_question.py` | AC-14.81, 14.83–14.86 |
+| `backend/tests/unit/process_discovery/interview/test_replies_proposals.py` | AC-14.82, 14.87 |
+| `backend/tests/unit/process_discovery/interview/test_prompts_guide.py`, `test_guide_node.py` | AC-14.85 (GUIDE lines, fallback) |
+| `backend/tests/api/test_document_routes.py` | AC-14.88 |
+| `backend/tests/unit/process_discovery/test_service_documents.py` | AC-14.89 |
+| `backend/tests/unit/process_discovery/interview/test_chat_cli.py` | AC-14.90 |
+
+**Contract changes this amendment needs** (lead to apply): spec 15 `DocumentUploadOut.reply: MessageOut` (always present on 201) and the upload composition of item 1; spec 23 shows the reply as a normal agent message (note at the end of spec 23 §11.4); `hydrate` passes the document `kind`.
 
 ## 4. Interfaces
 
@@ -601,7 +759,7 @@ def render_profile(profile, *, vocab, documents: Sequence[Mapping[str, str]] = (
 | AC-14.8 | Naming a cluster ("it and security", "Finance") when the last question was about the cluster sets it with `decided_by: named`, also after a rejection and with no live proposal; naming a different cluster than proposed switches to it |
 | AC-14.9 | A settled cluster is never rewritten by naming another; "Finance" given as the answer to the department question does not set the cluster |
 | AC-14.10 | A cluster code inside a word in the last agent message does not arm the proposal; a proposal not recorded in `last_question.confirm` is not armed |
-| AC-14.11 | "ok", "sure", "fine", replies over 6 words, and prose containing "yes" decide nothing; "that's right" and German "stimmt" are yes; the lexicon is the union of the configured languages |
+| AC-14.11 | "ok", "sure", "fine", replies over 6 words, and prose containing "yes" decide nothing; "that's right" and German "stimmt" are yes; the lexicon is the union of the configured languages **Amended (R9 fix):** a yes also counts when it opens the reply and the rest has no no-word and names no other cluster ("Yes, that cluster fits." decides; "well yes, but" and "Yes, though I would say Legal" do not). |
 | AC-14.12 | A yes to a proposal whose code no longer resolves is treated as a rejection (the proposal is not asked again) |
 | AC-14.13 | With `last_question.proposals = [trigger, end_result]`, a short yes confirms exactly those two; other proposals stay proposed |
 | AC-14.14 | A short no rejects exactly the proposals in `last_question.proposals` (cleared, meta removed) |
@@ -637,7 +795,7 @@ def render_profile(profile, *, vocab, documents: Sequence[Mapping[str, str]] = (
 | AC-14.44 | ASKED ALREADY appears from the second prior ask of the target, names the Verdict's missing part, and adds the "there are none" wording only for P11, P15, S04, S10, S11; the lists variant appears from `confirm_turns` 6 |
 | AC-14.45 | FINISH STATE renders a distinct sentence for ready and for each of the four `FinishBlock` codes (a test fails if a code has none); a blocked state never says Finish can be pressed |
 | AC-14.46 | Posture: find questions 1–3 add no posture text, 4–5 add the narrowed text, 6+ the direct text with the exit offer (withheld while a widening question is outstanding); the exit text says never to end the session |
-| AC-14.47 | The cluster `propose` block contains the cluster's name and its configured description word for word, and the runner-up's when there is one; the picker lists every cluster with its description; the picker is forced at the direct posture or after 2 cluster asks |
+| AC-14.47 | The cluster `propose` block contains the cluster's name and its configured description word for word, and the runner-up's when there is one; the picker lists every cluster with its description; the picker is forced at the direct posture or after 2 cluster asks **Amended:** at the direct posture the picker is forced only after the cluster proposal was put once. |
 | AC-14.48 | With `substep_count_rejected = 13` the STEP COUNT block quotes 13 and the range 2–6 |
 | AC-14.49 | GUIDE raising, returning only whitespace, or timing out yields the code-built fallback for the ask target (each kind in §3.10 tested); no fallback contains "noted", "saved", "recorded" or mentions a failure; the work of `extract` is kept |
 | AC-14.50 | Every phase in `PHASE_ORDER` has a headline and renders; an unknown phase renders the explicit "Unrecognised phase" line; a profile value, process name or previous question containing `PROFILE>>>` or `<<<SYSTEM` cannot close or open a fence (exactly one open and one close marker per fence) |

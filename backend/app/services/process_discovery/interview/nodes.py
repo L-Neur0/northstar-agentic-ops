@@ -12,7 +12,11 @@ turn guard (each call under `asyncio.wait_for` with its share of the turn deadli
 1 s skips the call and takes the failure path).
 Must not: write a field itself (every write goes through `profile`), log any text (keys, counts,
 codes and times only), or pass `max_tokens` (budgets come from the call types).
-Spec 14 §3.4, §3.10; AC-14.2 to AC-14.7, AC-14.37, AC-14.49, AC-14.52, AC-14.53, AC-14.55.
+In `find` EXTRACT also feeds steering (§3.15): candidates and their signals are kept on the session,
+a yes to the recommendation writes P04 through `apply_changes`, and the guide counts the steering
+and recommendation questions it asks. The ranking itself is code in `steering.py`.
+Spec 14 §3.4, §3.10, §3.15; AC-14.2 to AC-14.7, AC-14.37, AC-14.49, AC-14.52, AC-14.53, AC-14.55,
+AC-14.66, AC-14.72, AC-14.74, AC-14.75, AC-14.78.
 """
 
 from __future__ import annotations
@@ -65,16 +69,34 @@ from .phases import (
     last_question_for,
     next_ask,
     phase_blocks,
+    posture,
     read_counters,
 )
 from .prompts.classifier import classifier_system, classifier_user
 from .prompts.common import text_value
 from .prompts.extractor import extractor_system, extractor_user
-from .prompts.guide import guide_messages
-from .replies import last_agent_message, read_cluster_reply, read_proposal_reply, read_rollup_reply
+from .prompts.guide import from_image, guide_messages, image_documents
+from .prompts.steering_text import pick_fallback, recommend_fallback, steer_fallback
+from .replies import (
+    last_agent_message,
+    read_cluster_reply,
+    read_proposal_reply,
+    read_recommendation_reply,
+    read_rollup_reply,
+)
+from .steering import (
+    STEER_PREFIX,
+    add_candidates,
+    advance,
+    apply_signals,
+    changed_ideas,
+    ranked,
+    read_steering,
+)
 from .types import Ask, InterviewContext, TurnState
 
 GUIDE_RESERVE_SECONDS = 30
+NAME_KEY = "process.name"
 MIN_SHARE_SECONDS = 1.0
 IDEAS_MAX = 5
 
@@ -208,6 +230,10 @@ async def extract_node(state: TurnState, llm: LLM, ctx: InterviewContext) -> dic
     # 2. replies read by code, on the incoming state
     cluster_reply = read_cluster_reply(state, text, vocab=vocab, lexicon=ctx.lexicon) if text else None
     proposal_verdict, proposal_keys = read_proposal_reply(state, text, lexicon=ctx.lexicon) if text else (None, ())
+    recommend_verdict, recommended = (
+        read_recommendation_reply(state, text, vocab=vocab, lexicon=ctx.lexicon) if text else (None, None)
+    )
+    steering_in = read_steering(state.get("steering"))
 
     # 3. the model call
     raw: dict[str, Any] = {}
@@ -216,7 +242,12 @@ async def extract_node(state: TurnState, llm: LLM, ctx: InterviewContext) -> dic
             {
                 "role": "system",
                 "content": extractor_system(
-                    profile, last_agent_message(state), question, vocab=vocab, phase=prior_phase
+                    profile,
+                    last_agent_message(state),
+                    question,
+                    vocab=vocab,
+                    phase=prior_phase,
+                    candidates=[c["name"] for c in steering_in["candidates"]],
                 ),
             },
             {"role": "user", "content": extractor_user(text)},
@@ -241,15 +272,25 @@ async def extract_node(state: TurnState, llm: LLM, ctx: InterviewContext) -> dic
     candidates = raw.get("candidates") if prior_phase == PHASE_FIND else None
     allowed = allowed_changes(raw)
     screened, injected = screen(allowed)
-    dropped = [*unknown_change_keys(raw), *(k for k in raw if k not in allowed and k != "candidates")]
+    side_keys = ("candidates", "candidate_signals")
+    dropped = [*unknown_change_keys(raw), *(k for k in raw if k not in allowed and k not in side_keys)]
 
     # 5. apply
     result = apply_changes(profile, screened, vocab=vocab, at=now)
     profile = result.profile
     dropped += [f"{k}({r})" for k, r in result.refused] + [f"{k}(injection)" for k in injected]
 
-    # 6. ideas
-    ideas = _ideas(candidates, profile) if candidates is not None else []
+    # 6. ideas and steering (find only): candidates and their signals; a yes to the recommendation names it
+    steering = steering_in
+    if prior_phase == PHASE_FIND:
+        steering = add_candidates(steering, _ideas(candidates, profile) if candidates is not None else [])
+        if ctx.steering is not None:
+            steering = apply_signals(steering, raw.get("candidate_signals"), ctx.steering)
+    chosen = next((c for c in steering["candidates"] if c["id"] == recommended), None)
+    if recommend_verdict == "yes" and chosen is not None and not field_counts(profile, NAME_KEY, vocab=vocab):
+        profile = apply_changes(profile, {NAME_KEY: chosen["name"]}, vocab=vocab, at=now).profile
+    elif recommend_verdict == "no":
+        steering = {**steering, "declined": True}
 
     # 7. cluster reply
     if cluster_reply is not None and cluster_reply.verdict is True and cluster_reply.code:
@@ -313,9 +354,19 @@ async def extract_node(state: TurnState, llm: LLM, ctx: InterviewContext) -> dic
         profile = assume_substep_count(profile, vocab=vocab, at=now)
         assumed = True
 
-    # 13. score and phase
+    # 13. score and phase; steering moves on (§3.15 item 8)
     sc = score(profile, vocab=vocab)
     phase = advance_phase(profile, prior_phase, counters, vocab=vocab)
+    if ctx.steering is not None:
+        steering = advance(
+            steering,
+            phase=phase,
+            name_counts=field_counts(profile, NAME_KEY, vocab=vocab),
+            posture=posture(counters["find_turns"]),
+            cfg=ctx.steering,
+        )
+    name = str(process_of(profile).get("name") or "") if field_counts(profile, NAME_KEY, vocab=vocab) else ""
+    ideas = changed_ideas(steering_in, steering, name) if prior_phase == PHASE_FIND else []
 
     # 14. log fields (keys, counts and codes only)
     log.update(
@@ -342,6 +393,7 @@ async def extract_node(state: TurnState, llm: LLM, ctx: InterviewContext) -> dic
         "placement": placement,
         "user_input": "",
         "ideas": ideas,
+        "steering": steering,
         "log": log,
     }
 
@@ -437,7 +489,14 @@ def _label(key: str, vocab: Vocabulary) -> str:
     return vocab.label(address.spec) if address is not None else key
 
 
-def fallback_question(ask: Ask, profile: Mapping[str, Any], *, vocab: Vocabulary, process_name: str) -> str:
+def fallback_question(
+    ask: Ask,
+    profile: Mapping[str, Any],
+    *,
+    vocab: Vocabulary,
+    process_name: str,
+    images: frozenset[str] = frozenset(),
+) -> str:
     """A plain question built by code from the ask target; never mentions a failure, never "noted"."""
     p = normalized_profile(profile)
     if ask.kind in ("field", "cell") and ask.keys:
@@ -451,9 +510,12 @@ def fallback_question(ask: Ask, profile: Mapping[str, Any], *, vocab: Vocabulary
             return question
     if ask.kind == "proposals" and ask.keys:
         parts = [f"{_label(k, vocab)}: {text_value(stored_value(p, k))}" for k in ask.keys]
-        return (
-            f"I read this in your document: {'; '.join(parts)}. Is that right? Say yes, or tell me what is different."
+        lead = (
+            "I saw this in your image"
+            if all(from_image(p, k, images) for k in ask.keys)
+            else ("I read this in your document")
         )
+        return f"{lead}: {'; '.join(parts)}. Is that right? Say yes, or tell me what is different."
     if ask.kind == "cluster":
         return _cluster_fallback(ask, vocab=vocab, process_name=process_name, proposal=None)
     if ask.kind == "rollups":
@@ -497,14 +559,23 @@ def _fallback(state: Mapping[str, Any], ask: Ask, vocab: Vocabulary) -> str:
         scope = as_mapping(state.get("scope")) or {}
         failed = failed_signals(as_mapping(scope.get("verdict")) or {})
         return SIGNAL_QUESTIONS[failed[0]] if failed else SIGNAL_QUESTIONS["external_consumer"]
-    return fallback_question(ask, profile, vocab=vocab, process_name=name)
+    steering = read_steering(as_mapping(state.get("steering")))
+    if ask.kind == "steer":
+        steered = [c for c in steering["candidates"] if c.get("rank")] or steering["candidates"]
+        return steer_fallback([k.removeprefix(STEER_PREFIX) for k in ask.keys], steered)
+    if ask.kind == "recommend":
+        top = next((c for c in steering["candidates"] if c["id"] == steering["recommended_id"]), None)
+        if ask.mode == "recommend" and top is not None:
+            return recommend_fallback(top)
+        return pick_fallback(ranked(steering) or steering["candidates"])
+    return fallback_question(ask, profile, vocab=vocab, process_name=name, images=image_documents(state))
 
 
 async def guide_node(state: TurnState, llm: LLM, ctx: InterviewContext) -> dict[str, Any]:
     """Write the one question of this turn; on any failure, the code-built fallback for the same ask target."""
     vocab = ctx.vocab
     profile = normalized_profile(state.get("profile"))
-    ask = next_ask(state, vocab=vocab)
+    ask = next_ask(state, vocab=vocab, steering=ctx.steering)
     finish = finish_check(profile, vocab=vocab, scope=state.get("scope"))
     log = _log(state)
     messages = cast(
@@ -534,10 +605,16 @@ async def guide_node(state: TurnState, llm: LLM, ctx: InterviewContext) -> dict[
         fallback_used=fallback_used,
         proposals_waiting=len(proposed_keys(profile)),
     )
+    steering = read_steering(state.get("steering"))
+    if ask.kind == "steer":
+        steering["questions"] += 1
+    elif ask.kind == "recommend":
+        steering["recommend_asks"] += 1
     message = {"id": str(uuid.uuid4()), "role": "agent", "text": reply, "at": state.get("now", "")}
     return {
         "messages": [*(state.get("messages") or []), message],
         "reply": reply,
         "last_question": last_question_for(ask),
+        "steering": steering,
         "log": log,
     }

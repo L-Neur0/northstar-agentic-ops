@@ -30,7 +30,8 @@ def schema() -> dict:
 
 def test_ac_17_20_top_level_properties_are_the_proposable_leaves():
     leaves = {k.split(".", 1)[1] for k in proposal_keys() if k.startswith("process.") and "substeps[" not in k}
-    assert set(read_document_model().model_fields) == {"document_kind", "steps", *leaves}
+    scoped = {"document_role", "target_step", "target_named_by", "file_description", "target_cells"}  # §3.18
+    assert set(read_document_model().model_fields) == {*scoped, "steps", *leaves}
     forbidden = {"department", "user_function", "region", "cluster", "substep_count", "substeps", "__meta"}
     forbidden |= set(FLAG_KEYS) | {d.key.split(".", 1)[1] for d in DERIVED_SPECS}
     assert not forbidden & set(read_document_model().model_fields)
@@ -61,8 +62,8 @@ def test_ac_17_21_strict_schema_and_quotes_everywhere():
     objects = [(p, n) for p, n in _walk(payload["json_schema"]["schema"]) if n.get("type") == "object"]
     for path, node in objects:
         assert node["additionalProperties"] is False
-        if path == () or path[-2:] == ("steps", "items"):
-            continue  # the reply itself and a step: their parts carry the quotes
+        if path == () or path[-2:] == ("steps", "items") or "target_cells" in path[-3:]:
+            continue  # the reply itself, a step and the target cells: their parts carry the quotes
         props = set(node["properties"])
         if props == {"inputs", "outputs"}:
             continue  # S07: each item carries its own quote

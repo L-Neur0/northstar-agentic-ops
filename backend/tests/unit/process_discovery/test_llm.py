@@ -16,7 +16,7 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from app.core.settings import Settings
 from app.services.process_discovery import llm as llm_module
@@ -172,6 +172,15 @@ def test_the_default_budgets_match_the_spec():
     budgets = {ct: getattr(settings, f"llm_max_tokens_{ct.value.lower()}") for ct in CallType}
     assert budgets[CallType.GUIDE] == 100_000 and budgets[CallType.OPPORTUNITIES] == 100_000
     assert all(v == 32_000 for ct, v in budgets.items() if ct not in (CallType.GUIDE, CallType.OPPORTUNITIES))
+
+
+def test_the_step_assessment_has_its_own_call_type_and_budget():
+    """AC-11.5 / spec 26 §5: `ASSESS_STEPS` exists, with `LLM_MAX_TOKENS_ASSESS_STEPS` (default 32000, same range)."""
+    assert CallType.ASSESS_STEPS.value == "ASSESS_STEPS"
+    assert make_settings().llm_max_tokens_assess_steps == 32_000
+    assert make_settings(llm_max_tokens_assess_steps=128_000).llm_max_tokens_assess_steps == 128_000
+    with pytest.raises(ValidationError):
+        make_settings(llm_max_tokens_assess_steps=99)
 
 
 async def test_an_expert_call_without_an_evaluation_deployment_fails_when_made():

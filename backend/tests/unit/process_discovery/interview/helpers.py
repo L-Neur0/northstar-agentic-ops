@@ -29,6 +29,7 @@ def make_context(config: CompanyConfig, vocab: Vocabulary, **settings: Any) -> I
         lexicon=Lexicon.from_config(config.language),
         settings=InterviewSettings(**settings),
         product_name=config.organisation.product_name,
+        steering=config.steering,
     )
 
 

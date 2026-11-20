@@ -4,10 +4,11 @@
  * (max 120 px), Enter sends, Shift+Enter adds a line, and focus returns after a send.
  * Rules: controlled (`value`/`onChange`) so the page can put the text back after a failed send;
  * trimmed empty text and text above 16,000 characters (spec 15 route 5) cannot be sent; a counter
- * appears from 14,400 characters. Must not call the API itself.
+ * appears from 14,400 characters. Part 2: a `leading` slot on the left of the box holds the "+"
+ * button that adds a document (spec 23 §11.1; AC-23.103). Must not call the API itself.
  * Colours are theme tokens only, never raw palette classes (spec 23 §3.13.2; AC-23.57).
  */
-import { useEffect, useRef, type KeyboardEvent } from 'react'
+import { useEffect, useRef, type KeyboardEvent, type ReactNode } from 'react'
 import { ArrowUp } from 'lucide-react'
 import { MESSAGE_MAX_CHARS } from '../../types/process-discovery'
 
@@ -19,9 +20,11 @@ interface ChatInputProps {
   onChange: (value: string) => void
   onSend: (text: string) => void
   disabled: boolean
+  /** Shown on the left of the message box (the "+" button). */
+  leading?: ReactNode
 }
 
-export function ChatInput({ value, onChange, onSend, disabled }: ChatInputProps) {
+export function ChatInput({ value, onChange, onSend, disabled, leading }: ChatInputProps) {
   const ref = useRef<HTMLTextAreaElement>(null)
   /** True between a send and the composer being enabled again: then focus comes back. */
   const refocus = useRef(false)
@@ -59,6 +62,7 @@ export function ChatInput({ value, onChange, onSend, disabled }: ChatInputProps)
   return (
     <div className="border-t border-line bg-surface">
       <div className="flex items-end gap-2 px-4 py-3">
+        {leading}
         <textarea
           ref={ref}
           value={value}

@@ -1,0 +1,49 @@
+{
+  "clusters": [
+    {
+      "code": "FIN",
+      "name": "Finance",
+      "description": "Planning, recording and reporting money - budgets, invoices, costs and the monthly close."
+    },
+    {
+      "code": "HR",
+      "name": "People & HR",
+      "description": "Hiring, paying and developing employees, from the first offer to the last working day."
+    },
+    {
+      "code": "LEG",
+      "name": "Legal",
+      "description": "Contracts, legal advice, disputes and keeping the company within the law."
+    },
+    {
+      "code": "IT",
+      "name": "IT & Security",
+      "description": "Running laptops, accounts, software and networks, and keeping them safe from attack."
+    },
+    {
+      "code": "PRO",
+      "name": "Procurement",
+      "description": "Buying goods and services - choosing suppliers, ordering and receiving what was bought."
+    },
+    {
+      "code": "COM",
+      "name": "Comms & Growth",
+      "description": "Telling the company's story inside and outside - press, internal news, the brand and the website."
+    },
+    {
+      "code": "KNW",
+      "name": "Knowledge & Ops",
+      "description": "Running day-to-day operations and keeping procedures, project records and lessons learned usable."
+    },
+    {
+      "code": "ANL",
+      "name": "Analytics & Strategy",
+      "description": "Turning data into decisions - dashboards, analyses, business cases and the strategy plan."
+    },
+    {
+      "code": "GWT",
+      "name": "Sales & Marketing",
+      "description": "Finding and winning customers - leads, offers, bids, campaigns and the customer relationship."
+    }
+  ]
+}

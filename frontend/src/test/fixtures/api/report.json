@@ -1,0 +1,1356 @@
+{
+  "cover": {
+    "productName": "Discovery Agent",
+    "companyName": "NorthStar Infrastructure Group",
+    "processName": "Monthly cost review",
+    "department": "Finance",
+    "cluster": "FIN · Finance",
+    "region": "Europe",
+    "owner": "Head of Controlling",
+    "date": "19 November 2026",
+    "status": "Mapped"
+  },
+  "atAGlance": {
+    "number": 1,
+    "title": "At a glance",
+    "note": null,
+    "hours": "About 342 hours a year.",
+    "routeHeadline": "Start with step 2 \"Consolidate into the master file\" (about 96 h a year) using Custom AI app or agent built by the AI engineering team (placeholder). Fix first: step 1 \"Collect site spreadsheets\".",
+    "top": [
+      {
+        "id": "o1",
+        "title": "Read the site spreadsheets into the master file",
+        "stepsLabel": "Steps 1–2",
+        "hours": "168 h"
+      },
+      {
+        "id": "o2",
+        "title": "Draft the variance summary",
+        "stepsLabel": "Step 5",
+        "hours": "72 h"
+      },
+      {
+        "id": "o3",
+        "title": "Chase variance explanations automatically",
+        "stepsLabel": "Step 4",
+        "hours": "30 h"
+      }
+    ],
+    "prepare": [
+      "Agree one way of working (one template) across teams and regions. What differs today: \"each site sends its own spreadsheet layout\".",
+      "Agree one site template",
+      "Confirm with IT how each system can be reached."
+    ]
+  },
+  "process": {
+    "number": 2,
+    "title": "The process",
+    "note": null,
+    "fields": [
+      {
+        "key": "process.trigger",
+        "label": "Trigger",
+        "value": "Month-end close is completed in SAP",
+        "status": "complete",
+        "source": null,
+        "quote": null
+      },
+      {
+        "key": "process.end_result",
+        "label": "End result",
+        "value": "A cost report with variance explanations",
+        "status": "complete",
+        "source": null,
+        "quote": null
+      },
+      {
+        "key": "process.value_at_end",
+        "label": "Who uses the result",
+        "value": "The CFO uses it to steer the site budgets",
+        "status": "complete",
+        "source": null,
+        "quote": null
+      },
+      {
+        "key": "process.business_pain",
+        "label": "Business pain",
+        "value": "Every site sends its own spreadsheet and I copy the numbers into the master file by hand",
+        "status": "complete",
+        "source": null,
+        "quote": null
+      },
+      {
+        "key": "process.process_owner",
+        "label": "Process owner",
+        "value": "Head of Controlling",
+        "status": "complete",
+        "source": null,
+        "quote": null
+      },
+      {
+        "key": "process.cluster",
+        "label": "Cluster",
+        "value": "Finance: Planning, recording and reporting money - budgets, invoices, costs and the monthly close.",
+        "status": "complete",
+        "source": null,
+        "quote": null
+      }
+    ],
+    "notes": []
+  },
+  "measures": {
+    "number": 3,
+    "title": "Volume and measures",
+    "note": null,
+    "fields": [
+      {
+        "key": "process.volume",
+        "label": "Volume",
+        "value": "1 per month",
+        "status": "complete",
+        "source": null,
+        "quote": null
+      },
+      {
+        "key": "process.baseline_metric",
+        "label": "Time today",
+        "value": "5 working days (estimated)",
+        "status": "complete",
+        "source": null,
+        "quote": null
+      },
+      {
+        "key": "process.target_metric",
+        "label": "Target",
+        "value": "2 working days",
+        "status": "complete",
+        "source": null,
+        "quote": null
+      },
+      {
+        "key": "process.variation",
+        "label": "Same way everywhere",
+        "value": "No — each site sends its own spreadsheet layout",
+        "status": "complete",
+        "source": null,
+        "quote": null
+      },
+      {
+        "key": "process.sensitive_data",
+        "label": "Sensitive data or regulation",
+        "value": "None",
+        "status": "complete",
+        "source": null,
+        "quote": null
+      }
+    ],
+    "notes": []
+  },
+  "map": {
+    "number": 4,
+    "title": "Process map and steps",
+    "note": null,
+    "diagram": {
+      "lanes": [
+        "Cost controller"
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "label": "Month-end close completed",
+          "lane": "Cost controller",
+          "stepIndex": null,
+          "marker": "timer"
+        },
+        {
+          "id": "merge",
+          "type": "gateway",
+          "label": "",
+          "lane": "Cost controller",
+          "stepIndex": null,
+          "marker": "exclusive"
+        },
+        {
+          "id": "t1",
+          "type": "task",
+          "label": "Collect site spreadsheets",
+          "lane": "Cost controller",
+          "stepIndex": 1,
+          "marker": "user"
+        },
+        {
+          "id": "t2",
+          "type": "task",
+          "label": "Consolidate into the master file",
+          "lane": "Cost controller",
+          "stepIndex": 2,
+          "marker": "user"
+        },
+        {
+          "id": "g1",
+          "type": "gateway",
+          "label": "Totals match SAP?",
+          "lane": "Cost controller",
+          "stepIndex": null,
+          "marker": "exclusive"
+        },
+        {
+          "id": "t3",
+          "type": "task",
+          "label": "Analyse variances",
+          "lane": "Cost controller",
+          "stepIndex": 3,
+          "marker": "user"
+        },
+        {
+          "id": "t4",
+          "type": "task",
+          "label": "Chase explanations",
+          "lane": "Cost controller",
+          "stepIndex": 4,
+          "marker": "send"
+        },
+        {
+          "id": "t5",
+          "type": "task",
+          "label": "Write the variance summary",
+          "lane": "Cost controller",
+          "stepIndex": 5,
+          "marker": "user"
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "label": "Cost report sent",
+          "lane": "Cost controller",
+          "stepIndex": null,
+          "marker": "message"
+        }
+      ],
+      "flows": [
+        {
+          "source": "start",
+          "target": "merge",
+          "label": "",
+          "isDefault": false
+        },
+        {
+          "source": "t1",
+          "target": "t2",
+          "label": "",
+          "isDefault": false
+        },
+        {
+          "source": "t2",
+          "target": "g1",
+          "label": "",
+          "isDefault": false
+        },
+        {
+          "source": "g1",
+          "target": "t3",
+          "label": "yes",
+          "isDefault": false
+        },
+        {
+          "source": "g1",
+          "target": "merge",
+          "label": "no",
+          "isDefault": false
+        },
+        {
+          "source": "t3",
+          "target": "t4",
+          "label": "",
+          "isDefault": false
+        },
+        {
+          "source": "t4",
+          "target": "t5",
+          "label": "",
+          "isDefault": false
+        },
+        {
+          "source": "t5",
+          "target": "end",
+          "label": "",
+          "isDefault": false
+        },
+        {
+          "source": "merge",
+          "target": "t1",
+          "label": "",
+          "isDefault": false
+        }
+      ],
+      "dataObjects": [
+        {
+          "id": "do1i",
+          "stepIndex": 1,
+          "direction": "input",
+          "label": "site cost spreadsheets"
+        },
+        {
+          "id": "do1o",
+          "stepIndex": 1,
+          "direction": "output",
+          "label": "set of site files"
+        },
+        {
+          "id": "do2i",
+          "stepIndex": 2,
+          "direction": "input",
+          "label": "set of site files; SAP cost centre report"
+        },
+        {
+          "id": "do2o",
+          "stepIndex": 2,
+          "direction": "output",
+          "label": "consolidated cost file"
+        },
+        {
+          "id": "do3i",
+          "stepIndex": 3,
+          "direction": "input",
+          "label": "consolidated cost file; budget"
+        },
+        {
+          "id": "do3o",
+          "stepIndex": 3,
+          "direction": "output",
+          "label": "list of variances"
+        },
+        {
+          "id": "do4i",
+          "stepIndex": 4,
+          "direction": "input",
+          "label": "list of variances; explanations from site managers"
+        },
+        {
+          "id": "do4o",
+          "stepIndex": 4,
+          "direction": "output",
+          "label": "variance list with explanations"
+        },
+        {
+          "id": "do5i",
+          "stepIndex": 5,
+          "direction": "input",
+          "label": "variance list with explanations"
+        },
+        {
+          "id": "do5o",
+          "stepIndex": 5,
+          "direction": "output",
+          "label": "cost report with variance summary"
+        }
+      ],
+      "dataStores": [
+        {
+          "id": "ds1",
+          "label": "Outlook",
+          "steps": [
+            1,
+            4,
+            5
+          ]
+        },
+        {
+          "id": "ds2",
+          "label": "Excel",
+          "steps": [
+            1,
+            2,
+            3,
+            5
+          ]
+        },
+        {
+          "id": "ds3",
+          "label": "SAP S/4HANA",
+          "steps": [
+            2
+          ]
+        }
+      ],
+      "simplified": false,
+      "stepsHash": "bd055a4162ca464ae5dd29ed00852180071c6397c55eedf7a7d56b18c43923eb"
+    },
+    "processName": "Monthly cost review",
+    "caption": null,
+    "systems": [
+      "Outlook",
+      "Excel",
+      "SAP S/4HANA"
+    ],
+    "columns": [
+      {
+        "number": 1,
+        "name": "Collect site spreadsheets",
+        "cells": [
+          {
+            "key": "process.substeps[1].name",
+            "label": "Step name",
+            "value": "Collect site spreadsheets",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[1].goal",
+            "label": "Goal",
+            "value": "Have every site's cost file in one place",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[1].activities",
+            "label": "Activities",
+            "value": "download the attachments; save each file in the month folder",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[1].roles",
+            "label": "Roles involved",
+            "value": "Site controller (sends the site cost spreadsheet)",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[1].owner",
+            "label": "Step owner",
+            "value": "Cost controller",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[1].systems",
+            "label": "Systems",
+            "value": "Outlook; Excel",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[1].data",
+            "label": "Data in and out",
+            "value": "In: site cost spreadsheets. Out: set of site files",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[1].effort",
+            "label": "Effort",
+            "value": "6 hours, every month",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[1].pain_points",
+            "label": "Pain points",
+            "value": "sites send late and in different layouts",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[1].approvals",
+            "label": "Approvals",
+            "value": "None",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[1].exceptions",
+            "label": "Exceptions",
+            "value": "a site sends no file; I chase it by phone",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[1].handover",
+            "label": "Hand-over",
+            "value": "the set of site files goes to consolidation",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          }
+        ]
+      },
+      {
+        "number": 2,
+        "name": "Consolidate into the master file",
+        "cells": [
+          {
+            "key": "process.substeps[2].name",
+            "label": "Step name",
+            "value": "Consolidate into the master file",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[2].goal",
+            "label": "Goal",
+            "value": "One consolidated cost file that matches SAP",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[2].activities",
+            "label": "Activities",
+            "value": "copy each site's numbers; reconcile totals with SAP",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[2].roles",
+            "label": "Roles involved",
+            "value": "None",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[2].owner",
+            "label": "Step owner",
+            "value": "Cost controller",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[2].systems",
+            "label": "Systems",
+            "value": "Excel; SAP S/4HANA",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[2].data",
+            "label": "Data in and out",
+            "value": "In: set of site files; SAP cost centre report. Out: consolidated cost file",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[2].effort",
+            "label": "Effort",
+            "value": "1 day, each time",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[2].pain_points",
+            "label": "Pain points",
+            "value": "I copy the numbers into the master file by hand",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[2].approvals",
+            "label": "Approvals",
+            "value": "None",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[2].exceptions",
+            "label": "Exceptions",
+            "value": "totals do not match SAP → back to step 1",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[2].handover",
+            "label": "Hand-over",
+            "value": "the consolidated file goes to variance analysis",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          }
+        ]
+      },
+      {
+        "number": 3,
+        "name": "Analyse variances",
+        "cells": [
+          {
+            "key": "process.substeps[3].name",
+            "label": "Step name",
+            "value": "Analyse variances",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[3].goal",
+            "label": "Goal",
+            "value": "Find the cost lines that are off budget",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[3].activities",
+            "label": "Activities",
+            "value": "compare actuals with budget; mark lines over the threshold",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[3].roles",
+            "label": "Roles involved",
+            "value": "None",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[3].owner",
+            "label": "Step owner",
+            "value": "Cost controller",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[3].systems",
+            "label": "Systems",
+            "value": "Excel",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[3].data",
+            "label": "Data in and out",
+            "value": "In: consolidated cost file; budget. Out: list of variances",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[3].effort",
+            "label": "Effort",
+            "value": "6 hours, monthly",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[3].pain_points",
+            "label": "Pain points",
+            "value": "the threshold check is done by eye",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[3].approvals",
+            "label": "Approvals",
+            "value": "None",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[3].exceptions",
+            "label": "Exceptions",
+            "value": "None",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[3].handover",
+            "label": "Hand-over",
+            "value": "the list of variances goes to the site managers",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          }
+        ]
+      },
+      {
+        "number": 4,
+        "name": "Chase explanations",
+        "cells": [
+          {
+            "key": "process.substeps[4].name",
+            "label": "Step name",
+            "value": "Chase explanations",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[4].goal",
+            "label": "Goal",
+            "value": "An explanation for every variance",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[4].activities",
+            "label": "Activities",
+            "value": "email each site manager; send reminders",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[4].roles",
+            "label": "Roles involved",
+            "value": "Site manager (explains the variance)",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[4].owner",
+            "label": "Step owner",
+            "value": "Cost controller",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[4].systems",
+            "label": "Systems",
+            "value": "Outlook",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[4].data",
+            "label": "Data in and out",
+            "value": "In: list of variances; explanations from site managers. Out: variance list with explanations",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[4].effort",
+            "label": "Effort",
+            "value": "15 minutes, 10 times a month",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[4].pain_points",
+            "label": "Pain points",
+            "value": "some site managers answer only after three reminders",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[4].approvals",
+            "label": "Approvals",
+            "value": "None",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[4].exceptions",
+            "label": "Exceptions",
+            "value": "no answer by day 3; escalate to the Head of Controlling",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[4].handover",
+            "label": "Hand-over",
+            "value": "the explained list goes into the summary",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          }
+        ]
+      },
+      {
+        "number": 5,
+        "name": "Write the variance summary",
+        "cells": [
+          {
+            "key": "process.substeps[5].name",
+            "label": "Step name",
+            "value": "Write the variance summary",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[5].goal",
+            "label": "Goal",
+            "value": "A cost report the CFO can act on",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[5].activities",
+            "label": "Activities",
+            "value": "write the commentary; send the report",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[5].roles",
+            "label": "Roles involved",
+            "value": "CFO (reads the cost report)",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[5].owner",
+            "label": "Step owner",
+            "value": "Cost controller",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[5].systems",
+            "label": "Systems",
+            "value": "Excel; Outlook",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[5].data",
+            "label": "Data in and out",
+            "value": "In: variance list with explanations. Out: cost report with variance summary",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[5].effort",
+            "label": "Effort",
+            "value": "6 hours, every month",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[5].pain_points",
+            "label": "Pain points",
+            "value": "I write the commentary from scratch every month",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[5].approvals",
+            "label": "Approvals",
+            "value": "Head of Controlling (waits 1 day)",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[5].exceptions",
+            "label": "Exceptions",
+            "value": "None",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[5].handover",
+            "label": "Hand-over",
+            "value": "the cost report goes to the CFO",
+            "status": "complete",
+            "source": null,
+            "quote": null
+          }
+        ]
+      }
+    ],
+    "rowLabels": [
+      "Step name",
+      "Goal",
+      "Activities",
+      "Roles involved",
+      "Step owner",
+      "Systems",
+      "Data in and out",
+      "Effort",
+      "Pain points",
+      "Approvals",
+      "Exceptions",
+      "Hand-over"
+    ]
+  },
+  "steps": {
+    "number": 5,
+    "title": "Step-by-step AI assessment",
+    "note": null,
+    "rows": [
+      {
+        "number": 1,
+        "name": "Collect site spreadsheets",
+        "hours": "72 h",
+        "fit": "assist",
+        "fitLabel": "AI assists a person",
+        "routeId": "fix-first",
+        "routeName": "Fix first: standardise and digitise",
+        "routeReason": "The layouts must be agreed before any tool can read them.",
+        "reason": "Site files arrive late and in different layouts.",
+        "evidence": "sites send late and in different layouts",
+        "evidenceLabel": "the expert's words"
+      },
+      {
+        "number": 2,
+        "name": "Consolidate into the master file",
+        "hours": "96 h",
+        "fit": "automate",
+        "fitLabel": "AI can do it",
+        "routeId": "custom-ai-app",
+        "routeName": "Custom AI app or agent built by the AI engineering team (placeholder)",
+        "routeReason": "Reading many layouts reliably needs a build.",
+        "reason": "Numbers are copied by hand from site files into Excel.",
+        "evidence": "I copy the numbers into the master file by hand",
+        "evidenceLabel": "the expert's words"
+      },
+      {
+        "number": 3,
+        "name": "Analyse variances",
+        "hours": "72 h",
+        "fit": "automate",
+        "fitLabel": "AI can do it",
+        "routeId": "low-code-flow",
+        "routeName": "Low-code workflow automation",
+        "routeReason": "A fixed rule in a connected workbook.",
+        "reason": "A fixed threshold decides which lines are flagged.",
+        "evidence": "the threshold check is done by eye",
+        "evidenceLabel": "the expert's words"
+      },
+      {
+        "number": 4,
+        "name": "Chase explanations",
+        "hours": "30 h",
+        "fit": "automate",
+        "fitLabel": "AI can do it",
+        "routeId": "low-code-flow",
+        "routeName": "Low-code workflow automation",
+        "routeReason": "Reminders and escalation are a standard flow.",
+        "reason": "Reminders to site managers follow a fixed rhythm.",
+        "evidence": "some site managers answer only after three reminders",
+        "evidenceLabel": "the expert's words"
+      },
+      {
+        "number": 5,
+        "name": "Write the variance summary",
+        "hours": "72 h",
+        "fit": "assist",
+        "fitLabel": "AI assists a person",
+        "routeId": "office-assistant",
+        "routeName": "Office assistant",
+        "routeReason": "Drafting text in office documents with a person deciding.",
+        "reason": "The commentary is written from scratch each month.",
+        "evidence": "I write the commentary from scratch every month",
+        "evidenceLabel": "the expert's words"
+      }
+    ],
+    "catalogueNote": "Routes come from a placeholder solution list, not the company's real tools."
+  },
+  "route": {
+    "number": 6,
+    "title": "Recommended route",
+    "note": null,
+    "headline": "Start with step 2 \"Consolidate into the master file\" (about 96 h a year) using Custom AI app or agent built by the AI engineering team (placeholder). Fix first: step 1 \"Collect site spreadsheets\".",
+    "groups": [
+      {
+        "key": "start_with",
+        "title": "Start with",
+        "items": [
+          {
+            "number": 2,
+            "name": "Consolidate into the master file",
+            "hours": "96 h",
+            "routeName": "Custom AI app or agent built by the AI engineering team (placeholder)",
+            "reason": ""
+          },
+          {
+            "number": 3,
+            "name": "Analyse variances",
+            "hours": "72 h",
+            "routeName": "Low-code workflow automation",
+            "reason": ""
+          }
+        ]
+      },
+      {
+        "key": "later",
+        "title": "Later",
+        "items": [
+          {
+            "number": 5,
+            "name": "Write the variance summary",
+            "hours": "72 h",
+            "routeName": "Office assistant",
+            "reason": ""
+          },
+          {
+            "number": 4,
+            "name": "Chase explanations",
+            "hours": "30 h",
+            "routeName": "Low-code workflow automation",
+            "reason": ""
+          }
+        ]
+      },
+      {
+        "key": "fix_first",
+        "title": "Fix first",
+        "items": [
+          {
+            "number": 1,
+            "name": "Collect site spreadsheets",
+            "hours": "",
+            "routeName": "",
+            "reason": "The layouts must be agreed before any tool can read them."
+          }
+        ]
+      }
+    ],
+    "prepare": [
+      "A written rule for each decision",
+      "Connector access to the systems involved",
+      "A sponsor and an implementation brief"
+    ],
+    "catalogueNote": "Routes come from a placeholder solution list, not the company's real tools."
+  },
+  "assessment": {
+    "number": 7,
+    "title": "Transformation assessment",
+    "note": null,
+    "summary": "Most of the time goes into copying site numbers by hand; reading the files is the biggest lever.",
+    "opportunities": [
+      {
+        "id": "o1",
+        "title": "Read the site spreadsheets into the master file",
+        "stepsLabel": "Steps 1–2: Collect site spreadsheets, Consolidate into the master file",
+        "typeLabel": "Document AI",
+        "whatChanges": "Read the site spreadsheets into the master file: the step runs with less manual work.",
+        "how": "A generic tool category grounded in the systems the profile names.",
+        "prepareFirst": "Agree one template across sites.",
+        "impact": "High",
+        "impactReason": "The pain the expert describes.",
+        "feasibility": "Medium",
+        "feasibilityReason": "The systems are already in use.",
+        "evidence": "I copy the numbers into the master file by hand",
+        "evidenceLabel": "the expert's words",
+        "review": null
+      },
+      {
+        "id": "o2",
+        "title": "Draft the variance summary",
+        "stepsLabel": "Step 5: Write the variance summary",
+        "typeLabel": "AI assistant",
+        "whatChanges": "Draft the variance summary: the step runs with less manual work.",
+        "how": "A generic tool category grounded in the systems the profile names.",
+        "prepareFirst": "Agree one template across sites.",
+        "impact": "Medium",
+        "impactReason": "The pain the expert describes.",
+        "feasibility": "High",
+        "feasibilityReason": "The systems are already in use.",
+        "evidence": "I write the commentary from scratch every month",
+        "evidenceLabel": "the expert's words",
+        "review": null
+      },
+      {
+        "id": "o3",
+        "title": "Chase variance explanations automatically",
+        "stepsLabel": "Step 4: Chase explanations",
+        "typeLabel": "Workflow",
+        "whatChanges": "Chase variance explanations automatically: the step runs with less manual work.",
+        "how": "A generic tool category grounded in the systems the profile names.",
+        "prepareFirst": "Agree one template across sites.",
+        "impact": "Medium",
+        "impactReason": "The pain the expert describes.",
+        "feasibility": "High",
+        "feasibilityReason": "The systems are already in use.",
+        "evidence": "some site managers answer only after three reminders",
+        "evidenceLabel": "the expert's words",
+        "review": null
+      },
+      {
+        "id": "o4",
+        "title": "Agree one site template",
+        "stepsLabel": "Step 1: Collect site spreadsheets",
+        "typeLabel": "Standardise",
+        "whatChanges": "Agree one site template: the step runs with less manual work.",
+        "how": "A generic tool category grounded in the systems the profile names.",
+        "prepareFirst": "Agree one template across sites.",
+        "impact": "Medium",
+        "impactReason": "The pain the expert describes.",
+        "feasibility": "High",
+        "feasibilityReason": "The systems are already in use.",
+        "evidence": "each site sends its own spreadsheet layout",
+        "evidenceLabel": "the expert's words",
+        "review": null
+      }
+    ],
+    "stayHuman": [
+      {
+        "stepsLabel": "Step 5: Write the variance summary",
+        "reason": "The commentary to the CFO is the controller's judgement; a person decides what to say",
+        "evidence": "write the commentary"
+      }
+    ]
+  },
+  "potential": {
+    "number": 8,
+    "title": "Hours a year",
+    "note": null,
+    "complete": true,
+    "steps": [
+      {
+        "number": 1,
+        "name": "Collect site spreadsheets",
+        "hoursPerRun": "6 h",
+        "runsPerYear": "12",
+        "hoursPerYear": "72 h"
+      },
+      {
+        "number": 2,
+        "name": "Consolidate into the master file",
+        "hoursPerRun": "8 h",
+        "runsPerYear": "12",
+        "hoursPerYear": "96 h"
+      },
+      {
+        "number": 3,
+        "name": "Analyse variances",
+        "hoursPerRun": "6 h",
+        "runsPerYear": "12",
+        "hoursPerYear": "72 h"
+      },
+      {
+        "number": 4,
+        "name": "Chase explanations",
+        "hoursPerRun": "0.25 h",
+        "runsPerYear": "120",
+        "hoursPerYear": "30 h"
+      },
+      {
+        "number": 5,
+        "name": "Write the variance summary",
+        "hoursPerRun": "6 h",
+        "runsPerYear": "12",
+        "hoursPerYear": "72 h"
+      }
+    ],
+    "opportunities": [
+      {
+        "id": "o1",
+        "title": "Read the site spreadsheets into the master file",
+        "stepsLabel": "Steps 1–2",
+        "stepHours": "168 h"
+      },
+      {
+        "id": "o2",
+        "title": "Draft the variance summary",
+        "stepsLabel": "Step 5",
+        "stepHours": "72 h"
+      },
+      {
+        "id": "o3",
+        "title": "Chase variance explanations automatically",
+        "stepsLabel": "Step 4",
+        "stepHours": "30 h"
+      },
+      {
+        "id": "o4",
+        "title": "Agree one site template",
+        "stepsLabel": "Step 1",
+        "stepHours": "72 h"
+      }
+    ],
+    "totals": {
+      "hours": "342 h"
+    },
+    "formulas": [
+      "Process runs a year: 1 × 12 (\"1 per month\") = 12",
+      "Step 1 Collect site spreadsheets: 6 h (\"6 hours\") × 12 runs a year (\"every month\") = 72 h",
+      "Step 2 Consolidate into the master file: 8 h (\"1 day\") × 12 runs a year (\"each time\" = 1 × 12 process runs a year) = 96 h",
+      "Step 3 Analyse variances: 6 h (\"6 hours\") × 12 runs a year (\"monthly\") = 72 h",
+      "Step 4 Chase explanations: 0.25 h (\"15 minutes\") × 120 runs a year (\"10 times a month\") = 30 h",
+      "Step 5 Write the variance summary: 6 h (\"6 hours\") × 12 runs a year (\"every month\") = 72 h",
+      "Hours a year: 72 + 96 + 72 + 30 + 72 = 342 h",
+      "Opportunity o1 (steps 1, 2): 72 + 96 = 168 h",
+      "Opportunity o2 (steps 5): 72 = 72 h",
+      "Opportunity o3 (steps 4): 30 = 30 h",
+      "Opportunity o4 (steps 1): 72 = 72 h"
+    ],
+    "assumptions": [
+      "A working year is taken as 50 weeks of 5 working days, and a working day as 8 hours."
+    ],
+    "problems": [],
+    "parkedLine": "Euro value and savings are not shown yet: the method is still being agreed."
+  },
+  "readiness": {
+    "number": 9,
+    "title": "Readiness checklist",
+    "note": null,
+    "dimensions": [
+      {
+        "key": "defined",
+        "label": "Defined",
+        "question": "Clear trigger, result, owner, and a goal for every step?",
+        "level": "high",
+        "levelLabel": "High",
+        "reason": "Trigger, end result and owner known; 5 of 5 steps have a goal.",
+        "toPrepare": "",
+        "note": ""
+      },
+      {
+        "key": "standard",
+        "label": "Standard",
+        "question": "Done the same way across teams and regions? Exceptions the minority?",
+        "level": "low",
+        "levelLabel": "Low",
+        "reason": "Teams do it differently: \"each site sends its own spreadsheet layout\".",
+        "toPrepare": "Agree one way of working (one template) across teams and regions. What differs today: \"each site sends its own spreadsheet layout\".",
+        "note": ""
+      },
+      {
+        "key": "data",
+        "label": "Data",
+        "question": "Are the inputs digital, structured or readable documents?",
+        "level": "high",
+        "levelLabel": "High",
+        "reason": "8 of 8 labelled inputs are digital.",
+        "toPrepare": "",
+        "note": ""
+      },
+      {
+        "key": "systems",
+        "label": "Systems",
+        "question": "Are the systems known, with an export or an API?",
+        "level": "medium",
+        "levelLabel": "Medium",
+        "reason": "2 of 3 systems have a known export or API (Outlook, SAP S/4HANA); not: Excel.",
+        "toPrepare": "Confirm with IT how each system can be reached.",
+        "note": ""
+      },
+      {
+        "key": "rules",
+        "label": "Rules",
+        "question": "Are decisions fixed rules, or judgement that can be explained?",
+        "level": "high",
+        "levelLabel": "High",
+        "reason": "4 of 5 decisions are fixed rules or explainable.",
+        "toPrepare": "",
+        "note": ""
+      },
+      {
+        "key": "risk_size",
+        "label": "Risk and size",
+        "question": "Enough hours to be worth the effort? Sensitive data or regulation that needs a human check?",
+        "level": "high",
+        "levelLabel": "High",
+        "reason": "About 342 hours a year and no sensitive data.",
+        "toPrepare": "",
+        "note": ""
+      }
+    ],
+    "footer": "A guide to what would make the change easier. Not a verdict."
+  },
+  "path": {
+    "number": 10,
+    "title": "Suggested path",
+    "note": null,
+    "groups": [
+      {
+        "key": "prepare_first",
+        "title": "Prepare first",
+        "prepareLines": [
+          "Agree one way of working (one template) across teams and regions. What differs today: \"each site sends its own spreadsheet layout\"."
+        ],
+        "items": [
+          {
+            "opportunityId": "o4",
+            "title": "Agree one site template",
+            "stepsLabel": "Step 1: Collect site spreadsheets",
+            "stepHours": "72 h"
+          },
+          {
+            "opportunityId": "o1",
+            "title": "Read the site spreadsheets into the master file",
+            "stepsLabel": "Steps 1–2: Collect site spreadsheets, Consolidate into the master file",
+            "stepHours": "168 h"
+          }
+        ],
+        "emptyText": null
+      },
+      {
+        "key": "quick_wins",
+        "title": "Quick wins",
+        "prepareLines": [],
+        "items": [
+          {
+            "opportunityId": "o2",
+            "title": "Draft the variance summary",
+            "stepsLabel": "Step 5: Write the variance summary",
+            "stepHours": "72 h"
+          },
+          {
+            "opportunityId": "o3",
+            "title": "Chase variance explanations automatically",
+            "stepsLabel": "Step 4: Chase explanations",
+            "stepHours": "30 h"
+          }
+        ],
+        "emptyText": null
+      },
+      {
+        "key": "bigger_changes",
+        "title": "Bigger changes",
+        "prepareLines": [],
+        "items": [],
+        "emptyText": "Nothing here."
+      }
+    ]
+  },
+  "gaps": {
+    "number": 11,
+    "title": "Gaps and sources",
+    "note": null,
+    "fields": [],
+    "documents": [],
+    "closingNote": "This is a first assessment from one expert's account in a short interview. Numbers are hours estimated from the expert's answers; the specialist review checks them."
+  },
+  "generatedAt": "2026-11-19T10:00:01+00:00"
+}

@@ -3,6 +3,7 @@
  * Why: the panel follows the interview: on `steps` the five upper sections fold away and Steps
  * opens, on `confirm` Roles and systems opens, on `review` every section with a gap opens again.
  * A section the expert clicked is pinned and never changes by itself after that.
+ * The Documents section (spec 23 §11.1) starts open and no phase rule ever closes it.
  * Rules: pure functions over one map `{[sectionId]: {collapsed, pinned}}` kept in page state;
  * gaps are read from the server's field views and flags, never computed from values.
  */
@@ -16,7 +17,7 @@ export interface SectionState {
 
 export type SectionStateMap = Record<PanelSectionId, SectionState>
 
-const ALL: PanelSectionId[] = [...PROCESS_SECTIONS, 'steps', 'confirm']
+const ALL: PanelSectionId[] = [...PROCESS_SECTIONS, 'steps', 'confirm', 'documents']
 
 export function defaultSections(): SectionStateMap {
   return Object.fromEntries(ALL.map((id) => [id, { collapsed: false, pinned: false }])) as SectionStateMap
@@ -28,6 +29,7 @@ export function toggleSection(map: SectionStateMap, id: PanelSectionId): Section
 }
 
 function hasGap(id: PanelSectionId, session: SessionOut): boolean {
+  if (id === 'documents') return false // open by default and never closed by the walk (spec 23 §11.1)
   const p = session.profile.process
   if (id === 'steps') {
     return !p.substeps_complete || session.fieldViews.some((v) => v.phase === 'steps' && v.status !== 'complete' && !v.key.endsWith('.handover'))

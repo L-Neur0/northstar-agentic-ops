@@ -9,7 +9,11 @@ What: `DocumentRead`, `DocumentReport` (§3.17), `DocumentView`, `read_document`
 `remove_document`, `document_views`, and `FAILED_MESSAGE`.
 Must not: store, cache or log the bytes, the file name, the text, a quote or a value; write the
 session (the service saves it once); read a clock other than the monotonic timer for `duration_ms`.
-Spec 17 §3.1, §3.7, §3.12–§3.14, §3.17, §4; AC-17.32 to AC-17.38.
+Spec 17 §3.1, §3.7, §3.12–§3.14, §3.17, §4; AC-17.32 to AC-17.38. Amendment §3.18–§3.19: the
+reading context goes to the reader and the filter; images are prepared (`image.py`), read by one
+call, stored as their transcription only, and screened after the call (I1, I2); the report and the
+log line gain the role, the target step and `from_image`; the extra sentences are returned apart so
+the interview's chat question can reuse them. AC-17.47 to AC-17.61.
 """
 
 from __future__ import annotations
@@ -32,10 +36,13 @@ from ..llm import LLM
 from ..profile.proposals import ProposalDiff, proposed_keys, remove_document_proposals
 from ..profile.shapes import meta_for
 from .bpmn_read import read_bpmn
-from .extract import ExtractedText, extract_text
-from .filter import Filtered, build_diff
+from .context import ReadingContext
+from .extract import ExtractedText, clean_and_cap, extract_text
+from .filter import NO_TARGET_STEP, Filtered, build_diff, has_contact_data
+from .image import PreparedImage, prepare_image
 from .intake import DocumentKind, DocumentNotFound, DocumentRejected, check_intake, screen
-from .reader import read_with_model
+from .reader import read_image_with_model, read_with_model
+from .schema import STEP_SCOPED
 
 logger = logging.getLogger("app.documents")
 
@@ -43,6 +50,16 @@ FAILED_MESSAGE = (
     "I couldn't read this document just now. The interview continues without it; you can remove it and try again."
 )
 NAME_MAX = 120
+IMAGE_KINDS = frozenset({"png", "jpeg"})
+NO_TARGET_ROWS = (
+    "It looks like it belongs to one of your steps, but I couldn't tell which one, so I didn't fill anything "
+    "for a step."
+)
+NO_TARGET_EMPTY = (
+    "It looks like it belongs to one step; we haven't listed the steps yet, so I used only what fits the whole process."
+)
+IMAGE_EMPTY = 'I looked at "{name}" but couldn\'t read enough in it to fill anything.'
+REMOVED = "[removed]"
 
 
 class Tally(WireModel):
@@ -66,7 +83,10 @@ class DocumentReport(WireModel):
     kind: DocumentKind
     outcome: Literal["read", "failed"]
     reader: Literal["model", "bpmn"]
-    document_kind: str | None = None
+    document_role: str | None = None
+    target_step: int | None = None
+    target_source: str = "none"
+    from_image: bool = False
     bytes: int
     chars: int
     truncated: bool
@@ -94,23 +114,20 @@ class DocumentView(WireModel):
 
 @dataclass(frozen=True)
 class DocumentRead:
-    """The record to append, the diff to apply, and the report for the route."""
+    """The record to append, the diff to apply, the report for the route, and what the chat question needs."""
 
     record: DocumentRecord
     diff: ProposalDiff
     report: DocumentReport
+    role: str = "whole_process"
+    target_step: int | None = None
+    from_image: bool = False
+    extras: tuple[str, ...] = ()
 
 
-def read_message(
-    name: str, *, values: int, steps: int, truncated: bool, step_list: int, case_b: bool, unmatched: int
-) -> str:
-    """The sentence the expert sees after a reading (§3.12), built by code."""
-    shown = single_line(name, NAME_MAX)
-    if values or steps:
-        found = f"{values} values" + (f" and {steps} steps" if steps else "")
-        parts = [f'I read "{shown}" and found {found} for your process. Nothing counts until you confirm it.']
-    else:
-        parts = [f'I read "{shown}" but found nothing new for the form.']
+def read_extras(*, truncated: bool, step_list: int, case_b: bool, unmatched: int, no_target: str | None) -> list[str]:
+    """The sentences added after the main one (§3.12, §3.18 item 10), each its own string."""
+    parts: list[str] = []
     if truncated:
         parts.append("It is long, so I read only the first part.")
     if step_list:
@@ -120,6 +137,34 @@ def read_message(
         if unmatched:
             given += f" {unmatched} of its steps didn't match yours."
         parts.append(given)
+    if no_target:
+        parts.append(no_target)
+    return parts
+
+
+def read_message(
+    name: str,
+    *,
+    values: int,
+    steps: int,
+    truncated: bool,
+    step_list: int,
+    case_b: bool,
+    unmatched: int,
+    no_target: str | None = None,
+    image: bool = False,
+) -> str:
+    """The sentence the expert sees after a reading (§3.12), built by code."""
+    shown = single_line(name, NAME_MAX)
+    verb = "looked at" if image else "read"
+    if values or steps:
+        found = f"{values} value{'' if values == 1 else 's'}" + (f" and {steps} steps" if steps else "")
+        parts = [f'I {verb} "{shown}" and found {found} for your process. Nothing counts until you confirm it.']
+    else:
+        parts = [f'I {verb} "{shown}" but found nothing new for the form.']
+    parts += read_extras(
+        truncated=truncated, step_list=step_list, case_b=case_b, unmatched=unmatched, no_target=no_target
+    )
     return " ".join(parts)
 
 
@@ -149,6 +194,7 @@ async def read_document(
     document_id: str,
     now: str,
     vocab: Vocabulary,
+    context: ReadingContext | None = None,
 ) -> DocumentRead:
     """Check, extract, read and filter one upload. Raises `DocumentRejected` (nothing to store) or a budget error."""
     started = time.perf_counter()
@@ -156,16 +202,12 @@ async def read_document(
     kind: str = ""
     raw: BaseModel | None = None
     reader: Literal["model", "bpmn"] = "model"
-    try:
-        name, kind = check_intake(session.documents, filename, data, config)
-        extracted: ExtractedText
-        if kind == "bpmn":
-            reading = read_bpmn(data, budget)
-            extracted, raw, reader = reading.text, reading.raw, "bpmn"
-        else:
-            extracted = extract_text(kind, data, budget)
-        screen(name, extracted.text)
-    except DocumentRejected as rejected:
+    image: PreparedImage | None = None
+    extracted = ExtractedText("", 0, False)
+    profile = session.profile.model_dump(by_alias=True)
+    documents = [{"id": d.id, "name": d.name} for d in session.documents]
+
+    def rejected_line(rejected: DocumentRejected) -> None:
         _log(
             logging.WARNING,
             "document_read",
@@ -177,30 +219,84 @@ async def read_document(
             injection_patterns=rejected.patterns,
             duration_ms=round((time.perf_counter() - started) * 1000),
         )
+
+    try:
+        name, kind = check_intake(session.documents, filename, data, config)
+        if kind in IMAGE_KINDS:
+            image = prepare_image(data, kind, config)
+            screen(name, "")
+        elif kind == "bpmn":
+            reading = read_bpmn(data, budget)
+            extracted, raw, reader = reading.text, reading.raw, "bpmn"
+            screen(name, extracted.text)
+        else:
+            extracted = extract_text(kind, data, budget)
+            screen(name, extracted.text)
+    except DocumentRejected as rejected:
+        rejected_line(rejected)
         raise
 
-    profile = session.profile.model_dump(by_alias=True)
-    if reader == "model":
-        documents = [{"id": d.id, "name": d.name} for d in session.documents]
-        raw = await read_with_model(llm, name, extracted.text, profile, vocab=vocab, documents=documents)
+    empty_image = False
+    if image is not None:
+        raw = await read_image_with_model(llm, name, image, profile, vocab=vocab, documents=documents, context=context)
+        if raw is not None:
+            try:
+                extracted, empty_image = _image_text(raw, budget)
+                screen(name, extracted.text)  # I1: the model saw the image before code could screen it
+            except DocumentRejected as rejected:
+                rejected_line(rejected)
+                raise
+    elif reader == "model":
+        raw = await read_with_model(
+            llm, name, extracted.text, profile, vocab=vocab, documents=documents, context=context
+        )
 
-    filtered = None if raw is None else build_diff(raw, document_id=document_id, text=extracted.text, profile=profile)
+    from_image = image is not None
+    filtered = (
+        None
+        if raw is None
+        else build_diff(
+            raw,
+            document_id=document_id,
+            text=extracted.text,
+            profile=profile,
+            vocab=vocab,
+            context=context,
+            name=name,
+            from_image=from_image,
+        )
+    )
+    if filtered is not None and empty_image:
+        filtered = Filtered(ProposalDiff(document_id), (), (), role=filtered.role)
     outcome: Literal["read", "failed"] = "failed" if filtered is None else "read"
     diff = ProposalDiff(document_id) if filtered is None else filtered.diff
     kept = _kept(diff)
+    extras: list[str] = []
     if filtered is None:
         offered = Tally()
         message = FAILED_MESSAGE
+    elif empty_image:
+        offered = Tally()
+        message = IMAGE_EMPTY.format(name=single_line(name, NAME_MAX))
     else:
         offered = Tally(fields=filtered.offered_fields, steps=filtered.offered_steps, cells=filtered.offered_cells)
+        no_target = None
+        if filtered.role in STEP_SCOPED and any(s.reason == NO_TARGET_STEP for s in filtered.skipped):
+            no_target = NO_TARGET_ROWS if session.profile.process.substeps else NO_TARGET_EMPTY
+        facts = {
+            "truncated": extracted.truncated,
+            "step_list": len(filtered.step_list),
+            "case_b": filtered.steps_given and filtered.offered_steps > 0 and filtered.role not in STEP_SCOPED,
+            "unmatched": filtered.unmatched,
+            "no_target": no_target,
+        }
+        extras = read_extras(**facts)
         message = read_message(
             name,
             values=kept.fields + len(diff.step_cells),
             steps=kept.steps,
-            truncated=extracted.truncated,
-            step_list=len(filtered.step_list),
-            case_b=filtered.steps_given and filtered.offered_steps > 0,
-            unmatched=filtered.unmatched,
+            image=from_image,
+            **facts,
         )
 
     record = DocumentRecord(
@@ -220,7 +316,10 @@ async def read_document(
         kind=kind,
         outcome=outcome,
         reader=reader,
-        document_kind=getattr(raw, "document_kind", None),
+        document_role=filtered.role if filtered is not None else None,
+        target_step=filtered.target_step if filtered is not None else None,
+        target_source=filtered.target_source if filtered is not None else "none",
+        from_image=from_image,
         bytes=len(data),
         chars=extracted.chars,
         truncated=extracted.truncated,
@@ -251,9 +350,35 @@ async def read_document(
         dropped=_dropped(filtered),
         step_list=len(record.step_list),
         injection_patterns=0,
+        document_role=report.document_role,
+        target_source=report.target_source,
+        from_image=from_image,
+        **({"width": image.width, "height": image.height} if image is not None else {}),
         duration_ms=round((time.perf_counter() - started) * 1000),
     )
-    return DocumentRead(record, diff, report)
+    return DocumentRead(
+        record,
+        diff,
+        report,
+        role=report.document_role or "whole_process",
+        target_step=report.target_step,
+        from_image=from_image,
+        extras=tuple(extras),
+    )
+
+
+def _image_text(raw: BaseModel, budget: int) -> tuple[ExtractedText, bool]:
+    """§3.19 item 6: `Image: <summary>` + `Visible text:` + the transcription, capped; contact data in the summary removed (I2).
+
+    Returns the stored text and whether the model saw nothing to read (both parts empty).
+    """
+    summary = " ".join(str(getattr(raw, "image_summary", "") or "").split())
+    visible = str(getattr(raw, "visible_text", "") or "").strip()
+    if has_contact_data(summary):
+        summary = " ".join(REMOVED if has_contact_data(word) else word for word in summary.split())
+    if not summary and not visible:
+        return ExtractedText("", 0, False), True
+    return clean_and_cap(f"Image: {summary}\nVisible text:\n{visible}", budget), False
 
 
 def remove_document(session: Session, document_id: str, *, vocab: Vocabulary, now: str) -> tuple[Session, int]:

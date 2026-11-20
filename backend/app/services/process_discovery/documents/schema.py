@@ -11,7 +11,10 @@ text → `{value, quote}`; list → `[{value, quote}]`; scalar object → its su
 object of lists (S07) → each list as `[{value, quote}]`; object_list → rows with `quote`.
 Must not: express a bool sub-field (`none_identified`, `estimated`) or a none row: the absence of
 something in a document is not the expert saying "there are none". No object is built at import
-time. Spec 17 §3.7; AC-17.20 to AC-17.22.
+time. Spec 17 §3.7; AC-17.20 to AC-17.22. Amendment §3.18 item 4: `document_role` replaces
+`document_kind`, and `target_step`, `target_named_by`, `file_description` and `target_cells` (the
+step leaves without `name`, all optional) are added; `read_image_model()` adds `visible_text` and
+`image_summary` (§3.19 item 5). AC-17.47, AC-17.56.
 """
 
 from __future__ import annotations
@@ -24,7 +27,9 @@ from pydantic import BaseModel, ConfigDict, Field, create_model
 
 from ..domain.field_spec import PROFILE_SPECS, STEP_SPECS, FieldSpec, SubFieldSpec
 
-DocumentType = Literal["procedure", "process_map", "example_output", "other"]
+DocumentRole = Literal["whole_process", "step_output_example", "step_input_example", "step_material", "other"]
+TargetNamedBy = Literal["focus", "document", "expert"]
+STEP_SCOPED: frozenset[str] = frozenset({"step_output_example", "step_input_example", "step_material", "other"})
 
 
 class _Closed(BaseModel):
@@ -76,23 +81,44 @@ def _field(spec: FieldSpec) -> tuple[Any, Any]:
     return list[_object_model(spec, f"Q{spec.id}Row", row=True)], Field(default_factory=list)
 
 
-def build_read_document_model(process_specs: Sequence[FieldSpec], step_specs: Sequence[FieldSpec]) -> type[BaseModel]:
+def build_read_document_model(
+    process_specs: Sequence[FieldSpec], step_specs: Sequence[FieldSpec], *, image: bool = False
+) -> type[BaseModel]:
     """The output model for these registry entries: only `propose=True` fields, by leaf, in registry order."""
     step_fields: dict[str, Any] = {}
+    cell_fields: dict[str, Any] = {}
     for spec in step_specs:
         if not spec.propose:
             continue
         step_fields[spec.key] = (QText, ...) if spec.key == "name" else _field(spec)
+        if spec.key != "name":
+            cell_fields[spec.key] = _field(spec)
     step_model = create_model("QStep", __base__=_Closed, **step_fields)
-    fields: dict[str, Any] = {"document_kind": (DocumentType, "other")}
+    cells_model = create_model("QCells", __base__=_Closed, **cell_fields)
+    fields: dict[str, Any] = {}
+    if image:
+        fields["visible_text"] = (str, "")
+        fields["image_summary"] = (str, "")
+    fields["document_role"] = (DocumentRole, "other")
+    fields["target_step"] = (int | None, None)
+    fields["target_named_by"] = (TargetNamedBy | None, None)
+    fields["file_description"] = (QText | None, None)
     for spec in process_specs:
         if spec.is_process and spec.propose:
             fields[spec.leaf] = _field(spec)
     fields["steps"] = (list[step_model], Field(default_factory=list))
-    return create_model("ReadDocumentOut", __base__=_Closed, **fields)
+    fields["target_cells"] = (cells_model | None, None)
+    name = "ReadImageOut" if image else "ReadDocumentOut"
+    return create_model(name, __base__=_Closed, **fields)
 
 
 @cache
 def read_document_model() -> type[BaseModel]:
     """`ReadDocumentOut` for the real registry, built once on first use."""
     return build_read_document_model(PROFILE_SPECS, STEP_SPECS)
+
+
+@cache
+def read_image_model() -> type[BaseModel]:
+    """`ReadDocumentOut` plus `visible_text` and `image_summary` (spec 17 §3.19 item 5), built once."""
+    return build_read_document_model(PROFILE_SPECS, STEP_SPECS, image=True)

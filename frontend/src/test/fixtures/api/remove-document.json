@@ -1,0 +1,319 @@
+{
+  "id": "7184ad3f-493b-47d7-8f90-61d50b702905",
+  "status": "active",
+  "phase": "boundaries",
+  "displayName": null,
+  "createdAt": "2026-11-19T10:00:00+00:00",
+  "updatedAt": "2026-11-19T10:00:06+00:00",
+  "finishedAt": null,
+  "messages": [
+    {
+      "id": "d9b31026-b201-43fa-9425-b5d3ce06ee59",
+      "role": "agent",
+      "text": "Welcome",
+      "at": "2026-11-19T10:00:00+00:00"
+    },
+    {
+      "id": "e4b7d0e4-e846-4935-98df-e1af1508ab2d",
+      "role": "agent",
+      "text": "From \"Monthly cost review procedure.docx\" I'd fill:\n- Trigger: Month-end close is completed in the ledger\n- End result: The monthly cost report\n- Who uses the result: The CFO uses it to decide on budget corrections\n- Volume: count: 1; period: month; raw: every month for 14 cost centres\nThere is more in it (25 other values); I'll ask about those next.\nShould I fill it like this, or is something wrong?",
+      "at": "2026-11-19T10:00:01+00:00"
+    }
+  ],
+  "profile": {
+    "department": "Finance",
+    "user_function": "Cost controller",
+    "region": "Europe",
+    "process": {
+      "name": "Monthly cost review",
+      "cluster": {
+        "code": "FIN",
+        "name": "Finance",
+        "decided_by": "proposal"
+      },
+      "trigger": "Month-end close is completed in the ledger",
+      "end_result": "",
+      "value_at_end": "",
+      "business_pain": "",
+      "volume": {
+        "count": null,
+        "period": "",
+        "raw": ""
+      },
+      "process_owner": {
+        "role": "",
+        "none_identified": false
+      },
+      "baseline_metric": {
+        "value": "",
+        "unit": "",
+        "qualitative": "",
+        "estimated": false
+      },
+      "target_metric": {
+        "value": "",
+        "unit": ""
+      },
+      "variation": {
+        "same": "",
+        "differences": ""
+      },
+      "sensitive_data": [],
+      "substep_count": null,
+      "substep_count_rejected": null,
+      "substeps": [],
+      "all_roles": [],
+      "all_tools": [],
+      "substeps_complete": false,
+      "roles_confirmed": false,
+      "tools_confirmed": false
+    }
+  },
+  "fieldViews": [
+    {
+      "key": "department",
+      "id": "P01",
+      "label": "Department",
+      "phase": "context",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "user_function",
+      "id": "P02",
+      "label": "Role",
+      "phase": "context",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "region",
+      "id": "P03",
+      "label": "Region",
+      "phase": "context",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.name",
+      "id": "P04",
+      "label": "Process name",
+      "phase": "find",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.cluster",
+      "id": "P05",
+      "label": "Cluster",
+      "phase": "find",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.trigger",
+      "id": "P06",
+      "label": "Trigger",
+      "phase": "boundaries",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "document",
+      "quote": "The review starts once month-end close is completed in the ledger",
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.end_result",
+      "id": "P07",
+      "label": "End result",
+      "phase": "boundaries",
+      "status": "empty",
+      "reason": "End result has not been answered yet.",
+      "missing": [
+        "end_result"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.value_at_end",
+      "id": "P08",
+      "label": "Who uses the result",
+      "phase": "boundaries",
+      "status": "empty",
+      "reason": "Who uses the result has not been answered yet.",
+      "missing": [
+        "value_at_end"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.business_pain",
+      "id": "P09",
+      "label": "Business pain",
+      "phase": "boundaries",
+      "status": "empty",
+      "reason": "Business pain has not been answered yet.",
+      "missing": [
+        "business_pain"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.volume",
+      "id": "P10",
+      "label": "Volume",
+      "phase": "measure",
+      "status": "empty",
+      "reason": "Volume still needs: count, period.",
+      "missing": [
+        "count",
+        "period"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.process_owner",
+      "id": "P11",
+      "label": "Process owner",
+      "phase": "measure",
+      "status": "empty",
+      "reason": "Process owner still needs: role.",
+      "missing": [
+        "role"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.baseline_metric",
+      "id": "P12",
+      "label": "Time today",
+      "phase": "measure",
+      "status": "empty",
+      "reason": "Time today still needs: value, unit.",
+      "missing": [
+        "value",
+        "unit"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.target_metric",
+      "id": "P13",
+      "label": "Target",
+      "phase": "measure",
+      "status": "empty",
+      "reason": "Target still needs: value, unit.",
+      "missing": [
+        "value",
+        "unit"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.variation",
+      "id": "P14",
+      "label": "Same way everywhere",
+      "phase": "measure",
+      "status": "empty",
+      "reason": "Same way everywhere has not been answered yet.",
+      "missing": [
+        "same"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.sensitive_data",
+      "id": "P15",
+      "label": "Sensitive data or regulation",
+      "phase": "measure",
+      "status": "empty",
+      "reason": "Sensitive data or regulation still needs: item. \"There are none\" is also an answer.",
+      "missing": [
+        "item"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    },
+    {
+      "key": "process.substep_count",
+      "id": "P16",
+      "label": "Number of main steps",
+      "phase": "step_count",
+      "status": "empty",
+      "reason": "Number of main steps has not been answered yet.",
+      "missing": [
+        "substep_count"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0
+    }
+  ],
+  "score": {
+    "value": 0.3333,
+    "filledPoints": 6,
+    "totalPoints": 18
+  },
+  "finish": {
+    "ready": false,
+    "blockedBy": "below_gate",
+    "looksLikeTask": false
+  },
+  "scope": null,
+  "clusterProposal": null,
+  "reportStatus": null,
+  "documents": []
+}

@@ -10,10 +10,18 @@ What: `Skip`, `Filtered`, `build_diff` (one code path for model and BPMN output)
 Must not: write the profile (that is `profile.apply_proposals`, which re-checks the same rules at
 write time), add, remove or reorder an existing row, propose P16 or a none answer, read a clock,
 or log a value. Spec 17 §3.8–§3.11; AC-17.25 to AC-17.31, AC-17.40 to AC-17.44.
+Amendment §3.18 (reading in context): the role table of item 5 decides which parts of a reading are
+used (`not_used` for the rest); `resolve_target` picks the step a step-scoped file belongs to (T1–T5);
+`check_description` is the evidence rule for a file description (D1–D5), placed first in the target
+step's `data` (D6) and merged into a proposed cell (D7). §3.19 I4: every value read from an image
+passes the contact-data check (`personal_data`). Spec 17 Q5: a partly answered field takes a
+whole-field proposal that keeps the person's sub-values (`conflicts_with_expert` for a differing one).
+AC-17.47 to AC-17.53, AC-17.58, AC-17.59, AC-17.62, AC-17.65.
 """
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -27,9 +35,9 @@ from ..domain.field_spec import (
     MAX_STEPS,
     MIN_STEPS,
     PROFILE_SPECS,
-    SOURCE_SPECIALIST,
     STEP_SPECS,
     FieldSpec,
+    Vocabulary,
     has_any_answer,
     is_proposed,
     proposal_keys,
@@ -38,10 +46,12 @@ from ..domain.field_spec import (
     step_key_template,
 )
 from ..profile.constants import NUMBER_BOUNDS_PROPOSAL
-from ..profile.proposals import FieldProposal, ProposalDiff, StepProposal
-from ..profile.shapes import meta_for, normalized_profile, process_of, resolve_key, rows_of, stored_value
+from ..profile.proposals import FieldProposal, ProposalDiff, StepProposal, fill_target, merge_offered
+from ..profile.shapes import meta_for, normalized_profile, process_of, resolve_key, rows_of
 from ..profile.verdicts import P16_KEY
+from .context import ReadingContext
 from .quotes import normalise_for_quote, quote_found
+from .schema import STEP_SCOPED
 
 TEXT_MAX = 500
 ITEM_MAX = 200
@@ -60,7 +70,28 @@ NO_MATCHING_STEP = "no_matching_step"
 TOO_FEW_STEPS = "too_few_steps"
 TOO_MANY_STEPS = "too_many_steps"
 COUNT_MISMATCH = "count_mismatch"
+NOT_USED = "not_used"
+NO_TARGET_STEP = "no_target_step"
+DESCRIPTION_INVALID = "description_invalid"
+DESCRIPTION_UNSUPPORTED = "description_unsupported"
+PERSONAL_DATA = "personal_data"
+CONFLICTS_WITH_EXPERT = "conflicts_with_expert"
+QUOTE_INVALID = "quote_invalid"
 STEPS_KEY = "steps"
+TARGET_KEY = "target_step"
+DESCRIPTION_KEY = "file_description"
+TARGET_CELLS_KEY = "target_cells"
+
+DESCRIPTION_MIN = 10
+DESCRIPTION_MAX = 200
+EXCERPT_MIN = 10
+#: Contact data a value may not carry (§3.18 D4): an e-mail address, a URL, a run of 7+ digits.
+_EMAIL = re.compile(r"\S+@\S+\.\S+")
+_URL = re.compile(r"https?://|www\.", re.IGNORECASE)
+_DIGITS = re.compile(r"\d(?:[\s.\-+()]*\d){6,}")
+_WORD = re.compile(r"[^\W\d_]+")
+#: Where a file description goes, by role (§3.18 item 5, D6).
+DESCRIPTION_LIST: dict[str, str] = {"step_output_example": "outputs", "step_input_example": "inputs"}
 
 Loop = Callable[[Any], int | None]
 
@@ -85,6 +116,9 @@ class Filtered:
     offered_steps: int = 0
     offered_cells: int = 0
     steps_given: bool = False
+    role: str = "whole_process"
+    target_step: int | None = None
+    target_source: str = "none"
 
     @property
     def unmatched(self) -> int:
@@ -133,20 +167,68 @@ def _same_name(a: Any, b: Any) -> bool:
 # --- Fill-only (§3.9) ---------------------------------------------------------------------------
 
 
-def refusal(profile: Mapping[str, Any], key: str) -> str | None:
-    """Why a proposal may not land at `key` now, or `None` when the target is empty or only proposed."""
+def refusal(profile: Mapping[str, Any], key: str, *, vocab: Vocabulary | None = None) -> str | None:
+    """Why a proposal may not land at `key` now, or `None` when the target is empty, proposed or partly answered."""
     address = resolve_key(key)
     if address is None:
         return NOT_ALLOWED
     allowed = step_key_template(address.spec.key) if address.step is not None else address.spec.key
     if allowed not in proposal_keys():
         return NOT_ALLOWED
-    meta = meta_for(profile, address.key)
-    if meta is not None and meta.get("source") == SOURCE_SPECIALIST:
-        return SPECIALIST_OWNED
-    if has_any_answer(address.spec, stored_value(profile, address.key)) and not is_proposed(meta):
-        return CONFIRMED
+    return fill_target(profile, address.key, vocab=vocab).refusal
+
+
+def has_contact_data(text: str) -> bool:
+    """An e-mail address, a URL or a run of 7+ digits (spaces, dots, dashes, `+` and brackets ignored)."""
+    return bool(_EMAIL.search(text) or _URL.search(text) or _DIGITS.search(text))
+
+
+def check_description(value: Any, quote: Any, *, text: str, name: str) -> str | None:
+    """D1–D5 for a file description and its excerpt: the skip reason, or `None` when it may be used."""
+    description = _text(value, DESCRIPTION_MAX + 1)
+    if not DESCRIPTION_MIN <= len(description) <= DESCRIPTION_MAX:
+        return DESCRIPTION_INVALID
+    excerpt = quote if isinstance(quote, str) else ""
+    normal_text = normalise_for_quote(text)
+    if len(normalise_for_quote(excerpt.strip().strip("\"'“”‘’").strip())) < EXCERPT_MIN:
+        return QUOTE_INVALID
+    found = quote_found(excerpt, normal_text)
+    if found != "ok":
+        return found
+    words = {w for w in _WORD.findall(description.casefold()) if len(w) >= 4}
+    known = set(_WORD.findall(normal_text)) | set(_WORD.findall(normalise_for_quote(name)))
+    if not words & known:
+        return DESCRIPTION_UNSUPPORTED
+    if has_contact_data(description):
+        return PERSONAL_DATA
+    if contains_injection_pattern(description):
+        return UNSAFE_VALUE
     return None
+
+
+def _mentions_step(message: str, name: str, step: int) -> bool:
+    normal = normalise_for_quote(message)
+    named = normalise_for_quote(name)
+    return bool(named and named in normal) or re.search(rf"\bstep {step}\b", normal) is not None
+
+
+def resolve_target(raw: Mapping[str, Any], *, text: str, context: ReadingContext, rows: int) -> tuple[int | None, str]:
+    """T1–T5: `(target row, source)`; the model's step only when the document or the expert's last words name it."""
+    if rows == 0:
+        return None, "none"
+    step = raw.get("target_step")
+    by = raw.get("target_named_by")
+    if isinstance(step, int) and not isinstance(step, bool) and 1 <= step <= rows:
+        name = context.step_names[step - 1] if step <= len(context.step_names) else ""
+        normal_name = normalise_for_quote(name)
+        if by == "document" and normal_name and normal_name in normalise_for_quote(text):
+            return step, "document"
+        if by == "expert" and _mentions_step(context.last_expert, name, step):
+            return step, "expert"
+    focus = context.focus_step
+    if focus is not None and 1 <= focus <= rows:
+        return focus, "focus"
+    return None, "none"
 
 
 # --- Steps (§3.10) ------------------------------------------------------------------------------
@@ -196,10 +278,23 @@ class _Step:
 class _Builder:
     """Collects proposals and skips for one document; every shaper returns `(value, quote)` or `None`."""
 
-    def __init__(self, text: str, profile: dict[str, Any]) -> None:
+    def __init__(
+        self, text: str, profile: dict[str, Any], *, vocab: Vocabulary | None = None, from_image: bool = False
+    ) -> None:
         self.normal = normalise_for_quote(text)
         self.profile = profile
+        self.vocab = vocab
+        self.from_image = from_image
         self.skips: list[Skip] = []
+
+    def unsafe(self, texts: Sequence[Any]) -> str | None:
+        """`unsafe_value` for an injection pattern; from an image, `personal_data` for contact data (I4)."""
+        strings = [t for t in texts if isinstance(t, str)]
+        if any(contains_injection_pattern(t) for t in strings):
+            return UNSAFE_VALUE
+        if self.from_image and any(has_contact_data(t) for t in strings):
+            return PERSONAL_DATA
+        return None
 
     def skip(self, key: str, reason: str, items: int = 0) -> None:
         self.skips.append(Skip(key, reason, items))
@@ -232,8 +327,9 @@ class _Builder:
         if value is None:
             self.skip(key, EMPTY_VALUE)
             return None
-        if any(contains_injection_pattern(t) for t in texts):
-            self.skip(key, UNSAFE_VALUE)
+        unsafe = self.unsafe(texts)
+        if unsafe is not None:
+            self.skip(key, unsafe)
             return None
         return value, str(raw["quote"]).strip()
 
@@ -262,8 +358,8 @@ class _Builder:
             text = _text(item.get("value"), ITEM_MAX)
             if reason is None and not text:
                 reason = EMPTY_VALUE
-            if reason is None and contains_injection_pattern(text):
-                reason = UNSAFE_VALUE
+            if reason is None:
+                reason = self.unsafe([text])
             if reason is not None:
                 counts[reason] = counts.get(reason, 0) + 1
                 continue
@@ -309,8 +405,8 @@ class _Builder:
                     row[sub.key] = _text(raw.get(sub.key), TEXT_MAX)
             if reason is None and required is not None and not row.get(required):
                 reason = EMPTY_VALUE
-            if reason is None and any(isinstance(v, str) and contains_injection_pattern(v) for v in row.values()):
-                reason = UNSAFE_VALUE
+            if reason is None:
+                reason = self.unsafe(list(row.values()))
             if reason is not None:
                 counts[reason] = counts.get(reason, 0) + 1
                 continue
@@ -330,15 +426,26 @@ class _Builder:
         return self.single(spec, raw, key)
 
     def propose(self, spec: FieldSpec, raw: Any, key: str, emit: str, loop: Loop) -> FieldProposal | None:
-        """Shape, then the fill-only check against the current profile; `emit` is the key in the diff."""
+        """Shape, then the fill-only check against the current profile; `emit` is the key in the diff.
+
+        A partly answered field gets the whole value: the person's sub-values kept, the document's
+        missing ones added (spec 17 Q5); offered sub-values that differ are reported, never proposed.
+        """
         shaped = self.shape(spec, raw, key, loop)
         if shaped is None:
             return None
-        reason = refusal(self.profile, key)
+        reason = refusal(self.profile, key, vocab=self.vocab)
         if reason is not None:
             self.skip(key, reason)
             return None
-        return FieldProposal(emit, shaped[0], shaped[1])
+        value, conflicts = merge_offered(spec, shaped[0], fill_target(self.profile, key, vocab=self.vocab))
+        if conflicts:
+            self.skip(key, CONFLICTS_WITH_EXPERT, conflicts)
+        if value is None:
+            if not conflicts:
+                self.skip(key, CONFIRMED)
+            return None
+        return FieldProposal(emit, value, shaped[1])
 
 
 def _no_loop(_: Any) -> int | None:
@@ -357,11 +464,77 @@ def _loop_to(rows: Mapping[int, int], own_row: int) -> Loop:
     return translate
 
 
-def build_diff(raw: BaseModel, *, document_id: str, text: str, profile: Mapping[str, Any]) -> Filtered:
-    """Turn one reading (model or BPMN) into the proposal diff of §3.11, with every drop reported."""
+def _description_raw(
+    data: Mapping[str, Any], role: str, builder: _Builder, *, text: str, name: str
+) -> dict[str, Any] | None:
+    """The file description as one `{value, quote}` item for `data.<list>` (D1–D6), or `None` (with the skip)."""
+    offered = data.get(DESCRIPTION_KEY)
+    if not isinstance(offered, Mapping) or not offered:
+        return None
+    if role not in DESCRIPTION_LIST:
+        builder.skip(DESCRIPTION_KEY, NOT_USED)
+        return None
+    reason = check_description(offered.get("value"), offered.get("quote"), text=text, name=name)
+    if reason is not None:
+        builder.skip(DESCRIPTION_KEY, reason)
+        return None
+    return {"value": _text(offered.get("value"), DESCRIPTION_MAX), "quote": str(offered.get("quote")).strip()}
+
+
+def _target_cells(
+    data: Mapping[str, Any],
+    role: str,
+    builder: _Builder,
+    *,
+    target: int,
+    rows: int,
+    text: str,
+    name: str,
+) -> list[FieldProposal]:
+    """§3.18 items 7–8: the cells of the target row, the description first in `data.outputs`/`inputs`."""
+    cells = dict(data.get(TARGET_CELLS_KEY) or {})
+    description = _description_raw(data, role, builder, text=text, name=name)
+    if description is not None:
+        raw_data = dict(cells.get("data") or {})
+        listed = DESCRIPTION_LIST[role]
+        raw_data[listed] = [description, *(raw_data.get(listed) or [])]
+        cells["data"] = raw_data
+
+    def loop(value: Any) -> int | None:
+        ok = isinstance(value, int) and not isinstance(value, bool) and 1 <= value <= rows and value != target
+        return value if ok else None
+
+    out: list[FieldProposal] = []
+    for spec in STEP_SPECS:
+        if not spec.propose or spec.key == "name" or not _offered(cells.get(spec.key)):
+            continue
+        key = step_cell_key(target, spec.key)
+        cell = builder.propose(spec, cells[spec.key], key, key, loop)
+        if cell is not None:
+            out.append(cell)
+    return out
+
+
+def build_diff(
+    raw: BaseModel,
+    *,
+    document_id: str,
+    text: str,
+    profile: Mapping[str, Any],
+    vocab: Vocabulary | None = None,
+    context: ReadingContext | None = None,
+    name: str = "",
+    from_image: bool = False,
+) -> Filtered:
+    """Turn one reading (model or BPMN) into the proposal diff of §3.11, with every drop reported.
+
+    The role (§3.18 item 5) decides what is used: steps only for `whole_process`; for the other
+    roles the target step's cells and the file description. `vocab` enables partial-field proposals.
+    """
     current = normalized_profile(profile)
     data = raw.model_dump()
-    builder = _Builder(text, current)
+    builder = _Builder(text, current, vocab=vocab, from_image=from_image)
+    role = str(data.get("document_role") or "whole_process")
 
     fields: list[FieldProposal] = []
     offered_fields = 0
@@ -374,8 +547,14 @@ def build_diff(raw: BaseModel, *, document_id: str, text: str, profile: Mapping[
             fields.append(proposal)
 
     raw_steps: list[Mapping[str, Any]] = list(data.get("steps") or [])
+    offered_steps = len(raw_steps)
     step_specs = [s for s in STEP_SPECS if s.propose and s.key != "name"]
     offered_cells = sum(1 for step in raw_steps for s in STEP_SPECS if _offered(step.get(s.key)))
+    target_cells_raw = data.get(TARGET_CELLS_KEY) or {}
+    offered_cells += sum(1 for s in STEP_SPECS if _offered(target_cells_raw.get(s.key)))
+    if role in STEP_SCOPED and raw_steps:
+        builder.skip(STEPS_KEY, NOT_USED)
+        raw_steps = []
     valid: list[_Step] = []
     for position, step in enumerate(raw_steps, start=1):
         name_raw = step.get("name") or {}
@@ -434,13 +613,32 @@ def build_diff(raw: BaseModel, *, document_id: str, text: str, profile: Mapping[
                 if cell is not None:
                     step_cells.append(cell)
 
+    target: int | None = None
+    source = "none"
+    scoped_offer = _offered(data.get(TARGET_CELLS_KEY)) or _offered(data.get(DESCRIPTION_KEY))
+    if role not in STEP_SCOPED:
+        for key in (TARGET_CELLS_KEY, DESCRIPTION_KEY):
+            if _offered(data.get(key)):
+                builder.skip(key, NOT_USED)
+    else:
+        rows = len(rows_of(current))
+        target, source = resolve_target(data, text=text, context=context or ReadingContext(), rows=rows)
+        if target is None:
+            if scoped_offer:
+                builder.skip(TARGET_KEY, NO_TARGET_STEP)
+        else:
+            step_cells = _target_cells(data, role, builder, target=target, rows=rows, text=text, name=name)
+
     diff = ProposalDiff(document_id, fields=tuple(fields), steps=tuple(new_rows), step_cells=tuple(step_cells))
     return Filtered(
         diff,
         tuple(builder.skips),
         tuple(step_list),
         offered_fields=offered_fields,
-        offered_steps=len(raw_steps),
+        offered_steps=offered_steps,
         offered_cells=offered_cells,
         steps_given=steps_given,
+        role=role,
+        target_step=target,
+        target_source=source,
     )

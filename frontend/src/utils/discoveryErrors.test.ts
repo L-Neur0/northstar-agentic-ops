@@ -49,7 +49,7 @@ describe('errorEffect (AC-23.42)', () => {
   })
 
   it.each([
-    [422, 'validation_error', 'That could not be saved. Please check what you entered.'],
+    [422, 'invalid_value', 'That could not be saved. Please check what you entered.'],
     [429, 'rate_limited', 'Too many requests. Please wait a moment and try again.'],
     [429, 'budget_exhausted', 'The tool has reached its limit for today. Please try again tomorrow.'],
     [503, 'model_unavailable', 'The assistant is not available right now. Please try again later.'],
@@ -70,5 +70,49 @@ describe('errorEffect (AC-23.42)', () => {
       kind: 'init_failed',
       message: 'Could not reach the server. Check your connection and try again.',
     })
+  })
+})
+
+describe('document calls (spec 23 §11.5; AC-23.68, AC-23.69, AC-23.72)', () => {
+  const limits = { allowedTypes: ['pdf', 'docx'], maxFiles: 5, maxFileMb: 10, maxImageMb: 5 }
+
+  it.each([
+    [409, 'document_limit', 'You can add up to 5 documents. Remove one to add another.'],
+    [413, 'document_too_large', 'This file is larger than 10 MB.'],
+    [413, 'http_413', 'This file is larger than 10 MB.'],
+    [415, 'document_type', "This file type can't be read. Use PDF, Word, Excel, CSV, text, Markdown or BPMN."],
+    [422, 'document_unreadable', "I couldn't find any text in this file. If it is a scan, try the file it was made from."],
+    [400, 'unsafe_input', "This document contains text that looks like instructions to the assistant, so I didn't read it."],
+    [422, 'invalid_value', 'That file could not be sent. Please try again.'],
+    [429, 'budget_exhausted', 'The tool has reached its limit for today. Please try again tomorrow.'],
+    [0, 'network', 'Could not reach the server. Check your connection and try again.'],
+  ])('upload %i %s → panel sentence, not a banner (AC-23.68)', (status, code, text) => {
+    expect(errorEffect(err(status, code, code.startsWith('http_') ? 'HTTP 413' : ''), 'upload', limits)).toEqual({
+      kind: 'documents',
+      message: text,
+    })
+  })
+
+  it('upload prefers the server sentence for a document code', () => {
+    expect(errorEffect(err(409, 'document_limit', 'You can add up to 3 documents. Remove one to add another.'), 'upload')).toEqual({
+      kind: 'documents',
+      message: 'You can add up to 3 documents. Remove one to add another.',
+    })
+  })
+
+  it('document_limit is not the conflict reload; conflict still reloads (AC-23.68, AC-23.69)', () => {
+    expect(errorEffect(err(409, 'document_limit'), 'upload', limits).kind).toBe('documents')
+    expect(errorEffect(err(409, 'conflict'), 'upload').kind).toBe('reload')
+    expect(errorEffect(err(409, 'conflict'), 'proposals').kind).toBe('reload')
+  })
+
+  it('session_closed locks on upload, removal and proposals (AC-23.69)', () => {
+    for (const call of ['upload', 'removeDocument', 'proposals'] as const) {
+      expect(errorEffect(err(400, 'session_closed'), call).kind).toBe('lock')
+    }
+  })
+
+  it('a 404 on remove reloads the session with its sentence (AC-23.72)', () => {
+    expect(errorEffect(err(404, 'not_found'), 'removeDocument')).toEqual({ kind: 'reload', message: 'That document was already removed.' })
   })
 })

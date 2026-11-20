@@ -1,16 +1,32 @@
 # azure.yaml: azd project file for the Discovery Agent (spec 25 §3.3).
 #
-# Why it exists: lets `azd provision` deploy infra/main.bicep into the EXISTING
-#   resource group rg-northstar-discovery (azd env AZURE_RESOURCE_GROUP, D2).
+# Why it exists: lets `azd up` / `azd provision` deploy infra/main.bicep into the
+#   EXISTING resource group rg-northstar-discovery (azd env AZURE_RESOURCE_GROUP,
+#   D2), and `azd deploy` build the one image with local Docker (D4), push it to
+#   the registry and set it on the container app tagged azd-service-name: app.
 # What it creates: nothing by itself; infra/main.bicep says what is deployed.
-#   Block 1 (spec 15 §3.7) is provision-only: the Cosmos DB store.
+#   `pipeline` tells `azd pipeline config` which azd values become GitHub
+#   variables and secrets (spec 25 §3.12).
 # What it must not do: never run `azd down` on this environment; it deletes the
 #   resource group with the hand-made AI account and its quota (D8).
-# Acceptance criteria: AC-25.21 (completed when the service and pipeline land).
+# Acceptance criteria: AC-25.21.
 name: discovery-agent
 infra:
   provider: bicep
   path: infra
   module: main
-# TODO(spec 25 §3.3): add `services.app` (containerapp, ./Dockerfile,
-# remoteBuild false, APP_VERSION build arg) and the `pipeline` section.
+services:
+  app: # tag azd-service-name: app on the container app
+    project: .
+    language: py
+    host: containerapp
+    docker:
+      path: ./Dockerfile
+      context: .
+      remoteBuild: false # D4: Docker on the machine that runs azd
+      buildArgs:
+        - APP_VERSION=${APP_VERSION}
+pipeline:
+  provider: github
+  variables: [AZURE_RESOURCE_GROUP, MIN_REPLICAS, DEVELOPER_PRINCIPAL_ID]
+  secrets: [WORKSPACE_CODE_SPECIALIST, WORKSPACE_CODE_ENGINEER, WORKSPACE_TOKEN_SECRET]

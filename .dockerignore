@@ -1,0 +1,29 @@
+# .dockerignore: what never enters the Docker build context (spec 25 §3.2 rule 5).
+# Why: keeps the image small and, above all, keeps private material out of it:
+#   .work/ and brief/ must never reach the build context (confidentiality rule).
+# What: excludes VCS and CI files, private notes, azd state, env files, local
+#   dependencies and builds, tests, evaluation, docs, specs and infra.
+# Must not: exclude backend/app, backend/pyproject.toml, backend/uv.lock, config/
+#   or frontend/ sources (the Dockerfile needs them). AC-25.6.
+.git
+.github
+.work
+brief
+.azure
+.env*
+**/.env*
+**/node_modules
+**/.venv
+**/__pycache__
+**/.cache
+**/.pytest_cache
+**/.ruff_cache
+**/*.tsbuildinfo
+frontend/dist
+backend/tests
+backend/scripts
+eval
+docs
+specs
+infra
+.claude

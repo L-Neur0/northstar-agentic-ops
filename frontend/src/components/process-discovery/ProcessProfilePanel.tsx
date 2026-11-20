@@ -1,11 +1,15 @@
 /**
- * The "Your process" side panel (spec 23 §3.8; AC-23.38, AC-23.39).
+ * The "Your process" side panel (spec 23 §3.8, §11.1, §11.7, §11.8; AC-23.38, AC-23.39, AC-23.66,
+ * AC-23.74–23.79).
  * Why: the profile rail: the five process sections, the Steps section, the
  * Roles and systems section, then the *Finish* block (which takes the place of a "Generate
  * Prompt" and analysis buttons). All state is lifted to the page.
  * Rules: the *Finish* button follows `finish.ready` and the session status only; `looksLikeTask`
  * is an advisory note that never disables it; a blocked button shows its reason sentence, linked
- * by `aria-describedby`, and an unknown code is shown as is. Must not compute completeness.
+ * by `aria-describedby`, and an unknown code is shown as is. Part 2: the Documents section sits
+ * between Roles and systems and *Finish*; proposed rows carry ✓ / ✎; two or more proposed step
+ * names offer one batch confirm; *Finish* waits while a document write runs. Must not compute
+ * completeness or count proposals.
  * Colours are theme tokens only, never raw palette classes (spec 23 §3.13.2; AC-23.57).
  */
 import { Link } from 'react-router-dom'
@@ -15,8 +19,11 @@ import { ProcessCard } from './ProcessCard'
 import { SubstepTabs } from './SubstepTabs'
 import { DerivedReviewPanel } from './DerivedReviewPanel'
 import { SectionToggle } from './SectionToggle'
+import { DocumentPanel } from './DocumentPanel'
+import type { ProposalControls } from './ProposalActions'
+import type { ComponentProps } from 'react'
 import type { SectionStateMap } from './sectionState'
-import type { Pending } from '../../hooks/discoveryReducer'
+import { isWriting, type Pending } from '../../hooks/discoveryReducer'
 import { completenessPct } from '../../utils/discoveryFormat'
 import { settledStepCount } from '../../utils/substepProgress'
 import {
@@ -38,6 +45,9 @@ interface Props {
   onConfirm: (target: ConfirmTarget) => void
   onPickCluster: () => void
   onFinish: () => void
+  proposals?: ProposalControls
+  /** The Documents section; left out in part 1 tests. */
+  documentPanel?: Omit<ComponentProps<typeof DocumentPanel>, 'documents' | 'collapsed' | 'onToggle'>
 }
 
 function blockedSentence(code: string, scoreValue: number): string {
@@ -45,7 +55,19 @@ function blockedSentence(code: string, scoreValue: number): string {
   return make ? make(completenessPct(scoreValue)) : code
 }
 
-function FinishBlock({ session, locked, finishing, onFinish }: { session: SessionOut; locked: boolean; finishing: boolean; onFinish: () => void }) {
+function FinishBlock({
+  session,
+  locked,
+  finishing,
+  writing,
+  onFinish,
+}: {
+  session: SessionOut
+  locked: boolean
+  finishing: boolean
+  writing: boolean
+  onFinish: () => void
+}) {
   if (session.status === 'no_candidate') return null
   if (session.status === 'finished') {
     return (
@@ -59,7 +81,7 @@ function FinishBlock({ session, locked, finishing, onFinish }: { session: Sessio
     )
   }
   const { ready, blockedBy, looksLikeTask } = session.finish
-  const enabled = ready && !locked
+  const enabled = ready && !locked && !writing
   const reasonId = 'finish-blocked-reason'
   return (
     <div className="flex flex-col gap-2">
@@ -103,12 +125,18 @@ export function ProcessProfilePanel({
   onConfirm,
   onPickCluster,
   onFinish,
+  proposals,
+  documentPanel,
 }: Props) {
   const p = session.profile.process
   const active = session.status === 'active' && !locked
   const rows = p.substeps.length
   const declared = p.substep_count ?? rows
   const confirmedCount = Number(p.roles_confirmed) + Number(p.tools_confirmed)
+  const writing = isWriting(pending)
+  const proposedNames = p.substeps
+    .map((_, i) => `process.substeps[${i + 1}].name`)
+    .filter((key) => session.fieldViews.some((v) => v.key === key && v.status === 'proposed'))
 
   return (
     <aside
@@ -125,6 +153,7 @@ export function ProcessProfilePanel({
         canPickCluster={active}
         onPickCluster={onPickCluster}
         clusterProposal={session.clusterProposal}
+        proposals={proposals}
       />
 
       <section className="overflow-hidden rounded-lg border border-line bg-surface">
@@ -136,6 +165,13 @@ export function ProcessProfilePanel({
           onToggle={() => onToggleSection('steps')}
         />
         <div id="section-body-steps" hidden={sections.steps.collapsed}>
+          {proposals?.canAct && proposedNames.length >= 2 && (
+            <div className="px-3 pb-1">
+              <Button size="sm" disabled={proposals.disabled} onClick={() => proposals.onConfirm(proposedNames)}>
+                Confirm the {proposedNames.length} proposed step names
+              </Button>
+            </div>
+          )}
           <SubstepTabs
             profile={session.profile}
             fieldViews={session.fieldViews}
@@ -143,7 +179,9 @@ export function ProcessProfilePanel({
             onSelect={onSelectStep}
             sessionActive={active}
             confirming={pending.confirming !== null}
+            writing={writing}
             onNoFurtherSteps={() => onConfirm('substeps')}
+            proposals={proposals}
           />
         </div>
       </section>
@@ -163,14 +201,23 @@ export function ProcessProfilePanel({
             rolesConfirmed={p.roles_confirmed}
             toolsConfirmed={p.tools_confirmed}
             confirming={pending.confirming}
-            disabled={!active}
+            disabled={!active || writing}
             onConfirm={onConfirm}
           />
         </div>
       </section>
 
+      {documentPanel && (
+        <DocumentPanel
+          {...documentPanel}
+          documents={session.documents ?? []}
+          collapsed={sections.documents?.collapsed ?? false}
+          onToggle={() => onToggleSection('documents')}
+        />
+      )}
+
       <div className="mt-auto pt-1">
-        <FinishBlock session={session} locked={locked} finishing={pending.finishing} onFinish={onFinish} />
+        <FinishBlock session={session} locked={locked} finishing={pending.finishing} writing={writing} onFinish={onFinish} />
       </div>
     </aside>
   )

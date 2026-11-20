@@ -9,6 +9,7 @@ What: re-exports the functions the service composes (`read_document`, `remove_do
 build objects at import time. Spec 17 §2, §4; AC-17.39.
 """
 
+from .context import ReadingContext, reading_context
 from .intake import DocumentKind, DocumentNotFound, DocumentRejected
 from .pipeline import DocumentRead, DocumentReport, DocumentView, document_views, read_document, remove_document
 
@@ -19,7 +20,9 @@ __all__ = [
     "DocumentRejected",
     "DocumentReport",
     "DocumentView",
+    "ReadingContext",
     "document_views",
     "read_document",
+    "reading_context",
     "remove_document",
 ]

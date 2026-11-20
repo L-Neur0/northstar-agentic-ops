@@ -5,20 +5,40 @@
  * server's rules (closed sessions, the *Finish* gate, unknown clusters, ideas started once).
  * Rules: only the fake builds field views, scores and *Finish* state; real client code never does.
  * It is loaded by dynamic import in fake mode only and a production build refuses fake mode
- * (AC-23.48). Manual triggers: `/error <code>` fails the next call, `/finish-ready` completes the map.
+ * (AC-23.48). Error codes, statuses and sentences are the server's own (`api/errors.py`), checked
+ * against recorded responses in `contract.test.ts`. Manual triggers: `/error <code>` fails the next call
+ * (also a document, proposal, report or PDF call), `/finish-ready` completes the map,
+ * `/report-failed <part>` and `/report-missing <part>` shape the next report.
+ * Part 2 (spec 23 §11.15; AC-23.81, AC-23.101): document upload with progress and scripted
+ * outcomes by file name, fill-only proposals with quotes, ✓ / ✎, removal, the report and the PDF.
+ * Divergence kept on purpose: like the built server, a report asked for before *Finish* is 409
+ * `report_not_ready` (the spec text said 404).
  */
 import { ApiError, type DiscoveryApi } from './api'
 import {
+  BPMN_LANES,
   CLUSTERS,
   COST_REVIEW_STEPS,
+  DOCUMENT_SENTENCES,
+  FAKE_CONFIG,
+  FAKE_PDF,
   IDEAS,
+  PROCEDURE_FIELDS,
+  PROCEDURE_STEPS,
   PROCESS_FIELDS,
   SCRIPT,
   STEP_FIELDS,
   emptyProfile,
+  emptyStep,
 } from './fakeData'
+import { euReport, withFailedNote } from '../test/fixtures/report'
 import { getValue } from '../utils/discoveryFormat'
+import { PART_KEYS, type DiscoveryReport } from '../types/report'
+import { typeSentence } from '../utils/documentLimits'
 import type {
+  ApiErrorCode,
+  DocumentOut,
+  DocumentUploadOut,
   FieldStatus,
   FieldView,
   FinishState,
@@ -45,6 +65,12 @@ interface FakeSession {
   proposals: Record<string, string>
   turn: number
   proposingCluster: boolean
+  /** Uploaded documents (counts are derived from `docProposals`). */
+  documents?: Array<Omit<DocumentOut, 'pending'>>
+  /** Keys proposed by a document and not yet settled: document id and quote. */
+  docProposals?: Record<string, { docId: string; quote: string }>
+  /** Keys confirmed from a document: the document id (the name is looked up; gone = removed). */
+  docConfirmed?: Record<string, { docId: string; quote: string }>
 }
 
 interface Store {
@@ -60,20 +86,30 @@ export interface FakeApiOptions {
 }
 
 const STORAGE_KEY = 'discovery_fake_store'
+/** The server's fixed sentence for every 404 (backend `api/errors.py`). */
+const NOT_FOUND = 'Not found.'
 
-const ERROR_STATUS: Record<string, number> = {
+const ERROR_STATUS: Record<ApiErrorCode, number> = {
   session_closed: 400,
   unsafe_input: 400,
   not_found: 404,
   map_incomplete: 409,
   conflict: 409,
   unknown_cluster: 422,
-  validation_error: 422,
+  invalid_value: 422,
+  idea_started: 409,
   rate_limited: 429,
   budget_exhausted: 429,
   model_unavailable: 503,
+  store_unavailable: 503,
+  internal_error: 500,
   visitor_key_required: 401,
   network: 0,
+  document_limit: 409,
+  document_too_large: 413,
+  document_type: 415,
+  document_unreadable: 422,
+  report_not_ready: 409,
 }
 
 let clockTick = 0
@@ -125,7 +161,28 @@ function makeView(
   phase: Phase,
   value: unknown,
   proposalQuote: string | undefined,
+  s?: FakeSession,
 ): FieldView {
+  const fromDoc = s?.docProposals?.[key] ?? (proposalQuote === undefined ? s?.docConfirmed?.[key] : undefined)
+  if (fromDoc && s) {
+    const proposed = Boolean(s.docProposals?.[key])
+    const { status: g } = grade(key, value)
+    if (g === 'complete') {
+      return {
+        key,
+        id,
+        label,
+        phase,
+        status: proposed ? 'proposed' : 'complete',
+        reason: '',
+        missing: [],
+        source: 'document',
+        quote: fromDoc.quote,
+        documentName: s.documents?.find((d) => d.id === fromDoc.docId)?.name ?? null,
+        asks: 0,
+      }
+    }
+  }
   const { status: graded, missing } = grade(key, value)
   const status: FieldStatus = proposalQuote !== undefined && graded === 'complete' ? 'proposed' : graded
   const reason =
@@ -151,12 +208,12 @@ function makeView(
 
 function fieldViews(s: FakeSession): FieldView[] {
   const views = PROCESS_FIELDS.map((f) =>
-    makeView(f.key, f.id, f.label, f.phase, getValue(s.profile, f.key), s.proposals[f.key]),
+    makeView(f.key, f.id, f.label, f.phase, getValue(s.profile, f.key), s.proposals[f.key], s),
   )
   s.profile.process.substeps.forEach((_, i) => {
     for (const f of STEP_FIELDS) {
       const key = `process.substeps[${i + 1}].${f.leaf}`
-      views.push(makeView(key, f.id, f.label, 'steps', getValue(s.profile, key), undefined))
+      views.push(makeView(key, f.id, f.label, 'steps', getValue(s.profile, key), undefined, s))
     }
   })
   return views
@@ -240,7 +297,74 @@ function toOut(s: FakeSession): SessionOut {
     scope: null,
     clusterProposal: s.proposingCluster && s.status === 'active' ? cluster : null,
     reportStatus: s.status === 'finished' ? 'mapped' : null,
+    documents: documentsOut(s),
   })
+}
+
+function documentsOut(s: FakeSession): DocumentOut[] {
+  return (s.documents ?? []).map((d) => ({
+    ...d,
+    pending: Object.values(s.docProposals ?? {}).filter((p) => p.docId === d.id).length,
+  }))
+}
+
+/** Clears one field or step cell back to its empty value (the fake's ✎ and removal). */
+function clearValue(p: Profile, key: string): void {
+  const cell = /^process\.substeps\[(\d+)\]\.(\w+)$/.exec(key)
+  if (cell) {
+    const step = p.process.substeps[Number(cell[1]) - 1] as unknown as Record<string, unknown> | undefined
+    if (step) step[cell[2]] = (emptyStep() as unknown as Record<string, unknown>)[cell[2]]
+    return
+  }
+  const leaf = key.replace(/^process\./, '')
+  if (key.startsWith('process.')) {
+    ;(p.process as unknown as Record<string, unknown>)[leaf] = (emptyProfile().process as unknown as Record<string, unknown>)[leaf]
+  } else {
+    ;(p as unknown as Record<string, unknown>)[key] = ''
+  }
+}
+
+/** Drops step rows left with no answer at all (spec 17 §3.13.3). */
+function dropEmptyRows(p: Profile): void {
+  const blank = JSON.stringify(emptyStep())
+  p.process.substeps = p.process.substeps.filter((row) => JSON.stringify(row) !== blank)
+}
+
+const extOf = (name: string) => (name.includes('.') ? name.split('.').pop()!.toLowerCase() : '')
+
+/** What the fake "reads" from a file, by its name (spec 23 §11.15.3). */
+function readDocument(s: FakeSession, docId: string, name: string): { values: number; steps: number; truncated: boolean } {
+  const lower = name.toLowerCase()
+  if (lower.includes('empty')) return { values: 0, steps: 0, truncated: false }
+  const proposals = (s.docProposals ??= {})
+  const p = s.profile.process
+  let values = 0
+  let steps = 0
+  const bpmn = extOf(lower) === 'bpmn'
+  if (!bpmn) {
+    for (const f of PROCEDURE_FIELDS) {
+      if (p[f.key].trim()) continue // fill-only: never overwrite a value the expert gave
+      p[f.key] = f.value
+      proposals[`process.${f.key}`] = { docId, quote: f.quote }
+      values += 1
+    }
+  }
+  if (p.substeps.length === 0) {
+    PROCEDURE_STEPS.forEach((step, i) => {
+      const row = emptyStep()
+      row.name = step.name
+      p.substeps.push(row)
+      proposals[`process.substeps[${i + 1}].name`] = { docId, quote: step.quote }
+      steps += 1
+    })
+    if (bpmn) {
+      BPMN_LANES.forEach((lane, i) => {
+        p.substeps[i].roles = [{ role: lane, contribution: '' }]
+        proposals[`process.substeps[${i + 1}].roles`] = { docId, quote: `Lane: ${lane}` }
+      })
+    }
+  }
+  return { values, steps, truncated: lower.includes('long') }
 }
 
 function toSummary(s: FakeSession): SessionSummary {
@@ -272,6 +396,11 @@ export function createFakeApi(options: FakeApiOptions = {}): DiscoveryApi {
   const persist = options.persist ?? true
   const range = options.delayMs ?? [300, 800]
   let armedError: string | null = null
+  let reportFailed: string | null = null
+  let reportMissing: string | null = null
+  const stepMs = range === 0 ? 0 : 150
+  const readMs = range === 0 ? 0 : 800
+  const sleep = (ms: number) => (ms > 0 ? new Promise((r) => setTimeout(r, ms)) : Promise.resolve())
 
   const load = (): Store => {
     if (persist) {
@@ -306,7 +435,7 @@ export function createFakeApi(options: FakeApiOptions = {}): DiscoveryApi {
       const code = armedError
       armedError = null
       throw new ApiError(
-        ERROR_STATUS[code] ?? 400,
+        ERROR_STATUS[code as ApiErrorCode] ?? 400,
         code,
         code === 'unsafe_input' ? 'That message cannot be processed. Please rephrase it.' : `Simulated ${code}.`,
         code === 'map_incomplete' ? 'below_gate' : undefined,
@@ -319,7 +448,7 @@ export function createFakeApi(options: FakeApiOptions = {}): DiscoveryApi {
 
   const find = (id: string): FakeSession => {
     const s = store.sessions.find((x) => x.id === id)
-    if (!s) throw new ApiError(404, 'not_found', 'This session could not be found.')
+    if (!s) throw new ApiError(404, 'not_found', NOT_FOUND)
     return s
   }
   const writable = (id: string): FakeSession => {
@@ -352,8 +481,8 @@ export function createFakeApi(options: FakeApiOptions = {}): DiscoveryApi {
     }
     if (ideaId) {
       const idea = store.ideas.find((i) => i.id === ideaId)
-      if (!idea) throw new ApiError(404, 'not_found', 'This idea could not be found.')
-      if (idea.status === 'started') throw new ApiError(409, 'conflict', 'This idea has already been started.')
+      if (!idea) throw new ApiError(404, 'not_found', NOT_FOUND)
+      if (idea.status === 'started') throw new ApiError(409, 'idea_started', 'A session was already started from this idea.')
       idea.status = 'started'
       idea.startedSessionId = s.id
       s.profile.process.name = idea.name
@@ -389,16 +518,21 @@ export function createFakeApi(options: FakeApiOptions = {}): DiscoveryApi {
       call(() => {
         const s = writable(id)
         if (!text.trim() || text.length > 16000) {
-          throw new ApiError(422, 'validation_error', 'The message must be 1 to 16,000 characters.')
+          throw new ApiError(422, 'invalid_value', 'text: String should have at least 1 character')
         }
         s.messages.push({ id: uid(), role: 'expert', text, at: now() })
         let ideasAdded = 0
         let replyText: string
 
         const trigger = /^\/error\s+(\w+)/.exec(text.trim())
+        const reportTrigger = /^\/report-(failed|missing)\s+(\w+)/.exec(text.trim())
         if (trigger) {
           armedError = trigger[1]
           replyText = `(Test mode) The next call will fail with \`${trigger[1]}\`.`
+        } else if (reportTrigger) {
+          if (reportTrigger[1] === 'failed') reportFailed = reportTrigger[2]
+          else reportMissing = reportTrigger[2]
+          replyText = `(Test mode) The next report will have part \`${reportTrigger[2]}\` ${reportTrigger[1]}.`
         } else if (text.trim() === '/finish-ready') {
           completeMap(s)
           rebuildRollups(s.profile)
@@ -441,7 +575,7 @@ export function createFakeApi(options: FakeApiOptions = {}): DiscoveryApi {
         const s = writable(id)
         const p = s.profile.process
         if (target === 'substeps') {
-          if (p.substeps.length === 0) throw new ApiError(422, 'validation_error', 'There are no steps yet.')
+          if (p.substeps.length === 0) throw new ApiError(422, 'invalid_value', 'There are no steps yet.')
           p.substep_count = p.substeps.length
           p.substeps_complete = true
         } else if (target === 'roles') {
@@ -456,7 +590,7 @@ export function createFakeApi(options: FakeApiOptions = {}): DiscoveryApi {
       call(() => {
         const s = writable(id)
         const cluster = CLUSTERS.find((c) => c.code === code.toUpperCase())
-        if (!cluster) throw new ApiError(422, 'unknown_cluster', 'That cluster is not known.')
+        if (!cluster) throw new ApiError(422, 'unknown_cluster', 'This cluster code is not in the taxonomy.')
         s.profile.process.cluster = { code: cluster.code, name: cluster.name, decided_by: 'picker' }
         s.proposingCluster = false
         if (s.turn === 4) s.turn = 5
@@ -490,7 +624,7 @@ export function createFakeApi(options: FakeApiOptions = {}): DiscoveryApi {
 
     deleteIdea: (id) =>
       call(() => {
-        if (!store.ideas.some((i) => i.id === id)) throw new ApiError(404, 'not_found', 'This idea could not be found.')
+        if (!store.ideas.some((i) => i.id === id)) throw new ApiError(404, 'not_found', NOT_FOUND)
         store.ideas = store.ideas.filter((i) => i.id !== id)
       }),
 
@@ -503,5 +637,171 @@ export function createFakeApi(options: FakeApiOptions = {}): DiscoveryApi {
       }),
 
     getTaxonomy: () => call(() => ({ clusters: structuredClone(CLUSTERS) })),
+
+    getConfig: async () => {
+      await wait()
+      return structuredClone(FAKE_CONFIG)
+    },
+
+    uploadDocument: async (id, file, onProgress) => {
+      await call(() => {
+        const s = writable(id)
+        const limits = FAKE_CONFIG.documents
+        if ((s.documents ?? []).length >= limits.maxFiles) {
+          throw new ApiError(409, 'document_limit', `You can add up to ${limits.maxFiles} documents. Remove one to add another.`)
+        }
+        if (file.size > limits.maxFileMb * 1_048_576) {
+          throw new ApiError(413, 'document_too_large', `This file is larger than ${limits.maxFileMb} MB.`)
+        }
+        if (file.size === 0) {
+          throw new ApiError(422, 'document_unreadable', "I couldn't find any text in this file. If it is a scan, try the file it was made from.")
+        }
+        if (!limits.allowedTypes.includes(extOf(file.name))) {
+          throw new ApiError(415, 'document_type', typeSentence(limits))
+        }
+      })
+      for (const pct of [25, 50, 75, 100]) {
+        await sleep(stepMs)
+        onProgress?.(pct)
+      }
+      await sleep(readMs)
+      return call((): DocumentUploadOut => {
+        const s = writable(id)
+        const lower = file.name.toLowerCase()
+        if (lower.includes('scan')) {
+          throw new ApiError(422, 'document_unreadable', "I couldn't find any text in this file. If it is a scan, try the file it was made from.")
+        }
+        if (lower.includes('inject')) {
+          throw new ApiError(400, 'unsafe_input', "This document contains text that looks like instructions to the assistant, so I didn't read it.")
+        }
+        const docId = uid()
+        const failed = lower.includes('failed')
+        const read = failed ? { values: 0, steps: 0, truncated: false } : readDocument(s, docId, file.name)
+        const record = {
+          id: docId,
+          name: file.name,
+          kind: extOf(file.name),
+          bytes: file.size,
+          chars: failed ? 0 : 1000,
+          truncated: read.truncated,
+          uploadedAt: now(),
+          outcome: (failed ? 'failed' : 'read') as DocumentOut['outcome'],
+          proposals: read.values + read.steps + (extOf(file.name) === 'bpmn' && read.steps > 0 ? BPMN_LANES.length : 0),
+        }
+        ;(s.documents ??= []).push(record)
+        let message = failed
+          ? DOCUMENT_SENTENCES.failed
+          : record.proposals === 0
+            ? DOCUMENT_SENTENCES.nothingNew(file.name)
+            : DOCUMENT_SENTENCES.read(file.name, read.values, read.steps)
+        if (read.truncated) message += ` ${DOCUMENT_SENTENCES.truncated}`
+        // The agent's question about the file (spec 14 §3.16), also the last message of the session.
+        const reply: Message = {
+          id: uid(),
+          role: 'agent',
+          text:
+            failed || record.proposals === 0
+              ? `${message} Let's carry on where we left off.`
+              : `From "${file.name}" I'd fill the values marked as proposed in the panel.\nShould I fill it like this, or is something wrong?`,
+          at: now(),
+        }
+        s.messages.push(reply)
+        const session = touched(s)
+        const document = session.documents.find((d) => d.id === docId)!
+        const tally = { fields: read.values, steps: read.steps, cells: record.proposals - read.values - read.steps }
+        return {
+          session,
+          document,
+          report: {
+            documentId: docId,
+            outcome: record.outcome,
+            reader: extOf(file.name) === 'bpmn' ? 'bpmn' : 'model',
+            truncated: read.truncated,
+            offered: tally,
+            kept: tally,
+            dropped: 0,
+            skipped: [],
+            stepList: 0,
+            message,
+            documentRole: failed ? null : 'whole_process',
+            targetStep: null,
+            targetSource: 'none',
+            fromImage: ['png', 'jpg', 'jpeg'].includes(extOf(file.name)),
+          },
+          reply: structuredClone(reply),
+        }
+      })
+    },
+
+    removeDocument: (id, docId) =>
+      call(() => {
+        const s = writable(id)
+        if (!(s.documents ?? []).some((d) => d.id === docId)) throw new ApiError(404, 'not_found', NOT_FOUND)
+        s.documents = (s.documents ?? []).filter((d) => d.id !== docId)
+        for (const [key, p] of Object.entries(s.docProposals ?? {})) {
+          if (p.docId !== docId) continue
+          clearValue(s.profile, key)
+          delete s.docProposals![key]
+        }
+        dropEmptyRows(s.profile)
+        return touched(s)
+      }),
+
+    confirmProposals: (id, keys) =>
+      call(() => {
+        const s = writable(id)
+        for (const key of keys) {
+          const p = s.docProposals?.[key]
+          if (p) {
+            ;(s.docConfirmed ??= {})[key] = p
+            delete s.docProposals![key]
+          }
+          if (s.proposals[key] !== undefined) delete s.proposals[key]
+        }
+        return touched(s)
+      }),
+
+    rejectProposals: (id, keys) =>
+      call(() => {
+        const s = writable(id)
+        for (const key of keys) {
+          if (s.docProposals?.[key]) {
+            clearValue(s.profile, key)
+            delete s.docProposals[key]
+          } else if (s.proposals[key] !== undefined) {
+            clearValue(s.profile, key)
+            delete s.proposals[key]
+          }
+        }
+        return touched(s)
+      }),
+
+    getReport: (id) =>
+      call(() => {
+        const s = find(id)
+        if (s.status !== 'finished') {
+          throw new ApiError(409, 'report_not_ready', 'The report is ready once the map is finished.')
+        }
+        let report: DiscoveryReport = structuredClone(euReport)
+        if (reportFailed) {
+          const keys = reportFailed === 'steps' ? ['steps', 'route'] : [reportFailed]
+          report = withFailedNote(report, keys as Array<'steps' | 'route'>)
+          reportFailed = null
+        }
+        if (reportMissing && (PART_KEYS as readonly string[]).includes(reportMissing)) {
+          delete (report as unknown as Record<string, unknown>)[reportMissing]
+          reportMissing = null
+        }
+        return report
+      }),
+
+    getReportPdf: (id) =>
+      call(() => {
+        const s = find(id)
+        if (s.status !== 'finished') {
+          throw new ApiError(409, 'report_not_ready', 'The report is ready once the map is finished.')
+        }
+        return { blob: new Blob([FAKE_PDF], { type: 'application/pdf' }), filename: 'discovery-report-monthly-cost-review.pdf' }
+      }),
   }
 }

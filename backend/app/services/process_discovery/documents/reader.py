@@ -9,7 +9,9 @@ What: `read_with_model(llm, name, text, profile, vocab=..., documents=...)` buil
 the client owns the token budget, timeouts, retries and the one invalid-output retry (spec 11).
 Returns the raw reading, or `None` when the model failed.
 Must not: call the SDK directly, log the text or the reply, or swallow `LLMBudgetExceededError` or
-`asyncio.CancelledError`. Spec 17 §3.7; AC-17.33.
+`asyncio.CancelledError`. Spec 17 §3.7; AC-17.33. Amendment: the reading context goes into the
+messages (§3.18), and `read_image_with_model` sends one image with the image output model (§3.19
+item 4; AC-17.56).
 """
 
 from __future__ import annotations
@@ -21,8 +23,10 @@ from pydantic import BaseModel
 
 from ..domain.field_spec import Vocabulary
 from ..llm import LLM, CallType, LLMEmptyResponseError, LLMInvalidOutputError, LLMUnavailableError
-from .prompts import read_document_messages
-from .schema import read_document_model
+from .context import ReadingContext
+from .image import PreparedImage
+from .prompts import read_document_messages, read_image_messages
+from .schema import read_document_model, read_image_model
 
 
 async def read_with_model(
@@ -33,10 +37,29 @@ async def read_with_model(
     *,
     vocab: Vocabulary,
     documents: Sequence[Mapping[str, str]] = (),
+    context: ReadingContext | None = None,
 ) -> BaseModel | None:
     """The model's reading of the document, or `None` on an empty, invalid or unavailable reply."""
-    messages = read_document_messages(name, text, profile, vocab=vocab, documents=documents)
+    messages = read_document_messages(name, text, profile, vocab=vocab, documents=documents, context=context)
     try:
         return await llm.generate_structured(read_document_model(), CallType.READ_DOCUMENT, messages)
+    except (LLMEmptyResponseError, LLMInvalidOutputError, LLMUnavailableError):
+        return None
+
+
+async def read_image_with_model(
+    llm: LLM,
+    name: str,
+    image: PreparedImage,
+    profile: Mapping[str, Any],
+    *,
+    vocab: Vocabulary,
+    documents: Sequence[Mapping[str, str]] = (),
+    context: ReadingContext | None = None,
+) -> BaseModel | None:
+    """The model's reading of one image (transcription, summary, proposals), or `None` when the model failed."""
+    messages = read_image_messages(name, image, profile, vocab=vocab, documents=documents, context=context)
+    try:
+        return await llm.generate_structured(read_image_model(), CallType.READ_DOCUMENT, messages)
     except (LLMEmptyResponseError, LLMInvalidOutputError, LLMUnavailableError):
         return None

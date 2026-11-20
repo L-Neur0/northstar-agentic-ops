@@ -1,6 +1,6 @@
 /**
- * Tests for the Steps tabs and the **No further steps** button (spec 23 §3.8.9–10;
- * AC-23.33, AC-23.50, AC-23.51).
+ * Tests for the Steps tabs and the **No further steps** button (spec 23 §3.8.9–10, §11.7, §11.8;
+ * AC-23.33, AC-23.50, AC-23.51, AC-23.77, AC-23.78).
  * Why: the walk goes step by step; the tab shows `Step k (f/11)` from 1-based field views, S12 is
  * "(not scored)", arrow keys move between tabs, and the expert can end the walk early.
  * Rules: the button is enabled only with at least one row, an open walk, an active session and no
@@ -10,7 +10,8 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { SubstepTabs } from './SubstepTabs'
-import { emptyProfile, emptyStep, fullStep, stepViews, stepsSession } from '../../test/fixtures/sessions'
+import { emptyProfile, emptyStep, fullStep, stepViews, stepsSession, withProposals } from '../../test/fixtures/sessions'
+import type { ProposalControls } from './ProposalActions'
 import type { SessionOut } from '../../types/process-discovery'
 
 function Harness({ session, onNoFurther = vi.fn(), active = true, confirming = false }: {
@@ -93,5 +94,60 @@ describe('No further steps (AC-23.50, AC-23.51)', () => {
     render(<Harness session={s} />)
     expect(screen.getByRole('button', { name: 'No further steps' })).toBeEnabled()
     expect(fullStep('x').name).toBe('x')
+  })
+})
+
+describe('proposals in steps (AC-23.77, AC-23.78)', () => {
+  const controls = (over: Partial<ProposalControls> = {}): ProposalControls => ({
+    canAct: true,
+    disabled: false,
+    pending: null,
+    openQuotes: new Set(),
+    onToggleQuote: vi.fn(),
+    onConfirm: vi.fn(),
+    onReject: vi.fn(),
+    ...over,
+  })
+  const tabs = (proposals: ProposalControls, index = 1, session = withProposals()) =>
+    render(
+      <SubstepTabs
+        profile={session.profile}
+        fieldViews={session.fieldViews}
+        activeIndex={index}
+        onSelect={vi.fn()}
+        sessionActive
+        confirming={false}
+        onNoFurtherSteps={vi.fn()}
+        proposals={proposals}
+      />,
+    )
+
+  it('✓ and ✎ on a cell use the 1-based cell key (AC-23.77)', async () => {
+    const c = controls()
+    tabs(c)
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm Goal' }))
+    expect(c.onConfirm).toHaveBeenCalledWith(['process.substeps[2].goal'])
+    await userEvent.click(screen.getByRole('button', { name: 'Reject Systems' }))
+    expect(c.onReject).toHaveBeenCalledWith('process.substeps[2].systems', 'Systems')
+  })
+
+  it('a step with 2+ proposed cells offers one batch confirm with those keys in view order (AC-23.78)', async () => {
+    const c = controls()
+    tabs(c)
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm all 3 proposals in step 2' }))
+    expect(c.onConfirm).toHaveBeenCalledWith(['process.substeps[2].name', 'process.substeps[2].goal', 'process.substeps[2].systems'])
+  })
+
+  it('no batch button with fewer than two proposals; tabs say "· proposed" in text', () => {
+    tabs(controls(), 0)
+    expect(screen.queryByRole('button', { name: /Confirm all/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /^Step 1 \(0\/11\) · proposed$/ })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /^Step 2 .* · proposed$/ })).toBeInTheDocument()
+  })
+
+  it('the batch and ✓ / ✎ are disabled during another write', () => {
+    tabs(controls({ disabled: true }))
+    expect(screen.getByRole('button', { name: 'Confirm all 3 proposals in step 2' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Confirm Goal' })).toBeDisabled()
   })
 })

@@ -54,13 +54,33 @@ class CallType(StrEnum):
     OPPORTUNITIES = "OPPORTUNITIES"
     MAP = "MAP"
     LABEL = "LABEL"
+    ASSESS_STEPS = "ASSESS_STEPS"
     BRIEF = "BRIEF"
     EXPERT = "EXPERT"
 
 
+class ImageUrl(TypedDict):
+    url: str
+    detail: str
+
+
+class ContentPart(TypedDict, total=False):
+    """One part of a multi-part user message (spec 17 §3.19 item 4): text, or one image as a data URL."""
+
+    type: Literal["text", "image_url"]
+    text: str
+    image_url: ImageUrl
+
+
 class ChatMessage(TypedDict):
     role: Literal["system", "user", "assistant"]
-    content: str
+    content: str | list[ContentPart]
+
+
+#: Image data URLs a READ_DOCUMENT user message may carry; nothing else (no remote URL, no other type).
+IMAGE_URL_PREFIXES = ("data:image/png;base64,", "data:image/jpeg;base64,")
+#: Rough prompt tokens for one image at `detail: high` (spec 17 §3.19 item 9), for the size estimate only.
+IMAGE_TOKEN_ESTIMATE = 1_500
 
 
 @dataclass(frozen=True)
@@ -147,7 +167,19 @@ class LLM(Protocol):
 
 def approx_prompt_tokens(messages: Sequence[Mapping[str, Any]]) -> int:
     """Characters of all messages divided by four: a size that moves with the prompt, not a tokenizer."""
-    return sum(len(str(m.get("content") or "")) for m in messages) // 4
+    chars = 0
+    images = 0
+    for message in messages:
+        content = message.get("content") or ""
+        if isinstance(content, list):
+            for part in content:  # pyright: ignore[reportUnknownVariableType]
+                if isinstance(part, Mapping) and part.get("type") == "image_url":
+                    images += 1
+                elif isinstance(part, Mapping):
+                    chars += len(str(part.get("text") or ""))  # pyright: ignore[reportUnknownArgumentType]
+        else:
+            chars += len(str(content))
+    return chars // 4 + images * IMAGE_TOKEN_ESTIMATE
 
 
 def _setting_default(name: str) -> Any:
@@ -170,18 +202,48 @@ def deployment_for(settings: Settings | None, call_type: CallType) -> str:
     return str(value)
 
 
-def check_messages(messages: Sequence[Any]) -> list[ChatMessage]:
-    """A copy of `messages`, each exactly `{"role": system|user|assistant, "content": str}`, else `ValueError`."""
+def _check_parts(content: Any, index: int) -> list[ContentPart]:
+    """Text parts and `data:image/png|jpeg` parts only (spec 17 §3.19 item 4), else `ValueError`."""
+    parts: list[ContentPart] = []
+    for part in content:
+        if isinstance(part, Mapping) and part.get("type") == "text" and isinstance(part.get("text"), str):
+            parts.append({"type": "text", "text": str(part["text"])})  # pyright: ignore[reportUnknownArgumentType]
+            continue
+        image = part.get("image_url") if isinstance(part, Mapping) else None  # pyright: ignore[reportUnknownMemberType]
+        url = image.get("url") if isinstance(image, Mapping) else None  # pyright: ignore[reportUnknownMemberType]
+        if (
+            isinstance(part, Mapping)
+            and part.get("type") == "image_url"
+            and isinstance(url, str)
+            and url.startswith(IMAGE_URL_PREFIXES)
+        ):
+            detail = str(image.get("detail") or "high")  # pyright: ignore[reportOptionalMemberAccess, reportUnknownMemberType, reportUnknownArgumentType]
+            parts.append({"type": "image_url", "image_url": {"url": url, "detail": detail}})
+            continue
+        raise ValueError(f"message {index} has a content part that is not text or a png/jpeg data URL")
+    return parts
+
+
+def check_messages(messages: Sequence[Any], call_type: CallType | None = None) -> list[ChatMessage]:
+    """A copy of `messages`, each exactly `{"role": system|user|assistant, "content": str}`, else `ValueError`.
+
+    Only a `user` message of a READ_DOCUMENT call may carry content parts (an image, spec 17 §3.19).
+    """
     checked: list[ChatMessage] = []
     for index, message in enumerate(messages):
         if (
             not isinstance(message, Mapping)
             or set(message) != {"role", "content"}
             or message["role"] not in ("system", "user", "assistant")
-            or not isinstance(message["content"], str)
         ):
             raise ValueError(f"message {index} must be {{'role': system|user|assistant, 'content': str}}")
-        checked.append({"role": message["role"], "content": message["content"]})
+        content = message["content"]
+        if isinstance(content, list) and message["role"] == "user" and call_type is CallType.READ_DOCUMENT:
+            checked.append({"role": "user", "content": _check_parts(content, index)})
+            continue
+        if not isinstance(content, str):
+            raise ValueError(f"message {index} must be {{'role': system|user|assistant, 'content': str}}")
+        checked.append({"role": message["role"], "content": content})
     return checked
 
 
@@ -352,7 +414,7 @@ class AzureLLM:
         parse: Callable[[str], Any],
     ) -> Any:
         """One call, step by step (spec 11 §3.3). Logs exactly one `llm_call` line, whatever happens."""
-        checked = check_messages(messages)
+        checked = check_messages(messages, call_type)
         budget = token_budget(self._settings, call_type, max_tokens)
         deployment = deployment_for(self._settings, call_type)
         stats = _CallStats()

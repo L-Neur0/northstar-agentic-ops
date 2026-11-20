@@ -64,7 +64,9 @@ An absence is an answer. If the expert says there are none ("no approvals", "nob
 
 Not yours to write: never write the cluster, a confirmation or a flag. A yes or no to a proposal or to a list is read by code, so emit nothing for it.
 
-Other recurring work: if the expert mentions other pieces of recurring work besides the one being discussed, also return them as `"candidates": [{"name": "<short name in their words>", "words": "<what they said about it, copied>"}]`. That key is not a field; never invent a candidate.
+Other recurring work: if the expert mentions other pieces of recurring work besides the one being discussed, also return them as `"candidates": [{"name": "<short name in their words>", "words": "<what they said about it, copied>"}]`. That key is not a field; never invent a candidate. When the expert describes several pieces of recurring work and has not said which one to map, return them all as candidates and emit no `process.name`: the choice is theirs.
+
+Candidate signals: when the expert says how often, how long, how many people or what the work starts from for a candidate, return `candidate_signals` with the candidate's name and their words: `"candidate_signals": [{"name": "<candidate>", "runs": "<how often>", "time": "<how long>", "people": "<how many people>", "inputs": "<what it starts from>"}]`, only the parts they said, copied; never a number of your own. That key is not a field either.
 
 Return one JSON object. If the expert said nothing extractable, return an empty JSON object {}.
 

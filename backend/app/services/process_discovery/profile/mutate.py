@@ -126,9 +126,14 @@ def make_meta(
     document_id: str | None = None,
     quote: str | None = None,
     by: str | None = None,
+    replaces: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """One `__meta` entry, keyed as stored (`documentId`)."""
-    return {"source": source, "status": status, "documentId": document_id, "quote": quote, "by": by, "at": at}
+    """One `__meta` entry, keyed as stored (`documentId`); `replaces` only on a proposal over a partial answer."""
+    meta: dict[str, Any] = {"source": source, "status": status, "documentId": document_id, "quote": quote, "by": by}
+    meta["at"] = at
+    if replaces is not None:
+        meta["replaces"] = dict(replaces)
+    return meta
 
 
 def _blank(value: Any) -> bool:
@@ -488,7 +493,9 @@ def _write_one(
         return None, None
     proposed = is_proposed(meta_now)
     current = _current(profile, address)
-    base = empty_value(spec) if proposed else current
+    # A proposal is cleared first; one that completed a partial answer gives back what the person gave (spec 17 Q5).
+    replaced = as_mapping((meta_now or {}).get("replaces")) if proposed else None
+    base = (replaced.get("value") if replaced else empty_value(spec)) if proposed else current
     new, reason = _new_value(profile, address, base, value, vocab=vocab, replace=specialist)
     if reason is not None:
         return None, reason
