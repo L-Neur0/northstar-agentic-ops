@@ -10,19 +10,19 @@ NIG has 50,000 people; 9 clusters × 4 regions = 36 teams, each with its own sys
 
 ## 2. Problem
 
-Today two AI specialists map each process in a workshop: **24 person-hours and 2–3 weeks per process**.
+Today two AI specialists map each process by hand: a half-day workshop with two employees, then notes typed up in Visio and Excel and missing numbers chased by e-mail. That costs **24 person-hours and 2–3 weeks per process**, and because specialists must be in every conversation, discovery is capped by the size of the AI team.
 
 
 | What happens today                          | Why it hurts                                |
 | ------------------------------------------- | ------------------------------------------- |
-| Specialists interview people one by one     | At most 150–200 processes a year           |
+| Specialists interview people one by one     | At most 150–200 processes a year, for 36 teams |
 | Each specialist asks and writes differently | Reports cannot be compared                  |
 | Nobody checks whether a workflow is ready   | AI builds stall after weeks                 |
 | Detail is lost at hand-over                 | Engineers re-ask people:**~60 h per build** |
 
 ## 3. Solution
 
-The employee opens a link and, in a **guided chat** with an AI agent, maps one of their own workflows worth transforming. A fixed form makes every result comparable; it runs **for everyone at once**, so specialists review the best candidates instead of collecting them.
+The employee opens a link and, in a **guided chat** with an AI agent, maps one of their own workflows worth transforming. A fixed form makes every result comparable, and specialists review the best candidates instead of collecting them.
 
 ```mermaid
 flowchart LR
@@ -47,7 +47,7 @@ flowchart LR
 | Engineer hours per build | 60    | **20** (with hand-over brief, next release) |
 
 - **For the AI team (counted): €450k–675k a year**, from 400 processes × 22.5 h plus 25 builds × 40 h saved, at €90/h and 50–75 % adoption.
-- **For the whole company (not counted, likely larger):** NIG compares 400+ processes, not 150–200, and builds the best, **each build paying back again in the business**.
+- **For the whole company (not counted, likely larger):** discovery **scales to every team at once**, so NIG compares 400+ processes, not 150–200, and builds the best, **each paying back again**.
 - **Costs:** **€20k once** to build (one engineer, two months); **~€6k a year** to run (Azure hosting ~€5.5k; AI ~€0.40 per interview, ~€240): **payback under a month; ~€17 back per €1 in year one.**
 
 ## 5. Risks: three things must be true
@@ -59,8 +59,8 @@ flowchart LR
 | Reports are good enough       | Specialist: major edits? | Below 50 % clean |
 | Specialist review is quick    | Time each review         | Above 3 h        |
 
-Five manual mappings are also timed; at 18 h, not 24, the case holds (€342k a year). Open points: works-council agreement (critical path), languages beyond English, interview quality (latest test: 75 % of core fields right; target 85 %).
+At 18 h by hand, not 24, it still holds (€342k). Open: works council, languages, interview quality (75 %, target 85 %).
 
 ## 6. Status, rollout and the ask
 
-The first working version is **[live on Azure](https://link-on-request.invalid/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx)** and passed six simulated interviews end to end. **The ask:** an **8-week pilot in one cluster and region (~20 processes)** with volunteers, data-protection sign-off and company sign-in, stopped at any §5 limit; then **about two months** of hardening (private network, reliability; works-council agreement in parallel for rollout); then **cluster by cluster, region by region**. **About four months** to the first cluster live.
+The first working version is **[live on Azure](https://link-on-request.invalid/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx)** and passed six simulated interviews end to end. **The ask:** an **8-week pilot in one cluster and region (~20 processes)** with volunteers, data-protection sign-off and company sign-in, stopped at any §5 limit; then **about two months** of hardening while the works-council agreement is prepared; then **cluster by cluster**: **about four months** to the first cluster live.
