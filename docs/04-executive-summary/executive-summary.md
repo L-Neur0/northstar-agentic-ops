@@ -1,8 +1,8 @@
 # AI Use Case Discovery Agent · Executive summary
 
-> NIG (fictional) · **IT & Security** · November 2026 · *Figures are assumptions, to be confirmed in a pilot.* Detail: [use case](../01-use-case/use-case.md) · [deck](deck.pdf)
+> NIG (fictional) · **IT & Security** · November 2026 · *Figures are assumptions, to confirm in a pilot.* Detail: [use case](../01-use-case/use-case.md) · [deck](deck.pdf)
 
-**In one line:** a 15–20 minute guided interview shows NIG **which processes AI should transform first, without weeks of workshops.**
+**In one line:** a 20–30 minute guided interview shows NIG **which processes AI should transform first, without weeks of workshops.**
 
 ## 1. Context
 
@@ -25,10 +25,10 @@ The employee opens a link and has a **guided chat** with the agent, which helps 
 
 ```mermaid
 flowchart LR
-  E["Employee<br/>15–20 min"] --> I["Guided interview"]
+  E["Employee<br/>20–30 min"] --> I["Guided interview"]
   D["Own documents"] --> I
   I --> R["Discovery report"]
-  R --> S["Specialist review<br/>~4 h"]
+  R --> S["Specialist review<br/>~1 h"]
   S --> O["Overview of<br/>all processes"]
   O --> B["Brief to engineers"]
   classDef next stroke-dasharray:5 5
@@ -41,10 +41,10 @@ flowchart LR
 
 | | Today | With the tool |
 |---|---|---|
-| Person-hours per process | 24 | **5** |
+| Person-hours per process | 24 | **1.5** |
 | Engineer hours per build | 60 | **20** |
 
-- **For the AI team (counted): €387k–581k a year**, from 400 processes × 19 h plus 25 builds × 40 h saved, at €90/h and 50–75 % adoption. With a €100k build and €35k a year to run, it **pays back in about 3.5 months**.
+- **For the AI team (counted): €450k–675k a year**, from 400 processes × 22.5 h plus 25 builds × 40 h saved, at €90/h and 50–75 % adoption. With a €100k build and €35k a year to run, it **pays back in about 3 months**.
 - **For the whole company (not counted, and larger):** NIG compares 400+ processes instead of 150–200, picks the best and most ready, and builds more AI, **each build paying back again in the business**.
 
 ## 5. Risks: three things must be true
@@ -53,10 +53,10 @@ flowchart LR
 |---|---|---|
 | Employees finish on their own | Share who complete | Below 50 % |
 | Reports are good enough | Specialist: major edits? | Below 50 % clean |
-| The hours saved are real | Time 5 manual mappings | Above 10 h review |
+| The hours saved are real | Time 5 manual mappings | Above 3 h review |
 
-At 18 manual hours instead of 24 it still pays (€279k a year); works councils, invented facts and languages are handled by design.
+At 18 manual hours instead of 24 it still pays (€342k a year); works councils, invented facts and languages are handled by design.
 
 ## 6. Status and the ask
 
-The MVP is built and tested on Azure OpenAI and Cosmos DB. **The ask:** an **8-week pilot in one cluster and one region (~20 processes)**, then production, Microsoft 365 evidence with consent (Graph, Work IQ) and roll-out **by configuration**.
+The MVP is **[live on Azure](https://link-on-request.invalid/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx)** and tested (Azure OpenAI, Cosmos DB). **The ask:** an **8-week pilot in one cluster and one region (~20 processes)**, then production, Microsoft 365 evidence with consent (Graph, Work IQ) and roll-out **by configuration**.
