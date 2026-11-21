@@ -11,10 +11,11 @@ Must not: call a model, read a clock, give a yes / no or go / no-go, or invent a
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from typing import Any
 
-from app.models.process_discovery_schemas import Questions, RouteSummary, ValueResult
+from app.core.config import SolutionCatalogue
+from app.models.process_discovery_schemas import Questions, RouteSummary, StepRating, ValueResult
 
 from ..domain.field_spec import Vocabulary, same_unit
 from ..profile.shapes import as_mapping, process_of, rows_of
@@ -34,6 +35,28 @@ def _metric(value: Any) -> str:
     return " ".join(p for p in (_text(m.get("value")), _text(m.get("unit"))) if p) or _text(m.get("qualitative"))
 
 
+def _start_with(questions: Questions | None, ratings: Sequence[StepRating], catalogue: SolutionCatalogue | None) -> str:
+    """Sentence 3 (as built, 2026-11-21): the strong-fit steps and their routes, where AI fits best;
+    the route headline (ordered by hours) is the fallback."""
+    if questions is None or catalogue is None:
+        return ""
+    by_step = {r.step: r for r in ratings}
+    groups: dict[str, list[int]] = {}
+    for fit in questions.steps:
+        rating = by_step.get(fit.step)
+        solution = catalogue.get(rating.route_id) if rating is not None and rating.route_id else None
+        if fit.level == "strong" and solution is not None:
+            groups.setdefault(solution.name, []).append(fit.step)
+    parts = [
+        f"{'step' if len(n) == 1 else 'steps'} {_and([str(x) for x in n])} using {name}" for name, n in groups.items()
+    ]
+    return f"Suggested route: start with {_and(parts)}." if parts else ""
+
+
+def _and(items: list[str]) -> str:
+    return items[0] if len(items) == 1 else f"{', '.join(items[:-1])} and {items[-1]}"
+
+
 def build_summary(
     profile: Mapping[str, Any],
     questions: Questions | None,
@@ -41,6 +64,8 @@ def build_summary(
     value: ValueResult | None,
     *,
     vocab: Vocabulary,
+    ratings: Sequence[StepRating] | None = None,
+    catalogue: SolutionCatalogue | None = None,
 ) -> list[str]:
     """The §3.5 sentences, in order."""
     process = process_of(profile)
@@ -59,7 +84,10 @@ def build_summary(
     if questions is not None and questions.q1.level != "not_rated":
         reasons = " ".join(questions.q1.reasons)
         out.append(f"AI fit: {FIT_WORDS[questions.q1.level]}. {reasons}".strip())
-    if route is not None and route.headline:
+    start = _start_with(questions, ratings or [], catalogue)
+    if start:
+        out.append(start)
+    elif route is not None and route.headline:
         out.append(route.headline)
     if questions is not None and questions.q2.level != "not_rated":
         reasons = sorted(questions.q2.reasons, key=len)

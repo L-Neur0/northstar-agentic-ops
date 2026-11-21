@@ -488,7 +488,10 @@ def _summary(c: _Ctx) -> SummaryPart:
     a = c.assessment
     route = a.step_assessment.route if a is not None and a.step_assessment is not None else None
     questions = a.questions if a is not None and a.step_assessment is not None else None
-    sentences = build_summary(c.profile, questions, route, c.value, vocab=c.vocab)
+    ratings = a.step_assessment.steps if a is not None and a.step_assessment is not None else []
+    sentences = build_summary(
+        c.profile, questions, route, c.value, vocab=c.vocab, ratings=ratings, catalogue=c.catalogue
+    )
     note = None if questions is not None else _note("missing", NOT_V2)
     return SummaryPart(number=NUMBERS["summary"], title=TITLES["summary"], note=note, sentences=sentences)
 

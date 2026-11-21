@@ -28,7 +28,7 @@ def summary(profile=None, route: RouteSummary | None = ROUTE):
     value = compute_value(profile, [], CFG.rates)
     readiness = compute_readiness(profile, [], True, value, CFG.readiness)
     q = answer_questions(profile, P05_RATINGS, [], True, value, readiness, CFG.solutions, CFG.readiness, {})
-    return build_summary(profile, q, route, value, vocab=nig_vocabulary())
+    return build_summary(profile, q, route, value, vocab=nig_vocabulary(), ratings=P05_RATINGS, catalogue=CFG.solutions)
 
 
 def test_ac_27_7_p05_sentences():
@@ -38,7 +38,7 @@ def test_ac_27_7_p05_sentences():
         "three working days per role each time today."
     )
     assert s[1].startswith("AI fit: strong. Steps 2 and 3 (1,152 of 1,944 hours a year)")
-    assert s[2] == ROUTE.headline
+    assert s[2] == "Suggested route: start with steps 2 and 3 using NIG CV screening."  # the strong-fit steps
     assert s[3].startswith("Leans to a dedicated solution: ") and "NIG CV screening" in s[3]
     assert s[4] == "The expert's target is 1 working day per role instead of three working days per role."
     assert s[5] == "About 1,944 hours a year go into this process today: a large process."
@@ -50,7 +50,7 @@ def test_ac_27_7_missing_parts_drop_their_sentences():
     profile["process"]["target_metric"] = {"value": "", "unit": ""}
     s = summary(profile, route=None)
     assert not any(x.startswith("The expert's target") for x in s)
-    assert ROUTE.headline not in s
+    assert ROUTE.headline not in s and s[2].startswith("Suggested route: start with steps 2 and 3")
     profile["process"]["substeps"][2]["decision_criteria"]["written"] = "no"
     s = summary(profile)
     assert s[-1].startswith("Before starting: Write down the decision criteria for step 3")

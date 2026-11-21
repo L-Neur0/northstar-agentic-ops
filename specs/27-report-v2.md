@@ -109,7 +109,7 @@ Fixed sentences, each one left out when its data is missing:
 
 1. *"We mapped **{process name}** in {department} ({cluster name}): {n} steps, about {volume in words}, {time today} each time today."*
 2. *"AI fit: **{Q1 level}**. {Q1 reason}."*
-3. *"Suggested route: {route headline}."* (the route's code headline)
+3. *"Suggested route: start with steps {strong-fit steps} using {their catalogue routes}."* *(As built 2026-11-21: the strong-fit steps, where AI fits best; the route's hours-ordered headline is the fallback when no strong step has a route.)*
 4. *"{Q2 level sentence}: {Q2 reasons, shortest first}."*
 5. *"The expert's target is {target} instead of {time today}."* Only when P13 counts and is in the same unit as P12.
 6. *"About {hours} hours a year go into this process today. {Q3 level sentence}."*

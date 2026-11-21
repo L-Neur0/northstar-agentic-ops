@@ -358,6 +358,11 @@ svg text{font-family:var(--body)}
 .outl div div span{font-size:14px;color:var(--mute);line-height:1.35}
 .outnote{margin-top:auto;display:flex;gap:10px;align-items:center;font-size:14px;color:var(--good);border-top:1px solid var(--line);padding-top:12px}
 .outnote .ico{width:18px;height:18px}
+.eng-do{margin:0;border-top:1px solid rgba(91,140,255,.3);padding-top:16px;font-size:18px;line-height:1.45;color:var(--fg)}
+.impl{display:flex;align-items:baseline;gap:14px;padding:14px 22px;border:1px solid var(--line);border-radius:14px;background:var(--panel);font-size:18px;color:var(--mute)}
+.impl .k{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-right:6px}
+.impl b{color:var(--good);font-weight:600}
+.impl i{font-style:normal;color:var(--dim)}
 .eng-sub{margin:-4px 0 0;font-size:16px;line-height:1.45;color:var(--mute)}
 .nbig{display:flex;flex-direction:column;padding-right:20px;margin-right:4px;border-right:1px solid var(--line)}
 .nbig span{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
@@ -664,7 +669,7 @@ svg text{font-family:var(--body)}
 <section class="slide" data-sec="solution">
   <div class="top">
     <div class="eyebrow a"><span class="n">05</span> The solution</div>
-    <h2 class="a" style="--d:.08s">The Discovery Agent turns what employees know into <em>a baseline the AI team can act on</em></h2>
+    <h2 class="a" style="--d:.08s">The AI Use Case Discovery Agent turns what employees know into <em>a baseline the AI team can act on</em></h2>
     <p class="lead a" style="--d:.14s">The agent runs the interview <b>for every employee at the same time</b>. Specialists review the best candidates instead of collecting them: discovery goes from a few workshops to the whole company.</p>
   </div>
   <div class="body" style="gap:18px">
@@ -679,11 +684,7 @@ svg text{font-family:var(--body)}
         <span class="k">AI Use Case Discovery Agent</span>
         <b>A guided interview with a fixed form behind it</b>
         <p class="eng-sub">Like a good consultant: asks, listens, follows up, and fills in the same standard form every time.</p>
-        <div class="roles">
-          <div><span class="ico" data-i="message-square" style="color:var(--accent)"></span><span><b>AI</b> asks, follows up, reads</span></div>
-          <div><span class="ico" data-i="braces" style="color:var(--warn)"></span><span><b>Code</b> checks every answer, makes every number</span></div>
-          <div><span class="ico" data-i="user-check" style="color:var(--good)"></span><span><b>People</b> confirm and decide</span></div>
-        </div>
+        <p class="eng-do">Through a guided chat, the agent helps an employee share what they know, then select and map a workflow of their own that is worth transforming with AI.</p>
       </div>
       <span class="ico solarrow a" style="--d:.45s" data-i="arrow-right"></span>
       <div class="solcol out a" style="--d:.5s">
@@ -698,13 +699,7 @@ svg text{font-family:var(--body)}
         <div class="outnote"><span class="ico" data-i="quote"></span>Every claim carries the expert's own words</div>
       </div>
     </div>
-    <div class="next a" style="--d:.7s">
-      <div class="nbig"><span>What it changes</span><b>24 h → 5 h</b><small>per process</small></div>
-      <div class="nx"><span class="ico" data-i="user"></span><div><b>The expert: ~1 h, not 8</b><span>no workshops to attend</span></div></div>
-      <div class="nx"><span class="ico" data-i="badge-check"></span><div><b>Specialists: 4 h, not 16</b><span>checks the report, no workshop to run</span></div></div>
-      <div class="nx"><span class="ico" data-i="layout-dashboard"></span><div><b>Every process comparable</b><span>leadership picks on evidence, not on who asked</span></div></div>
-      <div class="nx"><span class="ico" data-i="file-text"></span><div><b>Engineers: 20 h, not 60</b><span>they start from a brief, not from scratch</span></div></div>
-    </div>
+    <div class="impl a" style="--d:.7s"><span class="k">What it changes</span><b>about 5 h instead of 24 h per process</b><i>·</i><span>every process comparable</span><i>·</i><span>specialists review instead of collect</span></div>
   </div>
   <div class="foot"><span>No go / no-go in the tool: it guides, people decide</span><span>05</span></div>
 </section>
