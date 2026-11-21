@@ -7,15 +7,15 @@
 
 **This needs about two quarters and these three things:**
 
-1. **A data-protection and works-council agreement in the first region**, started on day one. It is the critical path, not the code: no real employee should be interviewed before it exists.
+1. **A data-protection sign-off and a works-council agreement in the first region**, both started on day one. The sign-off comes before the pilot, which interviews volunteers only; the agreement comes before rollout and is the critical path, not the code.
 2. **Two engineers' worth of work for one quarter (26 engineer-weeks, about €100k with language testing and a security review)**, spread over the two quarters: Entra ID sign-in before the pilot, then hardening (private network, replicas, *Finish* as a background job, evaluation gate, Microsoft 365 evidence, specialist edits).
 3. **Named owners**: a product owner in the AI transformation team, an engineering owner in IT's platform team, and a champion in each cluster who launches the tool with their teams.
 
 | When | What | Who |
 |---|---|---|
-| Weeks 1–3 | Entra ID sign-in, consent text, impact assessment started | 1 engineer; data protection officer, HR |
-| Weeks 4–11 | **8-week pilot**: one cluster in one region, about 20 processes, on the current build. Three kill tests: share of employees who finish (stop below 50 %), share of reports a specialist accepts without major edits (stop below 50 %), specialist review time (stop above 3 h) | Product owner, 1–2 specialists, 1 engineer for fixes and prompt tuning on pilot data |
-| Quarter 2 | **Production hardening** (sections 3–7), then the first cluster-region goes live in production | 2 engineers |
+| Weeks 1–3 | Entra ID sign-in, consent text, data-protection sign-off for a volunteer pilot, works-council talks started | 1 engineer; data protection officer, HR |
+| Weeks 4–11 | **8-week pilot**: one cluster in one region, about 20 processes, with volunteers, on the current build plus sign-in. Three kill tests: share of employees who finish (stop below 50 %), share of reports a specialist accepts without major edits (stop below 50 %), specialist review time (stop above 3 h) | Product owner, 1–2 specialists, 1 engineer for fixes and prompt tuning on pilot data |
+| Quarter 2 | **Production hardening** (sections 3–8: private network, reliability) and the works-council agreement, then the first cluster-region goes live in production | 2 engineers |
 | After that | **Rollout by configuration**, cluster by cluster and region by region (section 10) | Product owner, champions; no new code per region |
 
 This is the €100k build and €35k a year run of the use case: the build is one quarter of two engineers' work, and it takes two calendar quarters because the pilot and the agreements set the pace.
