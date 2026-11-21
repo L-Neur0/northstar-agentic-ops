@@ -22,7 +22,7 @@ Today two AI specialists map each process by hand: a half-day workshop with two 
 
 ## 3. Solution
 
-The employee opens a link and, in a **guided chat** with an AI agent, maps one of their own workflows worth transforming. A fixed form makes every result comparable, and specialists review the best candidates instead of collecting them.
+An employee who wants to automate part of their work opens a link and, in a **guided chat** with an AI agent, maps one of their own workflows worth transforming. A fixed form makes results comparable; specialists only review the best.
 
 ```mermaid
 flowchart LR
