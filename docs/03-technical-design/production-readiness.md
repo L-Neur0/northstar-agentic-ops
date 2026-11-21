@@ -5,36 +5,51 @@
 
 ## 1. The honest estimate
 
-**This needs about two quarters and these three things:**
+**This needs about four months and these three things:**
 
-1. **A data-protection sign-off and a works-council agreement in the first region**, both started on day one. The sign-off comes before the pilot, which interviews volunteers only; the agreement comes before rollout and is the critical path, not the code.
-2. **Two engineers' worth of work for one quarter (26 engineer-weeks, about €100k with language testing and a security review)**, spread over the two quarters: Entra ID sign-in before the pilot, then hardening (private network, replicas, *Finish* as a background job, evaluation gate, Microsoft 365 evidence, specialist edits).
+1. **A data-protection sign-off and a works-council agreement in the first region**, both started on day one. The sign-off comes before the pilot, which interviews volunteers only; the agreement is prepared in parallel and gates the rollout beyond the pilot cluster, not the pilot: it is the critical path, not the code.
+2. **One engineer for about two months of work (6.5 engineer-weeks, about €20k)**, spread over the four months: Entra ID sign-in before the pilot, fixes during it, then hardening (private network, two replicas, *Finish* as a background job, monitoring, evaluation gate, one more language). The prototype is already built, tested and live, so this is the remaining production work only; Microsoft 365 evidence and specialist edits are later releases.
 3. **Named owners**: a product owner in the AI transformation team, an engineering owner in IT's platform team, and a champion in each cluster who launches the tool with their teams.
 
 | When | What | Who |
 |---|---|---|
-| Weeks 1–3 | Entra ID sign-in, consent text, data-protection sign-off for a volunteer pilot, works-council talks started | 1 engineer; data protection officer, HR |
-| Weeks 4–11 | **8-week pilot**: one cluster in one region, about 20 processes, with volunteers, on the current build plus sign-in. Three kill tests: share of employees who finish (stop below 50 %), share of reports a specialist accepts without major edits (stop below 50 %), specialist review time (stop above 3 h) | Product owner, 1–2 specialists, 1 engineer for fixes and prompt tuning on pilot data |
-| Quarter 2 | **Production hardening** (sections 3–8: private network, reliability) and the works-council agreement, then the first cluster-region goes live in production | 2 engineers |
+| Weeks 1–2 | Entra ID sign-in, consent text, data-protection sign-off for a volunteer pilot, works-council talks started | 1 engineer; data protection officer, HR |
+| Weeks 3–10 | **8-week pilot**: one cluster in one region, about 20 processes, with volunteers, on the current build plus sign-in. Three kill tests: share of employees who finish (stop below 50 %), share of reports a specialist accepts without major edits (stop below 50 %), specialist review time (stop above 3 h) | Product owner, 1–2 specialists, 1 engineer part-time for fixes and prompt tuning on pilot data |
+| Weeks 11–18 | **Production hardening, about two months** (sections 3–8: private network, reliability, monitoring, one more language), then the first cluster-region goes live in production; the works-council agreement is prepared in parallel | 1 engineer (about 4 weeks of work); NIG's security team reviews |
 | After that | **Rollout by configuration**, cluster by cluster and region by region (section 10) | Product owner, champions; no new code per region |
 
-This is the €100k build and €35k a year run of the use case: the build is one quarter of two engineers' work, and it takes two calendar quarters because the pilot and the agreements set the pace.
+**Build cost, bottom-up** (*assumptions*, updated 2026-11-21; the €20k is the product owner's decision, the lines show what it buys):
+
+| Work item (remaining production work only) | Engineer-weeks |
+|---|---|
+| Entra ID sign-in: app registration, MSAL, token validation, roles on the server, claiming visitor sessions, per-user quota (section 3) | 1.5 |
+| Private network and secrets: VNet, private endpoints, Front Door with WAF, Key Vault, approval before production (section 4) | 1 |
+| Reliability: two replicas, shared rate-limit counters, *Finish* and document reading as background jobs (section 7) | 1 |
+| Monitoring: alerts, cost dashboard, runbook, one restore test (sections 5, 7) | 0.5 |
+| Evaluation gate in CI and one more language tested with translated personas (sections 6, 8) | 0.5 |
+| Pilot support: fixes and prompt tuning on pilot data, part-time over the 8 weeks | 1 |
+| Buffer, about 20 % | 1 |
+| **Total** | **6.5 × €3k ≈ €20k** |
+
+Not in the €20k: the security review (by NIG's security team, *assumption*), the data-protection and works-council work (people, not code: data protection officer, HR), and later releases (Microsoft 365 evidence, specialist edits, integrations). The €3k per engineer-week is the use case's rate.
+
+This is the €20k build and the about €6k a year run (section 9) of the use case: about two months of one engineer's work, spread over about four calendar months (two weeks of set-up, the 8-week pilot, about two months of hardening) because the pilot sets the pace, not the code. The works-council agreement runs in parallel and gates the rollout to further clusters and regions.
 
 ## 2. Summary
 
 | Area | Prototype | Production | Effort |
 |---|---|---|---|
-| Identity and access | Open link, visitor key, workspace access code with a typed name | **Entra ID single sign-on**, roles from app roles, named attribution of every action, per-user quotas | M |
-| Network and secrets | Public ingress, managed identity | Private endpoints, VNet integration, WAF in front, Key Vault for anything not covered by managed identity | M |
+| Identity and access | Open link, visitor key, workspace access code with a typed name | **Entra ID single sign-on**, roles from app roles, named attribution of every action, per-user quotas | S–M |
+| Network and secrets | Public ingress, managed identity | Private endpoints, VNet integration, WAF in front, Key Vault for anything not covered by managed identity | S |
 | Data access and protection | Interview and uploaded documents; one EU region; no files stored | Microsoft 365 evidence with consent; impact assessment, works-council agreement, residency and retention per country, tested restore | M–L (mostly people, not code) |
-| Reliability | One replica, *Finish* in one long request | 2+ replicas, shared rate-limit store, *Finish* and document reading as background jobs, alerts and runbook | M |
+| Reliability | One replica, *Finish* in one long request | 2+ replicas, shared rate-limit store, *Finish* and document reading as background jobs, alerts and runbook | S–M |
 | AI quality and cost | gpt-5.6-sol (EU Data Zone), version pinned (no auto-upgrade), six-persona evaluation, daily budget | Planned version upgrades, evaluation gate before every model or prompt change, evaluation set from pilot sessions, cost dashboard | S–M |
-| Languages | English; yes/no words in English and German | Tested interviews and reports in each NIG language | M per language |
-| Workspace | Read-only: sessions, conversations, report v2 and PDF | Specialist edits and validation, overview across sessions, implementation briefs | M |
-| Integrations | None with NIG systems | Launch from Teams and the intranet; report export to NIG's BPM tool; briefs to the engineering backlog | S each |
+| Languages | English; yes/no words in English and German | Tested interviews and reports in each NIG language | S per language |
+| Workspace | Read-only: sessions, conversations, report v2 and PDF | Specialist edits and validation, overview across sessions, implementation briefs | M (later release) |
+| Integrations | None with NIG systems | Launch from Teams and the intranet; report export to NIG's BPM tool; briefs to the engineering backlog | S each (later release) |
 | Operations | The author | Product owner, engineering owner, support within IT's platform team | People |
 
-*S = days, M = 2–4 weeks, L = a quarter, for one engineer.*
+*S = days, M = 2–4 weeks, L = a quarter, for one engineer. The rows the €20k build covers are itemised in section 1.*
 
 ## 3. Identity and permissions: Entra ID
 
@@ -90,15 +105,21 @@ The model works in many languages and the profile keeps the employee's own words
 
 ## 9. Cost at scale
 
+*Updated 2026-11-21 (bottom-up cost).* The run cost is what NIG pays Azure: hosting and the AI. All lines are *assumptions* at Azure list prices (EUR ≈ USD) unless marked measured.
+
 | Cost a year | Low (200 processes) | Mid (400, base case) | High (800) | Basis |
 |---|---|---|---|---|
-| Model calls | about €150 | about €300 | about €600 | **Measured** €0.34–0.50 per interview in the evaluation (at assumed list prices), × 1.5 interviews per profiled process (*assumption*: restarts and unfinished sessions) |
-| Container Apps (2+ replicas), Cosmos DB serverless, private networking, monitoring | about €6k | about €6k | about €7k | *Assumption* from the use case; the prototype runs for about €15–40 a month |
-| Support and upkeep | about €25k | about €25k | about €25k | About 0.2 of an engineer (*assumption*) |
-| Evaluation runs, language testing, margin | about €4k | about €4k | about €4k | *Assumption* |
-| **Total** | **about €35k** | **about €35k** | **about €37k** | The use case's €35k a year |
+| **AI:** model calls | about €120 | about €240 | about €480 | **Measured** €0.34–0.50 per interview in the evaluation; €0.40 × 1.5 interviews per profiled process (*assumption*: restarts and unfinished sessions), so 600 interviews at Mid |
+| **Hosting:** Container Apps, 2 replicas always on | about €0.9k | about €0.9k | about €0.9k | 0.5 vCPU and 1 GiB each: about €70 a month after the monthly free grant |
+| Cosmos DB serverless, continuous backup (7 days) | about €0.1k | about €0.1k | about €0.2k | A few thousand small documents a year: under €10 a month in request units and storage |
+| Application Insights and Log Analytics | about €0.2k | about €0.2k | about €0.3k | A few GB of logs a month at about €2.3 per GB after the free 5 GB; capped at 0.5 GB a day (spec 25) |
+| Front Door Premium with WAF | about €4k | about €4k | about €4k | About €330 a month base fee; Premium is needed for a private origin and managed WAF rules. The largest line |
+| Private endpoints (Cosmos DB, Azure OpenAI, Key Vault), Key Vault, Container Registry | about €0.3k | about €0.3k | about €0.3k | About €7 a month per private endpoint, about €5 a month for the registry |
+| **Total** | **about €5.6k** | **about €5.8k** | **about €6.1k** | The use case's run cost: **about €6k a year** |
 
-The model is the smallest line: even at High it stays under €1k a year, and the daily token budget caps abuse. The run cost is people, not compute, so it barely moves with volume.
+Support and upkeep are done by IT's existing platform team (section 11) and are not counted, nor is the product owner's configuration time or language testing for each new region (paid at rollout).
+
+The AI is the smallest line: about €240 a year at Mid, under €0.5k even at High, and the daily token budget caps abuse. The run cost is mostly the WAF in front, so it barely moves with volume.
 
 ## 10. Trust and rollout
 
@@ -113,7 +134,7 @@ The model is the smallest line: even at High it stays under €1k a year, and th
 | Phase | Scope | Gate to the next |
 |---|---|---|
 | Pilot (8 weeks) | One cluster in one European region, about 20 processes | The three kill tests pass (section 1) |
-| Production hardening (one quarter) | Sections 3–8; the pilot cluster moves to production | Security review, evaluation gate green, agreement signed |
+| Production hardening (about two months) | Sections 3–8; the pilot cluster moves to production | Security review, evaluation gate green, agreement signed |
 | Cluster by cluster | The other clusters of the first region, through their champions | Completion and acceptance rates hold per cluster |
 | Region by region | One region at a time, each with its language tested and its residency and works-council position settled | Same, per region |
 

@@ -14,7 +14,7 @@
 
 **AI Use Case Discovery Agent** helps the people who do the work find which parts of it AI could take over, and shows them how.
 
-The user is the **process expert**: the employee who owns a process or knows it best. In a **15–20 minute guided interview** the agent helps them:
+The user is the **process expert**: the employee who owns a process or knows it best. In a **20–30 minute guided interview** the agent helps them:
 
 1. **discover** the processes in their routine that are worth mapping;
 2. **map** one of them step by step, starting from documents they already have if they want (an existing process map, a procedure, an example of what the process produces);
@@ -241,7 +241,7 @@ Rules for the questions:
 - Never asks the expert to classify their work into an internal framework.
 - If a turn fails (model error or empty reply), the expert gets a plain fallback question built by code. The interview never stops on a model error.
 
-**Done when:** a cooperative expert maps a 4–5 step process in 15–20 minutes, and every answer lands in the right field or is visibly asked again.
+**Done when:** a cooperative expert maps a 4–5 step process in 20–30 minutes, and every answer lands in the right field or is visibly asked again.
 
 ### F-03 · Discovering processes in your routine, and the honest exit
 
@@ -634,7 +634,7 @@ stateDiagram-v2
 
 | Area | Target (prototype) |
 |---|---|
-| Interview time | 15–20 minutes for a cooperative expert and a 4–5 step process; less when starting from a good document |
+| Interview time | 20–30 minutes for a cooperative expert and a 4–5 step process; less when starting from a good document |
 | Turn time | Typical reply under 10 s; never above 150 s (a fallback question is sent instead) |
 | *Finish* to report | Under 30 s |
 | Model cost | Under €0.50 per finished session with a small model |
@@ -661,7 +661,7 @@ stateDiagram-v2
 
 | # | Item | Default until decided |
 |---|---|---|
-| Q1 | Up to 6 main steps keeps the interview at 15–20 minutes | 2–6 |
+| Q1 | Up to 6 main steps keeps the interview at 20–30 minutes | 2–6 |
 | Q2 | Realisation shares | *Parked (R5)*; was 50% / 75% (use case §2.1.6) |
 | Q3 | Default saving share per opportunity type | *Parked (R5)*; set in configuration, tuned in the pilot |
 | Q4 | Readiness thresholds | First version in configuration, owned by the AI transformation team |

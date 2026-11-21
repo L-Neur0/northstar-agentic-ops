@@ -17,8 +17,8 @@
 | **Workflow** | Finding AI automation candidates in NIG's daily work, mapping them, and assessing their **transformation potential**. The brief names it as NIG's first need: "rapidly identify and validate high-value operational use cases". Cluster: **IT · IT and Security** |
 | **Users** | **The employee** who owns or knows a process (the process expert) is the main user: the tool helps them discover which processes in their routine are worth mapping, map one, and see its transformation potential and how to realise it. IT and transformation specialists review the reports and see all of them in one overview. AI engineers and AI DevOps receive an implementation brief for the opportunities chosen for a build |
 | **Pain today** | Discovery runs through central workshops: about **24 person-hours and 2–3 weeks per process**, booked weeks ahead, profiles that can't be compared. The programme reaches about 150–200 processes a year, chosen by who is nearest, not by value. Employees who see a good candidate in their own work have no easy way to raise it |
-| **With the tool** | A 20–30 minute guided conversation helps the employee spot candidate processes in their week, map one step by step (starting from documents they already have, if they want), and get a **discovery report**: the mapped process plus an AI transformation assessment: hours a year, where automation or AI fits and how, what to prepare first. Code checks every answer and makes every number; the tool guides, it never gives a go / no-go. About **1.5 person-hours per process**: the employee's 20–30 minutes and about 1 hour for a specialist to review the finished report. IT gets one overview of every mapped process; chosen opportunities leave with an implementation brief |
-| **Value** (base case, 400 processes a year) | **€0.45M a year conservative, €0.68M expected**, for about €0.1M to build and €35k a year to run. **Payback in about 3 months.** That is only the first return, the AI team's own saving. The second, larger one is not counted: a fast funnel lets NIG pick and automate more, better-chosen processes, and each build returns its own value in the business. Also not counted: AI builds on unready workflows avoided, worth €150–250k each |
+| **With the tool** | A 20–30 minute guided conversation helps the employee spot candidate processes in their week, map one step by step (starting from documents they already have, if they want), and get a **discovery report**: a summary, three questions (good AI use case? own tool or Copilot? worth it?), the mapped process, and per step how AI helps and what to prepare (feasibility). Code checks every answer and makes every number; the tool guides, it never gives a go / no-go. About **1.5 person-hours per process**: the employee's 20–30 minutes and about 1 hour for a specialist to review the finished report. Next release: IT gets one overview of every mapped process, specialist validation, and chosen opportunities leave with an implementation (hand-over) brief |
+| **Value** (base case, 400 processes a year) | **€0.45M a year conservative, €0.68M expected**, for about €20k to build and about €6k a year to run (Azure hosting about €5.5k; the AI about €0.40 per interview, about €240 a year). **Payback in under a month** *(updated 2026-11-21 (bottom-up cost))*. That is only the first return, the AI team's own saving. The second, larger one is not counted: a fast funnel lets NIG pick and automate more, better-chosen processes, and each build returns its own value in the business. Also not counted: AI builds on unready workflows avoided, worth €150–250k each |
 | **Why not buy** | Process mining needs clean system logs that NIG's fragmented systems don't have. Task mining needs agents on every desktop. Questionnaires and chat assistants don't produce comparable, checked profiles. We buy the commodity parts and build only the interview core (section 2.1.3) |
 | **Why people would trust it** | The employee sees the profile fill up live and confirms it; anything the AI reads from a document counts only after they confirm it. Every field shows its source and the employee's own words. Code, not the model, decides what counts as answered and when the map is complete (section 2.3.6) |
 
@@ -152,7 +152,7 @@ We chose this process for six reasons:
 - **The brief asks for it.** "Rapidly identify and validate high-value operational use cases" is the programme's first need.
 - **It is common.** Every company with an AI or transformation programme must baseline its processes and decide what to build first. Most do it with workshops and spreadsheets.
 - **It is manual and slow.** Interviews, notes, diagrams, spreadsheets and email loops.
-- **It is easy to explain.** "Any employee can find a process in their work that AI could take over, map it in 15 minutes, and see its potential, and how to get there. IT sees all of them in one overview."
+- **It is easy to explain.** "Any employee can find a process in their work that AI could take over, map it in 20–30 minutes, and see its potential, and how to get there. IT sees all of them in one overview."
 - **It is measurable.** Hours per profile, profiles per month, share of profiles that survive specialist review, engineering hours before the first build, and later, how many funded use cases deliver against their baseline.
 - **It serves every other cluster.** One tool, used by FIN, HR, PRO, IT and the rest. The build cost is paid once.
 
@@ -257,7 +257,7 @@ Yes, on purpose. The simulated employees include people who are vague, describe 
 Yes. The employee confirms every value read from a document, and the roles and systems, before the map is complete. The specialist reviews every field and every opportunity, and can correct them. The programme's steering group decides what is funded, outside the tool. The AI engineer accepts the implementation brief or sends it back. The AI never decides that a field is answered, that a profile is ready, or that a workflow is ready for AI.
 
 **Q7. Is there clear value and a realistic path to production?**
-Yes. About €0.45M a year conservative at the base case, with payback in about 3 months (section 2.1.6). *(updated 2026-11-21 (estimated effort: ~1.5 h per process, an assumption to confirm in the pilot))* A further value, builds on unready workflows avoided, is not counted. The path is one cluster in one region first, then all clusters. No integration work is needed per region.
+Yes. About €0.45M a year conservative at the base case, for a €20k build, with payback in under a month (section 2.1.6) *(updated 2026-11-21 (bottom-up cost))*. *(updated 2026-11-21 (estimated effort: ~1.5 h per process, an assumption to confirm in the pilot))* A further value, builds on unready workflows avoided, is not counted. The path is one cluster in one region first, then all clusters. No integration work is needed per region.
 
 **Q8. Can we measure it, and stop it if it fails?**
 Yes. We measure the minutes per interview, the share of interviews that reach a complete map, the share of reports the specialist validates without major edits, the share of implementation briefs the engineers accept, and the field accuracy against simulated ground truth. The kill test is part of the next deliverable.
@@ -286,7 +286,7 @@ The unit we count is the **profiled process**: one process, discovered, mapped a
 
 | Role | Active use | When |
 |---|---|---|
-| Employee | 20–30 minutes, once per process (the evaluation estimates 16–25 minutes per interview); a glance at the status later | On their own initiative, or when a cluster lead runs a campaign |
+| Employee | 20–30 minutes, once per process (the evaluation estimates about 20–25 minutes per interview); a glance at the status later | On their own initiative, or when a cluster lead runs a campaign |
 | Transformation specialist | About 1 hour per profile: reviewing the finished report in the workspace and adjusting the opportunities. No workshop, no write-up | Continuously |
 | Cluster lead | About 1 hour a month | Before each portfolio review |
 | Portfolio lead | About 1 day a month | Before each steering-group meeting |
@@ -319,7 +319,7 @@ The unit we count is the **profiled process**: one process, discovered, mapped a
 
 | Return | Who gains | What it is | In the ROI? |
 |---|---|---|---|
-| **1. The AI team works faster** | IT's AI transformation and engineering teams | Each process costs about 1.5 hours instead of 24, and each build starts from a brief (20 engineering hours instead of 60) | **Yes:** €0.45–0.68M a year, payback in about 3 months (below) |
+| **1. The AI team works faster** | IT's AI transformation and engineering teams | Each process costs about 1.5 hours instead of 24, and each build starts from a brief (20 engineering hours instead of 60) | **Yes:** €0.45–0.68M a year, payback in under a month (below) |
 | **2. NIG automates more, and the right things** | The whole company | A fast funnel. By hand, the programme reaches 150–200 processes a year, picked by who is nearest. With the tool, the same team reaches 400 or more, every one measured the same way, so leadership picks the highest-value, ready processes. More and better candidates mean more and better AI builds, and **each build has its own return** in the business: hours freed, errors avoided, faster service | **No:** the bigger prize, but it depends on what each build delivers, so we do not put a number on it |
 
 Return 1 alone pays for the tool. Return 2 is why the tool matters: it is the front door to every AI build NIG will make, and each of those builds starts from a measured "before" number, so its benefit can be proven.
@@ -336,7 +336,7 @@ In detail, the tool creates value in four ways. We count only the first two in t
 **Basis** (all *assumptions*):
 
 - By hand: about **16 specialist hours + 8 employee hours = 24 hours** per profiled process: one 4-hour workshop with 2 specialists and 2 employees, plus about a day of write-up (section 2.2.4).
-- With the tool: about **1 specialist hour + 0.5 employee hour = 1.5 hours**: the employee spends 20–30 minutes (the evaluation estimates 16–25 minutes per interview) and a specialist spends about 1 hour reviewing the finished report in the workspace, with no workshop and no write-up. The saving is about **22.5 hours per process**.
+- With the tool: about **1 specialist hour + 0.5 employee hour = 1.5 hours**: the employee spends 20–30 minutes (the evaluation estimates about 20–25 minutes per interview) and a specialist spends about 1 hour reviewing the finished report in the workspace, with no workshop and no write-up. The saving is about **22.5 hours per process**.
 - Handoff: about **60 engineering hours** of requirements work per build by hand, about **20** with the implementation brief. The saving is about **40 hours per build**, on about 25 builds a year at Mid (section 2.1.5).
 - **Conservative** adoption: 50% of the possible saving is realised. **Expected**: 75%. This is higher than the framework's default (30% / 50%) for one reason: the users of this workflow are IT's own teams. IT decides that discovery runs through the tool and that builds start from an implementation brief. Some processes will still need a workshop, which the 50% allows for.
 - Time is valued at **€90 an hour** (the framework default).
@@ -353,27 +353,27 @@ In detail, the tool creates value in four ways. We count only the first two in t
 
 The framework sets the ROI score bands as: below €100k = 1, €100k–500k = 2, €500k–2M = 3. The lower effort with the tool moves no scenario into another band.
 
-**Costs** (all *assumptions*, to firm up in the technical design):
+**Costs** (all *assumptions*, itemised bottom-up in [production readiness](../03-technical-design/production-readiness.md) sections 1 and 9) *(updated 2026-11-21 (bottom-up cost))*:
 
 | Cost | Amount | Basis |
 |---|---|---|
-| Prototype | About 1 engineer-week | This case |
-| Build to production | **About €100k, once** | About one quarter, 2 engineers (€3k per engineer-week × 26) + language testing and a security review |
-| Hosting | About €6k a year (production) | Two or more replicas, database, private networking, monitoring. The prototype runs for about €15–40 a month |
-| Model calls | Under €0.50 per interview with a small model (target) | About 40–60 calls per interview. Under €1k a year at Mid |
-| Support and upkeep | About €25k a year | About 0.2 of an engineer |
-| **Run cost** | **About €35k a year** | |
+| Prototype | About 1 engineer-week | This case. Already built, tested and live on Azure |
+| Build to production | **€20k, once** | One engineer, about two months: 6.5 engineer-weeks × €3k (sign-in, private network, reliability, monitoring, one more language, pilot fixes, 20 % buffer). The product owner's figure. The security review (NIG's security team) and the data-protection and works-council work (people, not code) are not in it |
+| AI: model calls | About €240 a year | €0.40 per interview (measured €0.34–0.50) × 600 interviews (400 processes × 1.5 interviews each, for restarts and unfinished sessions) |
+| Azure hosting | About €5.5k a year | Front Door Premium with WAF (~€4k), Container Apps with two replicas (~€0.9k), private endpoints, Key Vault and registry (~€0.3k), Application Insights (~€0.2k), Cosmos DB serverless (~€0.1k), at list prices. The prototype runs for about €15–40 a month |
+| **Run cost** | **About €6k a year** (€5.8k) | What NIG pays Azure: hosting and AI. Not counted: support and upkeep (IT's existing platform team) and the product owner's configuration time (part of the team's existing job) |
 
 **Net value and payback (Mid, 400 processes a year):**
 
 | | Conservative | Expected |
 |---|---|---|
 | Value a year | €450k | €675k |
-| Run cost a year | −€35k | −€35k |
-| **Net a year** | **about €415k** | **about €640k** |
-| **Payback on the €100k build** | **about 3 months** (€100k ÷ €415k × 12 = 2.9) | **about 2 months** (€100k ÷ €640k × 12 = 1.9) |
+| Run cost a year | −€6k | −€6k |
+| **Net a year** | **about €444k** | **about €669k** |
+| **Payback on the €20k build** | **under 1 month** (€20k ÷ €444k × 12 = 0.5) | **under 1 month** (€20k ÷ €669k × 12 = 0.4) |
+| **Year-one return per €1** (value ÷ (build + run)) | **about €17** (€450k ÷ €26k) | **about €26** (€675k ÷ €26k) |
 
-**Break-even:** each profile saves about €1,010 at conservative adoption (22.5 h × 50% × €90), so the tool pays for its run cost at about 35 profiles a year, and for its build within the first year at about 135 profiles.
+**Break-even:** each profile saves about €1,010 at conservative adoption (22.5 h × 50% × €90), so the tool pays for its run cost at about 6 profiles a year, and for its build and first year's run at about 26 profiles.
 
 **Not counted: builds on unready workflows avoided.** A build that starts on a workflow nobody has defined, and stops after a quarter, costs real money *(assumption: about €150–250k: one quarter of a small team plus run cost)*. If the readiness checklist makes **one** such workflow get prepared first instead of going straight to the engineers each year, that alone is worth €150–250k a year. We show it **separately** and never add it to the ROI, because we cannot prove it before the programme has a track record. It is the first thing to track after the pilot (section 2.1.9, A8).
 
@@ -392,17 +392,17 @@ The selection framework (`docs/05-how-we-worked/`) has six gates and six scores.
 | 3 No off-the-shelf tool or general assistant does it | Pass | Process mining needs clean logs, task mining needs desktop agents, questionnaires and chat assistants don't give comparable, checked profiles, a transformation assessment or an implementation brief (section 2.1.3) |
 | 4 Data exists today | Pass | The data is in people's heads. No data project is needed |
 | 5 Measurable | Pass | Minutes per profile, share of interviews that finish, specialist edit rate, field accuracy on simulated employees |
-| 6 One-sentence hook | Pass | "Any employee can find a process in their work that AI could take over, map it in 15 minutes, and see its potential, and how to get there. IT sees all of them in one overview." Every company that wants to become an agentic enterprise has this need |
+| 6 One-sentence hook | Pass | "Any employee can find a process in their work that AI could take over, map it in 20–30 minutes, and see its potential, and how to get there. IT sees all of them in one overview." Every company that wants to become an agentic enterprise has this need |
 
 **Scores** (1 = worst, 5 = best):
 
 | Score | Base case (Mid) | Reason |
 |---|---|---|
-| ROI | **3** at expected, 2 at conservative | €640k net a year expected, €415k conservative (section 2.1.6). Avoided failed builds not counted |
+| ROI | **3** at expected, 2 at conservative | €669k net a year expected, €444k conservative (section 2.1.6) *(updated 2026-11-21 (bottom-up cost))*. Avoided failed builds not counted |
 | Scalability | 5 | Any cluster or region by configuration. No integration per region. The main cost per region is testing the interview in its language |
 | Adoption | 4 | IT owns the workflow at both ends: its specialists run it and its engineers use the output. Employees give 20–30 minutes instead of a half-day workshop, and are not asked the same questions again by the engineers. Not yet tested with NIG staff |
 | Feasibility | 5 | No source system. Input is a conversation. Plain, well-known building blocks |
-| Build and run cost | 4 | About €100k and one quarter to production, about €35k a year to run |
+| Build and run cost | 4 | €20k and about two months of one engineer's work, about four months to the first cluster in production, about €6k a year to run *(updated 2026-11-21 (bottom-up cost))*. Cost and upkeep meet the top anchor (< €50k, little upkeep); the work and the calendar are longer than its < 1 month but well under the ~1 quarter of score 3, so 4. Unchanged, so the verdict is unchanged |
 | Risk | 4 | A wrong profile costs specialist time and is caught in review. Nothing is written to a system of record |
 
 **Result (base case, expected adoption):**
@@ -413,7 +413,7 @@ The selection framework (`docs/05-how-we-worked/`) has six gates and six scores.
 
 **Under the strictest reading** (conservative adoption, ROI 2), value is (4 + 5 + 4) ÷ 4 = 3.25, just below the GO line: MAYBE. At €450k it sits near the top of the €100k–500k band, €50k short of ROI 3; the lower effort with the tool does not change the score or the verdict. Any one of these turns it into GO: 800 processes a year (ROI 3 even at conservative adoption), avoiding one failed build a year, or replacing paid consultant days.
 
-**Conclusion:** cheap to build, nothing to integrate, every cluster served, engineers start from a checked brief, and payback in a few months. The pilot must confirm three numbers before the executive summary claims them: the hours per profile (A3, A4), the share of employees who finish the interview (A5), and the engineering hours saved per build (A13).
+**Conclusion:** cheap to build, nothing to integrate, every cluster served, engineers start from a checked brief, and payback within the first month (€20k build, about €6k a year to run). The pilot must confirm three numbers before the executive summary claims them: the hours per profile (A3, A4), the share of employees who finish the interview (A5), and the engineering hours saved per build (A13).
 
 #### 2.1.8 Weak points found in our review
 
@@ -432,7 +432,7 @@ The selection framework (`docs/05-how-we-worked/`) has six gates and six scores.
 | 8 | Different languages and cultures across four regions. | The model works in many languages. The profile keeps the employee's own words in their language. Prompts must be tested per language; translated reports are a production item. | Open |
 | 9 | Interviews about "what takes your time" feel like performance monitoring. Works councils in Europe may object. | The tool profiles processes, not people. No individual's time is reported. This must be agreed with HR and works councils before rollout. | Open; a production-readiness item |
 | 10 | There is no baseline for today's discovery effort. | True. We time the next five manual profiles before the pilot. | Open |
-| 11 | The 24 hours by hand may be too high. | Possible. If it is 18 hours, the saving is 16.5 hours per process, the conservative value at Mid falls to about €342k a year, and payback is still about 4 months. The case holds at ROI score 2. | To measure (A3) |
+| 11 | The 24 hours by hand may be too high. | Possible. If it is 18 hours, the saving is 16.5 hours per process, the conservative value at Mid falls to about €342k a year, and payback is still under a month (€20k ÷ €336k net × 12 = 0.7; about €13 back per €1 in year one) *(updated 2026-11-21 (bottom-up cost))*. The case holds at ROI score 2. | To measure (A3) |
 | 12 | A readiness rating from an interview can be wrong. The employee may not know what data the step really uses. | True. The checklist is a guide, not a verdict. The specialist can correct the profile and add notes, and the AI engineer can send the brief back. We track how many briefs engineers return. | To test (A14) |
 | 13 | Engineers will redo the requirements anyway. | Some will, for the parts the brief can't hold (API details, access rights). The brief is written in the format the engineering team chose, and its acceptance rate is a pilot metric. | To test (A13) |
 
@@ -454,7 +454,7 @@ The selection framework (`docs/05-how-we-worked/`) has six gates and six scores.
 | A8 | Failed builds avoided a year thanks to the readiness checklist | At least 1 (€150–250k each). Not in the ROI | Track funded use cases against their profiles for 2–3 quarters |
 | A9 | Interviews work in the main NIG languages | English, German, French, Spanish, Arabic | Run the simulated employees in each language |
 | A10 | HR and works councils accept process interviews | Yes, with no personal reporting | Ask HR in one European region before the pilot |
-| A11 | Build and run cost | €100k once, €35k a year | Technical design estimate; confirm with NIG's platform team |
+| A11 | Build and run cost | €20k once (product owner); about €6k a year: €5.5k Azure hosting, €240 AI (support by IT's platform team, not counted) *(updated 2026-11-21 (bottom-up cost))* | Bottom-up in production readiness, sections 1 and 9; confirm with NIG's platform team |
 | A12 | NIG pays consultants for discovery today | Unknown | Ask the AI transformation team. If yes, part of the saving is cash |
 | A13 | Engineering requirements hours per build, by hand and with the brief | 60 h and 20 h; 15 / 25 / 40 builds a year | Ask the AI engineering team for its last three builds; measure the first builds from a brief |
 | A14 | Implementation briefs that engineers accept without a new workshop | At least 80% | Pilot: engineers mark each brief accepted or returned, with a reason |
@@ -531,7 +531,7 @@ The FIN cluster lead in Europe suggests "monthly cost review" as a candidate. Tw
 - **Done by:** **Code** (rules, no AI), **AI** (the model reads or writes text, under code's rules), or a **person** (role named).
 - **Screen:** 0 My processes, 1 Interview, 2 Discovery report, 3 Review, 4 Overview, 5 Implementation brief.
 
-> **Prototype scope:** the prototype builds the MVP features of the [product specification](../../specs/01-product.md#6-features). Invitation campaigns (1.2) and a read-only view for the steering group come later.
+> **Prototype scope:** the first working version is live on Azure and passed six simulated interviews end to end: the interview, documents, the discovery report (report v2: summary, three questions, AI fit per step, feasibility) and a read-only workspace. Next release: the process overview, the hand-over (implementation) brief and specialist validation. Invitation campaigns (1.2) and a read-only view for the steering group come later.
 
 #### 2.3.1 What the tool is
 

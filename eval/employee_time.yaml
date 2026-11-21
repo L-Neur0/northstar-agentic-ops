@@ -8,4 +8,4 @@ think_seconds: 8              # assumption: time to think before each expert mes
 short_answer_think_seconds: 3 # assumption: think time for a yes/no-style short answer
 short_answer_max_words: 3     # a reply of at most this many words is a short answer
 upload_seconds: 20            # assumption: time to pick and upload one document
-target_minutes: 20            # target per session (product: a 15-20 minute interview)
+target_minutes: 20            # target per session (product: a 20–30 minute interview; the estimate counts reading, typing and thinking only)

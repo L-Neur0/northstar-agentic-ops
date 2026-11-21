@@ -27,15 +27,16 @@
 | 15 | [`15-api-and-store.md`](15-api-and-store.md): store (part 1), service and routes (part 2) | F-01, F-11, F-23 | built (part 1 + part 2) |
 | 16 | [`16-access.md`](16-access.md): visitor key, resume link, workspace codes, rate limits, daily budget | F-21 | built |
 | 17 | [`17-documents.md`](17-documents.md): upload, text extraction, BPMN reading, READ_DOCUMENT, proposals and confirmation | F-04 | built (in context, images, .pptx/.eml, conflicts) |
-| 18 | [`18-opportunities-and-map.md`](18-opportunities-and-map.md) | F-12, F-13 | built |
+| 18 | [`18-opportunities-and-map.md`](18-opportunities-and-map.md) | F-12, F-13 | built (opportunities call no longer used since report v2, spec 27) |
 | 19 | [`19-value-and-readiness.md`](19-value-and-readiness.md): hours (euro parts parked, R5), labels, readiness, path | F-14, F-15 | built (hours only; € parked) |
 | 20 | [`20-report.md`](20-report.md): report assembly, screen model, PDF | F-16 | built (report + PDF) |
 | 21 | [`21-admin.md`](21-admin.md): workspace backend: session list, read-only session view, conversation, report PDF, delete, audit line | F-17 (read-only) | built (read-only, open demo) |
 | 22 | `22-exports.md`: BPMN XML, Excel | F-20 | to write |
 | 23 | [`23-frontend.md`](23-frontend.md): app shell, home, interview (part 1); report, documents (part 2); admin (part 3) | screens of all features | parts 1–3 built |
 | 24 | [`24-evaluation.md`](24-evaluation.md): simulated experts, runner, scoring, judge, scorecard, seed data | F-25 | built (review 2026-11-20 in §11) |
-| 25 | [`25-deployment.md`](25-deployment.md): Dockerfile, Bicep/azd, CI, stages | arch §7 | built, not deployed |
+| 25 | [`25-deployment.md`](25-deployment.md): Dockerfile, Bicep/azd, CI, stages | arch §7 | built, deployed (live on Azure) |
 | 26 | [`26-step-assessment.md`](26-step-assessment.md): ASSESS_STEPS, solution catalogue, recommended route | F-26 | built |
+| 27 | [`27-report-v2.md`](27-report-v2.md): report v2: summary, three guiding questions, AI fit per step, feasibility; no separate opportunities call | F-16 | built |
 
 **Build order** (see [architecture §8](02-architecture.md#8-what-builds-on-what)): 10 → 12 → 13 → 11 → 14 → 15/16 (25 in parallel from the start) → 17 and 18/19/26 (in parallel) → 20 → 23 (UI-1: home, interview) → 21 → 23 (UI-2: report, workspace) → 24 → 22.
 

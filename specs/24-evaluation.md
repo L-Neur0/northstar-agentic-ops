@@ -279,7 +279,7 @@ Approved by the product owner on 2026-11-20: what costs the employee is **time**
 | Thinking | Per expert message: a fixed think time; a short answer (≤ 3 words, "yes", "no", "mine") gets the short think time | 8 s; 3 s for ≤ 3 words |
 | Uploads | Per uploaded document | 20 s |
 
-Words = whitespace-separated tokens. Code-answered replies (E6) count as expert messages. Target **≤ 20 min per session** (product: a 15-20 minute interview), all personas. The scorecard shows minutes per persona (with reading, typing, thinking and upload parts), the **average answer length in words** (expert words ÷ expert messages; A2, report only) and the delta to the last full run.
+Words = whitespace-separated tokens. Code-answered replies (E6) count as expert messages. Target **≤ 20 min per session** (product: a 20–30 minute interview; the estimate counts reading, typing and thinking only), all personas. The scorecard shows minutes per persona (with reading, typing, thinking and upload parts), the **average answer length in words** (expert words ÷ expert messages; A2, report only) and the delta to the last full run.
 
 *Example:* 30 agent messages of 46 words (1 380 words → 6.0 min), 28 expert messages of 12 words (336 words → 8.4 min), 28 × 8 s thinking (3.7 min), no upload → **18.1 min** ✓.
 

@@ -48,7 +48,7 @@ flowchart LR
 
 - **For the AI team (counted): €450k–675k a year**, from 400 processes × 22.5 h plus 25 builds × 40 h saved, at €90/h and 50–75 % adoption.
 - **For the whole company (not counted, likely larger):** NIG compares 400+ processes, not 150–200, and builds the best, **each build paying back again in the business**.
-- **Costs:** **€100k once** for production (two engineers, one quarter) and **about €35k a year** to run (AI included, ~€0.40 per interview): **payback in about 3 months; about €3 back per €1 in year one.**
+- **Costs:** **€20k once** to build (one engineer, two months); **~€6k a year** to run (Azure hosting ~€5.5k; AI ~€0.40 per interview, ~€240): **payback under a month; ~€17 back per €1 in year one.**
 
 ## 5. Risks: three things must be true
 
@@ -63,4 +63,4 @@ Five manual mappings are also timed; at 18 h, not 24, the case holds (€342k a 
 
 ## 6. Status, rollout and the ask
 
-The first working version is **[live on Azure](https://link-on-request.invalid/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx)** and passed six simulated interviews end to end. **The ask:** an **8-week pilot in one cluster and region (~20 processes)** with volunteers, data-protection sign-off and company sign-in, stopped at any §5 limit; then **one quarter** of hardening (private network, reliability, works-council agreement for rollout); then **cluster by cluster, region by region**, by configuration. **Two quarters** to the first cluster in production.
+The first working version is **[live on Azure](https://link-on-request.invalid/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx)** and passed six simulated interviews end to end. **The ask:** an **8-week pilot in one cluster and region (~20 processes)** with volunteers, data-protection sign-off and company sign-in, stopped at any §5 limit; then **about two months** of hardening (private network, reliability; works-council agreement in parallel for rollout); then **cluster by cluster, region by region**. **About four months** to the first cluster live.
