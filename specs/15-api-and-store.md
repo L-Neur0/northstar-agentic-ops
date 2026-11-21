@@ -270,6 +270,8 @@ Routes 1–13 need a visitor key (spec 16); 14–16 are public. Every error body
 
 The client replaces its state with `SessionOut` on every response (no partial merges needed); `TurnOut.reply` is also the last message.
 
+**Amended 2026-11-21 (owner test).** `ScoreOut` gains `progress: float` (0–1), computed by `interview.phases.progress` from the profile and the counters every time a session is sent (spec 14 §3.20 O4); it is not stored. `POST /confirm` with `roles` / `tools` still answers for old clients; *Finish* no longer reads those flags.
+
 ### 3.5 Logs and audit
 
 One `turn` line per message (from spec 14) plus the service line: route, session id, owner prefix (8 characters), outcome (`ok`, `conflict`, `unsafe_input`, `budget`), duration. Never the text.

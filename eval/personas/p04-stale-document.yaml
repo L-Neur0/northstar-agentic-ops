@@ -1,6 +1,6 @@
 # Persona p04 (spec 24 §3.3): starts the steps from an out-of-date procedure and corrects it. Synthetic.
 id: p04-stale-document
-version: 1
+version: 3
 quick: false
 seed: false
 kind: cooperative
@@ -43,6 +43,7 @@ truth:
       pain_points: [some applications can only export to CSV by hand]
       approvals: [{none: true}]
       exceptions: [{none: true}]
+      decision_type: {kind: rules, evidence: "the export is the same script every quarter"}
     - name: Send the lists to the application owners
       goal: Every application owner has a review task
       activities: [create the review campaign, assign each list to its owner]
@@ -54,6 +55,7 @@ truth:
       pain_points: [owner names in the tool are out of date]
       approvals: [{none: true}]
       exceptions: [{description: an application has no owner and the task goes to the security manager}]
+      decision_type: {kind: rules, evidence: "each application has a named owner, so it's mechanical"}
     - name: Review and mark access to remove
       goal: Each owner has confirmed or marked every user
       activities: [owners check each user, mark access to remove, chase owners who have not started]
@@ -65,6 +67,7 @@ truth:
       pain_points: [owners approve whole lists without checking]
       approvals: [{none: true}]
       exceptions: [{none: true}]
+      decision_type: {kind: judgement, evidence: "the owners decide if someone still needs the access"}
     - name: Approve the removals
       goal: Every removal is approved before it is done
       activities: [collect the marked removals, get the approval in the tool]
@@ -76,6 +79,7 @@ truth:
       pain_points: [approvals wait for owners on holiday]
       approvals: [{approver_role: Application owner}]
       exceptions: [{none: true}]
+      decision_type: {kind: mix, evidence: "the security manager signs off, but looks twice at admin rights"}
     - name: Remove access and file the evidence
       goal: Removed access is gone and the evidence is filed for the audit
       activities: [remove the access, export the review report, file it in the audit folder]
@@ -87,6 +91,7 @@ truth:
       pain_points: [old applications need a ticket for every removal]
       approvals: [{none: true}]
       exceptions: [{description: a removal fails and is redone through a ticket}]
+      decision_type: {kind: rules, evidence: "removal and filing follow the procedure step by step"}
   aliases:
     Access review tool: [access tool, the access tool, review tool, IAM review tool, access review system]
     Identity directory: [directory, active directory, AD, entra id]

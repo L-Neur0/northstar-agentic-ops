@@ -7,10 +7,11 @@ not pass, while case, curly quotes, dash style and a trailing full stop must not
 What: `profile_values` lists every text in the profile with its address and source, in a fixed
 order; `normalise_quote` folds both sides the same way; `find_evidence` accepts a quote that is a
 substring of one value with at least three words, or a whole value, and returns where it was found;
-`restrict_to_step` and `restrict_to_step_or_process` narrow the search for per-step calls.
+`restrict_to_step` and `restrict_to_step_or_process` narrow the search for per-step calls. A step's
+S13 "rules or judgement" words (`decision_type.evidence`) are one of its values; the `kind` code word is not.
 Must not: search across two values, accept "..." or "…", read the conversation or uploaded files,
 or mutate the profile. Pure: no I/O, no clock.
-Spec 18 §3.3, §4.1; AC-18.8, AC-18.9.
+Spec 18 §3.3, §4.1; AC-18.8, AC-18.9; spec 26 §3.9 (S14 decision criteria words are step evidence), AC-26.22.
 """
 
 from __future__ import annotations
@@ -113,6 +114,13 @@ def profile_values(profile: Mapping[str, Any]) -> list[Value]:
             add(step_cell_key(index, leaf), _texts(step.get(leaf)))
         data = as_mapping(step.get("data")) or {}
         add(step_cell_key(index, "data"), _texts(data.get("inputs")) + _texts(data.get("outputs")))
+        decision = as_mapping(step.get("decision_type")) or {}  # S13: the expert's words, never the kind
+        add(step_cell_key(index, "decision_type"), [v] if isinstance(v := decision.get("evidence"), str) else [])
+        criteria = as_mapping(step.get("decision_criteria")) or {}  # S14: words only, never `written`
+        add(
+            step_cell_key(index, "decision_criteria"),
+            [v for k in ("basis", "set_by", "varies") if isinstance(v := criteria.get(k), str)],
+        )
         effort = as_mapping(step.get("effort")) or {}
         add(
             step_cell_key(index, "effort"),

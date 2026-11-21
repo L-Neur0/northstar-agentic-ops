@@ -1,6 +1,6 @@
 # 23 · Frontend, part 1: the interview side
 
-> **Status:** amended 2026-11-20 (open workspace: `WORKSPACE_OPEN`, product owner decision) · amended 2026-11-20 (§11.7 open-conflict marker, AC-23.146: built) · part 1 approved · §3.13 theme approved · part 2 (§10–§17: documents, report) built · part 3 (§18–§25: workspace) approved 2026-11-20 (Q14 server names win; Q15 cells as display text from the server; Q16–Q20 defaults) · **Implements:** the screens of F-01, F-02, F-03 (honest exit), F-07 (cluster picker), F-08 (step tabs), F-10, F-11, F-21.1–2 (visitor key, resume link), F-23.4 (delete my data) (product); architecture §1 (two sides), §4 (frontend) · **Depends on:** specs 10 (toolchain), 12 (wire models), 13 (field views, *Finish*), 14 (turn), 15 part 2 (routes), 16 (visitor key)
+> **Status:** **amended 2026-11-21 (report v2): the report page and the workspace popup render the six parts of spec 27 (§11.16, AC-23.152 to AC-23.157)** · **amended 2026-11-21 (S14 *Decision criteria* row in the step panel, AC-23.151)** · **amended 2026-11-21 (owner test): progress bar, no Confirm rung, no Roles and systems section (AC-23.147 to AC-23.149)** · **short step walk (S13 row, f/12, agent proposals), approved 2026-11-20** · amended 2026-11-20 (open workspace: `WORKSPACE_OPEN`, product owner decision) · amended 2026-11-20 (§11.7 open-conflict marker, AC-23.146: built) · part 1 approved · §3.13 theme approved · part 2 (§10–§17: documents, report) built · part 3 (§18–§25: workspace) approved 2026-11-20 (Q14 server names win; Q15 cells as display text from the server; Q16–Q20 defaults) · **Implements:** the screens of F-01, F-02, F-03 (honest exit), F-07 (cluster picker), F-08 (step tabs), F-10, F-11, F-21.1–2 (visitor key, resume link), F-23.4 (delete my data) (product); architecture §1 (two sides), §4 (frontend) · **Depends on:** specs 10 (toolchain), 12 (wire models), 13 (field views, *Finish*), 14 (turn), 15 part 2 (routes), 16 (visitor key)
 > **Code:** `frontend/src/{main.tsx,App.tsx,pages,components,services,types,utils,hooks,access}` · **Tests:** next to each file (`*.test.ts[x]`), setup `frontend/src/test/setup.ts`
 > **Part 2** (§10–§17 of this file): document upload and proposals (✓ / ✎), the report screen. **Part 3** (§18–§25): the workspace: access-code login, session list, read-only session popup, conversation, PDF, delete. Overview, edits, validation and briefs come later.
 
@@ -13,7 +13,7 @@ Give the expert three things in the browser: **My processes** (sessions, ideas, 
 - **Side:** interview side of architecture §1 (`pages/Home.tsx`, `pages/ProcessDiscovery.tsx`, `components/process-discovery/`, `components/chat/`). The admin side and the report screen are part 2.
 - **Exists today:** the spec 10 scaffold (one page calling `GET /api/health`), Vite + React 18 + TypeScript strict + Tailwind 3 + React Router 7 + React Query 5 + lucide-react + react-markdown/remark-gfm, Vitest + Testing Library + jsdom, the Vite proxy `/api` → `:8000`.
 - **Changes:** `App.tsx` becomes the router; the scaffold page and its test are replaced. No backend file changes.
-- **Look:** a plain neutral template. Title "Process Discovery", no logo, Tailwind colours (slate neutrals, one blue primary, green / amber / red for status), lucide icons, system font. No external UI kit.
+- **Look:** a plain neutral template. Title "AI Use Case Discovery Agent" (renamed 2026-11-21; short form "Use Case Discovery" under the `sm` breakpoint; My processes opens with the tagline "Find a workflow worth transforming, map it step by step, and see where AI can help"; the How this works dialog is titled "How the AI Use Case Discovery Agent works"; the frontend strings live in `src/config/product.ts`), no logo, Tailwind colours (slate neutrals, one blue primary, green / amber / red for status), lucide icons, system font. No external UI kit.
 
 ## 3. Behaviour
 
@@ -28,7 +28,7 @@ Give the expert three things in the browser: **My processes** (sessions, ideas, 
 | anything else | redirect to `/` | |
 
 1. `main.tsx`: consume the resume fragment (§3.2) **before** the first render, then `QueryClientProvider` (retry 1, no refetch on focus) › `BrowserRouter` › `ApiProvider` (§3.10) › `App`.
-2. `AppHeader` (`components/layout/`): a 56 px bar with a neutral `Search` icon, an `<h1>` "Process Discovery", and an actions slot on the right. Same component on every page.
+2. `AppHeader` (`components/layout/`): a 56 px bar with a neutral `Search` icon, an `<h1>` "AI Use Case Discovery Agent", and an actions slot on the right. Same component on every page.
 3. Layout is full height (`h-screen flex flex-col`); only the message list and the profile panel scroll.
 
 ### 3.2 Visitor key and private resume link (`access/visitorKey.ts`)
@@ -46,7 +46,7 @@ Give the expert three things in the browser: **My processes** (sessions, ideas, 
 
 ```
 +--------------------------------------------------------------------------------+
-| [Q] Process Discovery                                  [+ Start a new interview] |  AppHeader
+| [Q] AI Use Case Discovery Agent                              [+ Start a new interview] |  AppHeader
 +--------------------------------------------------------------------------------+
 | (notice: resume link opened / storage unavailable / deletion done)    [x]      |
 | My processes                                                                   |
@@ -85,7 +85,7 @@ Give the expert three things in the browser: **My processes** (sessions, ideas, 
 
 ```
 +--------------------------------------------------------------------------------------+
-| [Q] Process Discovery        [i How this works] [History Past sessions] [+ New] [My processes] |
+| [Q] AI Use Case Discovery Agent    [i How this works] [History Past sessions] [+ New] [My processes] |
 +--------------------------------------------------------------------------------------+
 | About you › Process › Boundaries › Measures › Step count › step 2 of 4 › Confirm › Review › Finished |
 |                                                                 40/62 points · 65 %  |
@@ -136,6 +136,25 @@ Changing `:sessionId` (Past sessions, New) resets the page state and runs the bo
 | 4 | On `no_candidate` the rungs are muted and a text "Ended: no process to map" replaces the counter |
 | 5 | Right side: `<filledPoints>/<totalPoints> points · <pct> %` with `pct = round(score.value × 100)`, all from the server |
 | 6 | Bar: `role="progressbar"`, `aria-valuenow={pct}`, `aria-valuemin=0`, `aria-valuemax=100`, `aria-label="Completeness"`. Colour: green at ≥ 80 %, amber at ≥ 40 %, else primary. The percentage text is always shown, so colour is never the only cue |
+
+**Amended 2026-11-21 (owner test), spec 14 §3.20 O4 and O10.**
+
+| # | Rule |
+|---|---|
+| 7 | The bar and its percentage show `score.progress` (computed by the server along the interview path; the steps carry their real share), `pct = round(score.progress × 100)`, `aria-label="Progress"`. The client computes nothing. The points text is removed; a session sent without `progress` (an old server) falls back to `score.value` |
+| 8 | No **Confirm** rung: the strip is About you, Process, Boundaries, Measures, Step count, Steps, Review, Finished. A session still stored in `confirm` lights the Steps rung as past and Review as current |
+| 9 | The "Your process" panel has no **Roles and systems** section (`DerivedReviewPanel` removed); the order is `ProcessCard`, Steps, Documents, *Finish*. The *Finish* blocked sentences are only "below 80 %" and "steps not described"; an unknown code is shown as is |
+| 10 | Step names appear in the Steps section as soon as the profile holds them (no wait for P16 or for a confirmation) |
+| 11 | **Tab labels** (product owner decision 2026-11-21, amends §3.8.9 and AC-23.33): a named step's tab reads `k · <step name> (f/12)`, the name cut to one line with an ellipsis (CSS, about 12 rem), the full name in the tooltip (`title`) and in the tab's `aria-label` ("Step k: <name>, f of 12 answered"); a step without a name yet reads `Step k (f/12)`. " · proposed" stays after the count |
+| 12 | **Decision criteria row** (amended 2026-11-21, spec 12 §3.13, spec 14 §3.21 P1; amends §3.8.9): the step panel shows S14 *Decision criteria* after S13 only when the server sends its cell view (`process.substeps[k].decision_criteria`, sent only for a step whose S13 kind is `judgement` or `mix`). It is optional and unscored: marked "(not scored)" like S12, ✓/✎ when proposed, never counted in `f/12` and never keeping a step unsettled. Shown as "Based on: …; set by …; not written down; varies: …" |
+
+| ID | Given / when / then |
+|---|---|
+| AC-23.147 | `DiscoveryPhaseMeter` with `score {value: 0.83, progress: 0.34}` shows 34 % and `aria-valuenow=34`; without `progress` it shows the value |
+| AC-23.148 | The strip has no Confirm rung; `ProcessProfilePanel` renders no "Roles and systems" section and no Confirm roles / Confirm systems button |
+| AC-23.149 | A session whose profile has three step names and P16 = 3 shows the three names in the step tabs |
+| AC-23.150 | A tab of a named step shows `1 · <name>` with the truncate class, `title` = the full name and an `aria-label` naming the step and the name; an unnamed step's tab shows `Step 2 (f/12)` |
+| AC-23.151 | A step with an S14 view shows a 14th row *Decision criteria* after *Rules or judgement*, marked "(not scored)", with ✓/✎ when proposed, and its tab still counts `(f/12)`; a step without an S14 view (S13 `rules` or unknown) shows thirteen rows. The fake API sends S14 views only for judgement or mix steps |
 
 ### 3.7 Chat (`components/chat/`)
 
@@ -211,7 +230,7 @@ Above the composer, in order:
 | Data in and out | "in: … · out: …" |
 | Effort | "<duration> · <frequency>" |
 
-9. **`SubstepTabs`**: header "Steps <complete>/<N>" (N = P16, else rows). One tab per row, `Step k (f/11)` where f counts S01–S11 views of step k with status `complete` (keys `process.substeps[k].<leaf>`, **1-based**). Tabs follow the WAI-ARIA tabs pattern (`role="tablist"`, roving `tabindex`, arrow keys), scroll horizontally, and the active tab scrolls into view. The tab panel shows "Step k · <name>" and the twelve cell rows; S12 shows "(not scored)". No rows yet → "The steps appear here once you start describing them."
+9. **`SubstepTabs`**: header "Steps <complete>/<N>" (N = P16, else rows). One tab per row, `Step k (f/12)` (amended 2026-11-21: `k · <name> (f/12)` once the step has a name, §3.6 rule 11) where f counts the scored step views (S01–S11 and S13, amended 2026-11-20, short step walk) of step k with status `complete` (keys `process.substeps[k].<leaf>`, **1-based**). Tabs follow the WAI-ARIA tabs pattern (`role="tablist"`, roving `tabindex`, arrow keys), scroll horizontally, and the active tab scrolls into view. The tab panel shows "Step k · <name>" and the thirteen cell rows in registry order (S13 *Rules or judgement* after S12); S12 shows "(not scored)". A Tier C value proposed by the agent (meta `source: agent`) shows the chip "suggested from your answers" and the same ✓/✎ as a document proposal. No rows yet → "The steps appear here once you start describing them."
    **No further steps** button under the tabs: enabled only when at least one step row exists, `profile.process.substeps_complete` is false, the session is active and no confirm is in flight; otherwise disabled. It calls `POST /confirm {target: "substeps"}`; the server trims the declared count (P16) to the steps already started (spec 13), and the returned session replaces the panel (tabs, Steps count, phase meter). Hint next to it: "Use this if the process has fewer steps than you said."
 10. **Active step** (`substepProgress.activeStepIndex(fieldViews, rows)`): the first row that has an S01–S11 view not `complete` and not `skipped` (the walk goes in order, F-08.3); all settled → the last row. The tab follows it until the expert clicks a tab; any phase change hands control back.
 11. **`DerivedReviewPanel`** (section header "Roles and systems x/2", x = confirmed lists): two rows, **Roles** (`profile.process.all_roles`) and **Systems** (`all_tools`), each with read-only chips (or "None yet"), a status text "✓ Confirmed" or "Not confirmed yet", and a button **Confirm roles** / **Confirm systems** → `POST /confirm {target: "roles" | "tools"}`. Disabled while any confirm is in flight or the session is not active. Confirming an **empty** list opens an `alertdialog`: "Confirm that no roles are involved?" with **Cancel** and **Yes, confirm** (F-10.2). Footer: "To correct an entry, say it in the chat."
@@ -450,7 +469,7 @@ ui/{Modal,Button,Pill,Tabs,ProgressBar,Alert,Spinner}.tsx
 | AC-23.3 | Given the URL `/#k=<valid key>`, when the app starts, then the key is stored, the fragment is removed, and Home shows the resume notice; an invalid value is removed and "This resume link is not valid." is shown |
 | AC-23.4 | Every expert call sends `X-Visitor-Key`; `GET /api/taxonomy` does not |
 | AC-23.5 | `services/api.ts` uses the method, path and body of §4 for every call, parses `{code, message, reason}` into `ApiError`, gives `network` on a failed fetch and `http_<status>` on a non-JSON body |
-| AC-23.6 | Routes: `/`, `/process-discovery`, `/process-discovery/:id`, `/report/:id` render their pages; an unknown path redirects to `/`; every page shows the header "Process Discovery" and no logo |
+| AC-23.6 | Routes: `/`, `/process-discovery`, `/process-discovery/:id`, `/report/:id` render their pages; an unknown path redirects to `/`; every page shows the header "AI Use Case Discovery Agent" and no logo |
 | AC-23.7 | Home lists sessions with name (or "Not named yet"), status text by status and `reportStatus`, completeness and relative time, in server order |
 | AC-23.8 | Home shows **Continue** for active, **Open report** for finished, and **Delete** for every session; Delete asks first, then calls `DELETE` and refreshes the list |
 | AC-23.9 | When a list fails to load, Home shows an error with Retry, not an empty list |
@@ -477,7 +496,7 @@ ui/{Modal,Button,Pill,Tabs,ProgressBar,Alert,Spinner}.tsx
 | AC-23.30 | Values are formatted per §3.8.8; a none row shows "None"; an owner with `none_identified` shows "None" |
 | AC-23.31 | A `proposed` field shows "Proposed", its source ("from <document>" or "from your idea"), the quote, and the confirm-in-chat hint; it is not counted in the section count |
 | AC-23.32 | On phase `steps`, unpinned upper sections collapse and Steps opens; on `review`, unpinned sections with gaps open; a clicked section stays as the expert left it through later phase changes |
-| AC-23.33 | `SubstepTabs` shows `Step k (f/11)` from the 1-based field views, marks S12 "(not scored)", supports arrow keys between tabs, and the active tab is the first unsettled step until the expert clicks a tab |
+| AC-23.33 | `SubstepTabs` shows `Step k (f/12)` from the 1-based field views, marks S12 "(not scored)", supports arrow keys between tabs, and the active tab is the first unsettled step until the expert clicks a tab |
 | AC-23.34 | `DerivedReviewPanel` lists roles and systems with "✓ Confirmed" or "Not confirmed yet"; **Confirm roles** calls `confirm(id, "roles")`, **Confirm systems** calls `confirm(id, "tools")` |
 | AC-23.35 | Confirming an empty list opens an `alertdialog`; **Cancel** makes no call; **Yes, confirm** makes the call |
 | AC-23.36 | The cluster link opens `ClusterPicker`, which lists the taxonomy clusters with name, code and description and marks the current one with `aria-pressed="true"` |
@@ -552,7 +571,7 @@ All decided at the lead review; kept here for the record.
 | Q3 | Should Home show the specialist's validation note? `SessionSummary` has no note today | No; part 2 shows it on the report page |
 | Q4 | Should *Finish* ask for a second confirmation, since the session then closes? | No: one press, with the sentence "After this, the session is closed." under the button |
 | Q5 | Is there a screen for `confirm` with `target: "substeps"`? | Yes: the **No further steps** button in the Steps section (§3.8.9, AC-23.50–23.51) |
-| Q6 | Fixed title or the product name from `GET /api/config`? | Fixed title "Process Discovery" |
+| Q6 | Fixed title or the product name from `GET /api/config`? | Fixed title "AI Use Case Discovery Agent" |
 
 ---
 
@@ -737,7 +756,7 @@ Every new action carries `forId`; a result for another session is ignored (part 
 
 ```
 +--------------------------------------------------------------------------------------+
-| [Q] Process Discovery              [Download PDF] [Back to My processes] [moon]      |  AppHeader
+| [Q] AI Use Case Discovery Agent          [Download PDF] [Back to My processes] [moon]      |  AppHeader
 +--------------------------------------------------------------------------------------+
 | Contents          | DISCOVERY REPORT · <product name> · <company name>                |  cover
 |  At a glance      | Monthly cost review                                   [Mapped]   |
@@ -785,7 +804,7 @@ Every new action carries `forId`; a result for another session is ignored (part 
 | 1 At a glance (`at_a_glance`) | `AtAGlance` | The hours sentence in large text; "Recommended route:" + the headline (left out when absent); "Top opportunities" as a list: title · steps label · hours; "To prepare" as a list. The note "Hours need: <fields>." when sent |
 | 2 The process (`process`) | `ReportFields` | A `<dl>`: label → value; a quote (when the field has one) as a small muted line "the expert's words" or "from <document>"; the task or one-off note above the list |
 | 3 Volume and measures (`measures`) | `ReportFields` | Same `<dl>`; "Not measured yet" comes from the server |
-| 4 Process map and steps (`map`) | `ProcessMap` + `StepTable` | §11.12 map; "Systems used: a, b, c"; the step table: `<table>` with `<caption>` "Steps of the process, one column per step", `<th scope="col">` "Step k · <name>" per step, `<th scope="row">` per leaf label (S01–S12), cells as sent (including "— (skipped)" and "(proposed, not confirmed)"). The table sits in a `role="region"` with `aria-label="Step table"` and `tabindex="0"`, scrolling sideways; the first column is sticky |
+| 4 Process map and steps (`map`) | `ProcessMap` + `StepTable` | §11.12 map; "Systems used: a, b, c"; the step table: `<table>` with `<caption>` "Steps of the process, one column per step", `<th scope="col">` "Step k · <name>" per step, `<th scope="row">` per leaf label (S01–S13), cells as sent (including "— (skipped)" and "(proposed, not confirmed)"). The table sits in a `role="region"` with `aria-label="Step table"` and `tabindex="0"`, scrolling sideways; the first column is sticky |
 | 5 Step-by-step AI assessment (`steps`) | `StepAssessmentTable` | `<table>` with `<caption>` and `<th scope="col">`: Step, Hours a year, AI fit, Route, Why this route, Reason, Evidence. AI fit = an icon (`Bot` automate, `Handshake` assist, `User` human, `HelpCircle` not assessed) plus the server's `fitLabel` text; route = `routeName` ("No route" as sent); evidence in quotes with its label ("the expert's words" / "from <document>"). The catalogue note above the table (§11.11.2) |
 | 6 Recommended route (`route`) | `RecommendedRoute` | The headline as a lead sentence; each group sent (Start with, Later, Fix first, Stays with people, No route yet) as an `<h3>` + list "Step k · <name> · <hours> · <route name>" (or the reason for Fix first); "What to have in place" list. Groups are shown in the order and number sent; empty groups are not sent (spec 20) and not invented |
 | 7 Transformation assessment (`assessment`) | `OpportunityList` | The summary paragraph; one `<article>` per opportunity: `<h3>` title, a line "<steps label> · <type label> · Impact <word> · Feasibility <word>", then a `<dl>`: What changes, How, Prepare first, Why this impact, Why this feasibility, Evidence (quote + label), and the review status when sent ("Accepted by IT"); then "Steps that stay with people": steps label, reason, evidence |
@@ -852,7 +871,7 @@ Rules: node ids are replaced by generated ids (`n0`, `n1`, … in diagram order)
 
 | # | Behaviour |
 |---|---|
-| 1 | `getConfig()` returns `{productName: "Process Discovery", regions, languages, documents: {allowedTypes: ["pdf","docx","xlsx","csv","txt","md","bpmn","xml"], maxFiles: 5, maxFileMb: 10}}` |
+| 1 | `getConfig()` returns `{productName: "AI Use Case Discovery Agent", regions, languages, documents: {allowedTypes: ["pdf","docx","xlsx","csv","txt","md","bpmn","xml"], maxFiles: 5, maxFileMb: 10}}` |
 | 2 | `uploadDocument` checks count, size and type like the server, then calls `onProgress` at 25, 50, 75, 100 % about 150 ms apart, then waits 800 ms ("reading") |
 | 3 | **Scripted outcomes by file name** (case-insensitive): a name with `procedure` → 2 process fields (trigger, end result) and, when the step table is empty, 5 proposed step names, each with a quote from a fixed procedure text; `.bpmn` → 5 proposed step names and 2 proposed roles from lanes; `empty` → nothing new; `long` → as `procedure` plus `truncated` and the "read only the first part" sentence; `failed` → `outcome: "failed"` with the model-failure sentence; `scan` → 422 `document_unreadable`; `inject` → 400 `unsafe_input`. Any other name behaves like `procedure`. Sentences are built from the spec 17 §3.12 templates |
 | 4 | Proposals follow the fill-only rule: they never overwrite a value the expert gave; they set the field view to `proposed` with `source: "document"`, `documentName`, `quote` |
@@ -860,6 +879,23 @@ Rules: node ids are replaced by generated ids (`n0`, `n1`, … in diagram order)
 | 6 | `getReport(id)` returns the fake EU report (the spec 20 cost review: 342 h; step hours 72, 96, 72, 30, 72; assumed tool set note) for a finished fake session, 404 otherwise. `getReportPdf(id)` returns a small valid PDF blob and the file name `discovery-report-monthly-cost-review.pdf` |
 | 7 | **Triggers:** `/error <code>` (part 1) also applies to the next document, proposal, report or PDF call; `/report-failed <part key>` makes the next report carry the failed note for that part (for `steps`, also `route`); `/report-missing <part key>` leaves that key out of the next report |
 | 8 | Report fixtures in `src/test/fixtures/report.ts`: `euReport` (complete), `euReportStepsFailed`, `euReportSimplifiedMap`, `thinReport` (minimum fields, many "—"); the fake and the tests share them |
+
+### 11.16 Report v2 (amended 2026-11-21 (report v2), spec 27)
+
+Spec 27 replaces the eleven parts with six. The wire model (`DiscoveryReport` in `backend/app/models/process_discovery_wire.py`) is the contract and wins over this text. This amends §11.10 rules 5–6, §11.11 (parts 1 and 5–11), §11.15 (`/report-failed <part>` takes a v2 key) and §19.4 blocks 4–7. Superseded ACs: AC-23.84, AC-23.86, AC-23.93–23.96 (read as AC-23.153–23.156), AC-23.129 (read as AC-23.157), and in AC-23.101 "`steps` and `route`" (now `steps` only).
+
+| Part (key) | Component | Shown as |
+|---|---|---|
+| 1 Summary (`summary`) | `SummarySentences` | Each server sentence as its own paragraph, in the order sent; nothing invented when the list is short or empty |
+| 2–4 (`process`, `measures`, `map`) | unchanged | As §11.11 |
+| 5 Step-by-step AI assessment (`steps`) | `StepLevelTable` | Columns: Step, Hours a year, AI fit, Because, Route (route name, the route reason as a small line), Why, The expert's words. AI fit = a signal icon (strong high, partial medium, weak low, otherwise `HelpCircle`) plus the server's `levelLabel`; *Because* is the server's list. Catalogue note above |
+| 6 AI readiness and feasibility (`feasibility`) | `Feasibility` | Three blocks with headings one level below the part: **The three questions** (`QuestionsTable`: Question as row header, Level as icon + `levelLabel`, Why + the quote with "the expert's words"); **Readiness** (`ReadinessTable`: Dimension, Level, To prepare; then `readinessFooter`); **Before starting and risks** (the bullets as a list, then `gaps` in small print). The third heading is left out when both are empty |
+
+Levels are always the server's words, never yes / no or go / no-go; the client formats nothing. Anchors are `#part-<key>`. The fallback titles are Summary, The process, Volume and measures, Process map and steps, Step-by-step AI assessment, AI readiness and feasibility.
+
+**Workspace popup (§19.4 blocks 4–7, amended):** Summary (`SummarySentences`), Step-by-step AI assessment (`StepLevelTable`), **The three questions** (`QuestionsTable` from `report.feasibility`; readiness and bullets stay in the report and PDF) and Process map, each an `<h3>` block inside its own `ReportPartBoundary`. `StepAssessmentTable`, `RecommendedRoute`, `OpportunityList`, `AtAGlance`, `HoursTables`, `SuggestedPath` and `GapsAndSources` are removed.
+
+**Samples:** `src/test/fixtures/api/report.json` and the report in `review-session.json` are recorded from the v2 server by `backend/scripts/export_api_samples.py`; the tests read level words and sentences from the sample, so a wording change on the server needs no test change.
 
 ## 12. Interfaces (part 2)
 
@@ -1051,6 +1087,12 @@ utils/{documentLimits,processMap,downloadFile}.ts · types/report.ts
 | AC-23.104 | The "+" button is disabled while a turn is sending, while an upload runs (spinner shown), when the session is closed, and when the document limit is reached; the tooltip states the reason |
 | AC-23.105 | Dropping a file on the chat area uploads it; the upload result sentence appears in the chat as a system note, and the Documents section in the panel updates from the returned session |
 | AC-23.146 | *(amended 2026-11-20)* A process field or a step cell whose view has `conflict: "open"` shows the text "Conflict – answer in the chat" in its row and no extra button; with `conflict: "left"` or `null` the text is absent |
+| AC-23.152 | *(amended 2026-11-21 (report v2))* `types/report.ts` and `checkDiscoveryReport` / `loadReport` mirror the v2 wire model: `summary`, `process`, `measures`, `map`, `steps` (rows with `level`, `levelLabel`, `because`), `feasibility` (`questions` keyed q1–q3, `readiness`, `readinessFooter`, `bullets`, `gaps`); the recorded sample passes, numbered 1–6; a v1 report fails with `summary` and `feasibility` missing |
+| AC-23.153 | *(amended 2026-11-21 (report v2))* The summary shows each server sentence as one paragraph in order and nothing when the list is empty |
+| AC-23.154 | *(amended 2026-11-21 (report v2))* Part 5 has columns Step, Hours a year, AI fit, Because, Route, Why, The expert's words; AI fit is a signal icon plus the server's level words ("Strong fit", "Not assessed"), never yes / no; the catalogue note shows when sent |
+| AC-23.155 | *(amended 2026-11-21 (report v2))* The three questions table has one row per question with the question as row header, the level words with an icon, and why with the quote labelled "the expert's words" |
+| AC-23.156 | *(amended 2026-11-21 (report v2))* Part 6 shows, in order, The three questions, Readiness (six rows: Dimension, Level, To prepare; then the footer) and Before starting and risks (the bullets, then the gaps line in small print); its block headings sit one level below the part heading |
+| AC-23.157 | *(amended 2026-11-21 (report v2))* The report page renders the cover and six sections "1. Summary" … "6. AI readiness and feasibility" linked from the contents nav, with no euro, saving, yes or no-go; the workspace popup of a finished session renders Summary, Step-by-step AI assessment, The three questions and Process map as `<h3>` blocks, and none of the old route or opportunity blocks |
 
 ## 15. Test plan (part 2)
 
@@ -1132,7 +1174,7 @@ No link to `/workspace` from the expert's screens (unchanged part 1 rule: no adm
 | **Error** | List call fails (not 401 / 403) | `ui/Alert` with the part 1 §3.11 sentence and **Retry**. Never an empty list or zero counts |
 | **Session ended** | Any workspace call returns 401 `workspace_code_required` | Token cleared, popup closed, login shown with the notice "Your workspace session has ended. Enter the access code again." |
 
-Header (`AppHeader`, title "Process Discovery · Workspace"): when logged in, the typed name as text ("Signed in as <name>"), **Refresh** (refetches the list), **Log out** (clears the token, shows login), then the theme toggle (part 1 §3.13, unchanged). Below 640 px the buttons become icon buttons with `aria-label`s.
+Header (`AppHeader`, title "AI Use Case Discovery Agent · Workspace"): when logged in, the typed name as text ("Signed in as <name>"), **Refresh** (refetches the list), **Log out** (clears the token, shows login), then the theme toggle (part 1 §3.13, unchanged). Below 640 px the buttons become icon buttons with `aria-label`s.
 
 ### 19.2 Login (`components/workspace/WorkspaceLogin.tsx`, `access/workspaceToken.ts`)
 

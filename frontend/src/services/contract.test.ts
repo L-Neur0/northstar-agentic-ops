@@ -28,7 +28,7 @@ import {
 } from './wireGuards'
 import { discoveryReducer, initialDiscoveryState } from '../hooks/discoveryReducer'
 import { errorEffect, errorText, ERROR_TEXT } from '../utils/discoveryErrors'
-import type { SessionOut, TurnOut } from '../types/process-discovery'
+import type { FieldView, SessionOut, TurnOut } from '../types/process-discovery'
 import createSession from '../test/fixtures/api/create-session.json'
 import turn from '../test/fixtures/api/turn.json'
 import setCluster from '../test/fixtures/api/set-cluster.json'
@@ -80,6 +80,14 @@ describe('real samples parse into the wire types (AC-23.5)', () => {
     expect(check(result)).toEqual([])
   })
 
+  it('real sessions carry score.progress in [0, 1] (AC-23.147)', () => {
+    for (const sample of [createSession, setCluster, confirmRoles, finishOk] as unknown as SessionOut[]) {
+      expect(typeof sample.score.progress).toBe('number')
+      expect(sample.score.progress).toBeGreaterThanOrEqual(0)
+      expect(sample.score.progress).toBeLessThanOrEqual(1)
+    }
+  })
+
   it('config matches its type (not used by part 1, kept in the contract)', () => {
     expect(checkPublicConfig(config)).toEqual([])
   })
@@ -90,13 +98,17 @@ describe('real samples parse into the wire types (AC-23.5)', () => {
     expect(checkSessionOut({ ...createSession, finish: { ready: true } })).not.toEqual([])
   })
 
+  it('a session still stored in confirm is a valid wire value (AC-23.148)', () => {
+    expect(checkSessionOut({ ...createSession, phase: 'confirm' })).toEqual([])
+  })
+
   it('every error sample is an ApiErrorBody and the client keeps code, message and reason', async () => {
     for (const body of [finishBlocked, errorKey, errorNotFound, errorInvalid]) expect(checkApiErrorBody(body)).toEqual([])
     serve(409, finishBlocked)
     await expect(api.finish('s')).rejects.toMatchObject({
       status: 409,
       code: 'map_incomplete',
-      reason: 'roles_not_confirmed',
+      reason: 'below_gate',
     })
   })
 })
@@ -125,9 +137,9 @@ describe('the reducer handles real responses (AC-23.43)', () => {
     })
     const error = new ApiError(409, finishBlocked.code, finishBlocked.message, finishBlocked.reason)
     const effect = errorEffect(error, 'finish')
-    expect(effect).toEqual({ kind: 'finish_blocked', reason: 'roles_not_confirmed' })
-    const s2 = discoveryReducer(s1, { type: 'FINISH_BLOCKED', forId: createSession.id, reason: 'roles_not_confirmed' })
-    expect(s2.session?.finish).toMatchObject({ ready: false, blockedBy: 'roles_not_confirmed' })
+    expect(effect).toEqual({ kind: 'finish_blocked', reason: 'below_gate' })
+    const s2 = discoveryReducer(s1, { type: 'FINISH_BLOCKED', forId: createSession.id, reason: 'below_gate' })
+    expect(s2.session?.finish).toMatchObject({ ready: false, blockedBy: 'below_gate' })
     expect(s2.error).toBeNull()
   })
 })
@@ -167,9 +179,17 @@ describe('the fake API returns the same shapes (spec 23 §3.12.4)', () => {
     const fakeKeys = turnOut.session.fieldViews.filter((v) => !v.key.includes('substeps[')).map((v) => [v.key, v.id, v.phase])
     const realKeys = confirmRoles.fieldViews.filter((v) => !v.key.includes('substeps[')).map((v) => [v.key, v.id, v.phase])
     expect(fakeKeys).toEqual(realKeys)
-    const fakeStep = turnOut.session.fieldViews.filter((v) => v.key.startsWith('process.substeps[1].')).map((v) => [v.key, v.id])
-    const realStep = confirmRoles.fieldViews.filter((v) => v.key.startsWith('process.substeps[1].')).map((v) => [v.key, v.id])
-    expect(fakeStep).toEqual(realStep)
+    // Real step 1 is a mix step, so it carries S14 (spec 12 §3.13); compare it with the fake's first
+    // judgement or mix step, and check that a fake rules step has no S14 (AC-23.151).
+    const leaves = (views: Array<Pick<FieldView, 'key' | 'id'>>, k: number) =>
+      views.filter((v) => v.key.startsWith(`process.substeps[${k}].`)).map((v) => [v.key.split('.').pop(), v.id])
+    const kinds = turnOut.session.profile.process.substeps.map((st) => st.decision_type.kind)
+    const judgementStep = kinds.findIndex((k) => k === 'judgement' || k === 'mix') + 1
+    expect(confirmRoles.profile.process.substeps[0].decision_type.kind).toBe('mix')
+    expect(leaves(turnOut.session.fieldViews, judgementStep)).toEqual(leaves(confirmRoles.fieldViews, 1))
+    const rulesStep = kinds.indexOf('rules') + 1
+    expect(rulesStep).toBeGreaterThan(0)
+    expect(leaves(turnOut.session.fieldViews, rulesStep).map(([, id]) => id)).not.toContain('S14')
   })
 
   it('uses the real error codes: invalid_value for a bad message, idea_started for a second start', async () => {
@@ -226,23 +246,41 @@ describe('document samples (AC-23.59)', () => {
   })
 })
 
-describe('report sample (spec 23 Q7, Q8; AC-23.83)', () => {
-  it('has the cover and the eleven parts in order, numbered 1–11, every number a string', () => {
+describe('report sample (spec 23 Q7, Q8; AC-23.83; report v2, AC-23.152)', () => {
+  it('has the cover and the six v2 parts in order, numbered 1–6, every number and level a string', () => {
     const loaded = loadReport(report)
     expect(loaded.cover).not.toBeNull()
+    expect(PART_KEYS).toEqual(['summary', 'process', 'measures', 'map', 'steps', 'feasibility'])
     PART_KEYS.forEach((key, i) => expect(loaded[key]?.number).toBe(i + 1))
-    expect(report.atAGlance.top.every((t) => typeof t.hours === 'string')).toBe(true)
-    expect(typeof report.potential.totals.hours).toBe('string')
+    expect(report.summary.sentences.length).toBeGreaterThan(0)
+    expect(report.steps.rows.every((r) => typeof r.hours === 'string' && typeof r.levelLabel === 'string')).toBe(true)
+    expect(report.feasibility.questions.map((q) => q.key)).toEqual(['q1', 'q2', 'q3'])
+    expect(report.feasibility.readiness).toHaveLength(6)
+    expect(report.feasibility.bullets.length).toBeLessThanOrEqual(5)
+    for (const old of ['atAGlance', 'route', 'assessment', 'potential', 'readiness', 'path', 'gaps']) expect(report).not.toHaveProperty(old)
+  })
+
+  it('a v1 report (old parts, no summary or feasibility) fails the guard (AC-23.152)', () => {
+    const v1 = { ...report, atAGlance: {} } as Record<string, unknown>
+    delete v1.summary
+    delete v1.feasibility
+    expect(checkDiscoveryReport(v1)).toEqual(expect.arrayContaining(['$.summary: missing', '$.feasibility: missing']))
+  })
+
+  it('a question key outside q1–q3 fails the guard (AC-23.152)', () => {
+    const bad = structuredClone(report)
+    ;(bad.feasibility.questions[0] as { key: string }).key = 'q4'
+    expect(checkDiscoveryReport(bad).some((p) => p.startsWith('$.feasibility.questions[0].key'))).toBe(true)
   })
 
   it('a part of the wrong shape is treated as missing, not as a page error', () => {
     const broken = { ...report, steps: { number: 5 }, map: null }
-    delete (broken as Record<string, unknown>).gaps
+    delete (broken as Record<string, unknown>).feasibility
     const loaded = loadReport(broken)
     expect(loaded.steps).toBeNull()
     expect(loaded.map).toBeNull()
-    expect(loaded.gaps).toBeNull()
-    expect(loaded.route).not.toBeNull()
+    expect(loaded.feasibility).toBeNull()
+    expect(loaded.summary).not.toBeNull()
   })
 
   it('the 409 report_not_ready body is an ApiErrorBody', async () => {
@@ -260,7 +298,7 @@ describe('the fake returns the same document and report shapes', () => {
     expect(checkDocumentUploadOut(up)).toEqual([])
     expect(checkSessionOut(await fake.removeDocument(s.id, up.document.id))).toEqual([])
     await fake.sendMessage(s.id, '/finish-ready')
-    for (const target of ['substeps', 'roles', 'tools'] as const) await fake.confirm(s.id, target)
+    await fake.confirm(s.id, 'substeps')
     await fake.finish(s.id)
     expect(checkDiscoveryReport(await fake.getReport(s.id))).toEqual([])
   })

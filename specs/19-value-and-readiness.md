@@ -1,6 +1,6 @@
 # 19 · Value, labels, readiness and the suggested path
 
-> **Status:** approved · **Implements:** F-12 (item 4, the path), F-14, F-15 (product); §6.2 LABEL, §6.4 grounding, §5 assessment fields (architecture) · **Depends on:** specs 10 (`Rates`, config loader), 11 (LLM client), 12 (models, `counts`), 13 (profile dicts), 20 (opportunities, evidence check, profile fence, fingerprint)
+> **Status:** approved · **built 2026-11-20** · **Implements:** F-12 (item 4, the path), F-14, F-15 (product); §6.2 LABEL, §6.4 grounding, §5 assessment fields (architecture) · **Depends on:** specs 10 (`Rates`, config loader), 11 (LLM client), 12 (models, `counts`), 13 (profile dicts), 20 (opportunities, evidence check, profile fence, fingerprint)
 > **Amendment 2026-11-19 (draft): hours only.** Cost today, hours that could be freed, euro values and saving shares are **parked until the value method is decided (refinement R5)**. Their text stays below, marked *parked (R5)*, so it can come back; code does not compute or show them while R5 is open. `value_parse.py` moves to `domain/` so the interview's steering (spec 14 §3.15) uses the same grammar.
 > **Code:** `backend/app/services/process_discovery/domain/value_parse.py`, `artifacts/{value,readiness,path}.py`, `artifacts/labels/{schemas,prompts,labels}.py`, the `ReadinessConfig` model in `backend/app/core/config.py`
 > **Tests:** `backend/tests/unit/process_discovery/artifacts/`
@@ -250,6 +250,32 @@ If LABEL failed: Data and Rules are `unknown`, "Not rated: the input labels coul
 ### 3.7 Recompute
 
 `compute_code_parts(profile, opportunities, labels, step_ratings, outcomes, rates, readiness_cfg, catalogue, previous_readiness)` runs value (hours) → readiness → blocked_by → path → recommended route (`route_summary`, spec 26 §3.6), with no model call. It runs at *Finish* (spec 20) and after any specialist change to the profile or a review (spec 21). Specialist notes on dimensions are carried over by key.
+
+### 3.8 Amendment (built 2026-11-21): per-run phrases, two-part answers, decision criteria
+
+> **Status:** approved 2026-11-21 · **built 2026-11-21** (AC-19.44 to AC-19.49). As built: `weekday`, `weekend` and `shift` are also not units of work. Why: in evaluation run `20261121-084902` every step's frequency was "once per role, about 6 times a month", which §3.1 cannot read, so the report had **no hours a year at all** (spec 14 §3.21 row 2). Where this section differs from §3.1, §3.3 or §3.5, it wins.
+
+**Parsing (§3.1 steps 3 and 4).** A *unit-of-work noun* is 1–3 words whose first word is not a period word (§3.1 period table, weekday names) and not `run`, `time` or `cycle`; examples: `role`, `candidate`, `request`, `new starter`, `site visit`.
+
+| # | Rule | Example → result |
+|---|---|---|
+| F1 | **Per run, new forms:** `once per N`, `once for each N`, `once for every N`, `per N`, `each N`, `for each N`, `for every N` (N a unit-of-work noun), and `every time` followed by any words | "once per role", "for every request", "every time we hire" → per run, 1 |
+| F2 | `QTY times per N`, `QTY times each N`, `twice per N` | "twice per candidate" → per run, 2 |
+| F3 | **Two-part answers:** when the whole text does not parse, it is split on `,` and `;` and each part is read; the first part that is **per run** wins, else the first part that parses; none parses → unreadable as today | "once per role, about 6 times a month" → per run, 1 |
+| F4 | **Durations:** the per-run tail of step 3 also takes `per N`, `each N`, `for each N` (N a unit-of-work noun). A period word after `per` stays unreadable (a rate is not a duration per run) | "3 working days per role" → 24 h; "3 hours per week" → unreadable |
+
+**LABEL (§3.3, rule 3).** The fenced profile renders S14 under its step as "Decision criteria: based on: …; set by: …; written: …; varies: …". Added sentence: "When the step's decision criteria say what a decision is based on, that decision is `explainable_judgement` unless the expert's words say it rests on experience or feel."
+
+**Readiness, Rules (§3.5).** Level and reason are unchanged (LABEL decides them). The to-prepare line of `rules` (medium or low) gets, for at most 2 steps with S14 present, in step order: ` Step <n> today: based on "<basis>"` + `, set by <set_by>` (when present) + `, not written down` / `, partly written down` (when `written` is `no` / `partly`) + `, varies: "<varies>"` (when present) + `.` (each value capped at 120). When `rules` is high and a step's S14 has `written: no`, the level stays high and the reason gets ` Criteria for step <n> are not written down.`
+
+| ID | Given / when / then |
+|---|---|
+| AC-19.44 | `parse_frequency` reads "once per role", "per candidate", "for every request", "every time we hire" as per run 1 and "twice per candidate" as per run 2; "once per month" stays periodic 12; "per weekday" is not per run |
+| AC-19.45 | `parse_frequency("once per role, about 6 times a month")` is per run 1; `"about 6 times a month; sometimes more"` is periodic 72; `"it depends, really"` is `None` |
+| AC-19.46 | `parse_duration("3 working days per role")` = 24 h; `parse_duration("about 3 hours each candidate")` = 3 h; `parse_duration("3 hours per week")` is `None` |
+| AC-19.47 | Regression: the p05 stored profile (effort "about 3 hours" / "about 1 day" × 2, frequency "once per role, about 6 times a month", P10 6 a month) gives 19 h a run and 1,368 h a year (19 × 72), and Risk and size is rated |
+| AC-19.48 | The LABEL prompt holds the S14 rendering and the added sentence |
+| AC-19.49 | Rules medium with step 3 S14 `{basis: "the hiring manager's must-haves", set_by: "Hiring manager", written: "no", varies: "every manager wants something different"}` → the to-prepare line ends with ` Step 3 today: based on "the hiring manager's must-haves", set by Hiring manager, not written down, varies: "every manager wants something different".`; with no S14 the line is unchanged |
 
 ## 4. Interfaces
 

@@ -85,7 +85,11 @@ def test_ac_21_3_counts_match_field_views_and_stored_lists():
     views = field_views(session.profile.model_dump(mode="json", by_alias=True), counters={}, vocab=VOCAB)
     rows, _, _ = review_rows([session], vocab=VOCAB)
     row = rows[0]
-    assert row.fields_total == len(views) == len(PROFILE_SPECS) + 5 * len(STEP_SPECS)
+    assert (
+        row.fields_total
+        == len(views)
+        == len(PROFILE_SPECS) + 5 * len([s for s in STEP_SPECS if s.applies_when is None])
+    )
     assert row.fields_filled == sum(v["status"] == "complete" for v in views)
     assert (row.steps, row.message_count, row.document_count) == (5, 3, 1)
 

@@ -226,3 +226,53 @@ def test_ac_19_38_readiness_is_pure() -> None:
     tree = ast.parse(path.read_text(encoding="utf-8"))
     modules = {n.module or "" for n in ast.walk(tree) if isinstance(n, ast.ImportFrom)}
     assert not any(m.endswith("llm") or m in {"os", "pathlib", "time", "datetime"} for m in modules)
+
+
+# --- Amendment §3.8: decision criteria (S14) in the Rules line -------------------------------------
+
+CRITERIA = {
+    "basis": "the hiring manager's must-haves",
+    "set_by": "Hiring manager",
+    "written": "no",
+    "varies": "every manager wants something different",
+}
+
+
+def _with_criteria(step: int, criteria: dict) -> dict:
+    profile = load_profile("eu")
+    profile["process"]["substeps"][step - 1]["decision_criteria"] = criteria
+    return profile
+
+
+def test_ac_19_49_rules_line_names_the_criteria() -> None:
+    """AC-19.49: Rules medium + step 3 S14 → the to-prepare line ends with the criteria clause."""
+    dim = _readiness(_with_criteria(3, CRITERIA), labels=_decisions(4, 6))["rules"]
+    assert dim.level == "medium"
+    assert dim.to_prepare.startswith(CFG.dimensions["rules"].to_prepare["medium"])
+    assert dim.to_prepare.endswith(
+        ' Step 3 today: based on "the hiring manager\'s must-haves", set by Hiring manager, not written down, '
+        'varies: "every manager wants something different".'
+    )
+
+
+def test_ac_19_49_no_criteria_line_unchanged() -> None:
+    """AC-19.49: without S14 the line is the configured one."""
+    dim = _readiness(labels=_decisions(4, 6))["rules"]
+    assert dim.to_prepare == CFG.dimensions["rules"].to_prepare["medium"]
+
+
+def test_ac_19_49_at_most_two_steps_and_partly() -> None:
+    """§3.8: at most 2 steps, in step order; partly → "partly written down"; set_by and varies optional."""
+    profile = _with_criteria(4, {"basis": "b4", "written": "partly"})
+    for step in (1, 2):
+        profile["process"]["substeps"][step - 1]["decision_criteria"] = {"basis": f"b{step}"}
+    line = _readiness(profile, labels=_decisions(4, 6))["rules"].to_prepare
+    assert line.endswith(' Step 1 today: based on "b1". Step 2 today: based on "b2".')
+    assert "b4" not in line
+
+
+def test_ac_19_49_high_level_with_unwritten_criteria_notes_it_in_the_reason() -> None:
+    """§3.8: Rules high stays high; written no adds a sentence to the reason, no to-prepare line."""
+    dim = _readiness(_with_criteria(3, CRITERIA), labels=_decisions(7, 3))["rules"]
+    assert dim.level == "high" and dim.to_prepare == ""
+    assert dim.reason.endswith(" Criteria for step 3 are not written down.")

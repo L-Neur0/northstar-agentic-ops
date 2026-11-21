@@ -1,13 +1,14 @@
 /**
  * Wire types of the discovery report, a mirror of `DiscoveryReport` and its part models in the
- * backend's `models/process_discovery_wire.py` (spec 20 v3 §3.3, §4; spec 23 part 2 §12, Q7/Q8).
+ * backend's `models/process_discovery_wire.py` (report v2: spec 27 §3.1, §4; spec 23 part 2 §12,
+ * Q7/Q8, amended 2026-11-21 (report v2), AC-23.152).
  * Why: the report page renders exactly what `GET /api/sessions/{id}/report` sends, and a drift
  * between the server's names and this file must break the build or the contract test
  * (`services/contract.test.ts` parses a recorded report), not a screen in front of the expert.
- * Rules: every number is a display-ready string ("96 h", "About 342 hours a year.") because the
- * server formats everything (Q8 resolved: strings); hours only, no euro field (R5, the parked line
- * is the server's own sentence). Must not: hold logic, add fields the server does not send, or
- * format any value.
+ * Rules: every number and level is a display-ready string ("96 h", "Strong fit") because the
+ * server formats everything (Q8 resolved: strings); a level is shown as the server's words, never
+ * yes / no; hours only, no euro field (R5). Must not: hold logic, add fields the server does not
+ * send, or format any value.
  */
 import type { FieldStatus } from './process-discovery'
 
@@ -47,18 +48,9 @@ export interface ReportCover {
   status: string
 }
 
-export interface TopOpportunity {
-  id: string
-  title: string
-  stepsLabel: string
-  hours: string
-}
-
-export interface AtAGlancePart extends PartBase {
-  hours: string
-  routeHeadline: string | null
-  top: TopOpportunity[]
-  prepare: string[]
+export interface SummaryPart extends PartBase {
+  /** Fixed code sentences (spec 27 §3.5), each left out by the server when its data is missing. */
+  sentences: string[]
 }
 
 export interface FieldsPart extends PartBase {
@@ -125,7 +117,13 @@ export interface StepRow {
   number: number
   name: string
   hours: string
-  /** 'automate' | 'assist' | 'human', or null when not assessed. */
+  /** 'strong' | 'partial' | 'weak' | 'not_rated', or null when not assessed (spec 27 §3.3). */
+  level: string | null
+  /** The server's words for the level ("Strong fit"); never yes / no. */
+  levelLabel: string
+  /** The step signals behind the level, in fixed words. */
+  because: string[]
+  /** 'automate' | 'assist' | 'human', or null when not assessed (spec 26). */
   fit: string | null
   fitLabel: string
   routeId: string | null
@@ -141,86 +139,6 @@ export interface StepsPart extends PartBase {
   catalogueNote: string | null
 }
 
-export interface RouteItem {
-  number: number
-  name: string
-  hours: string
-  routeName: string
-  reason: string
-}
-
-export interface RouteGroup {
-  key: string
-  title: string
-  items: RouteItem[]
-}
-
-export interface RoutePart extends PartBase {
-  headline: string
-  groups: RouteGroup[]
-  prepare: string[]
-  catalogueNote: string | null
-}
-
-export interface ReportOpportunity {
-  id: string
-  title: string
-  stepsLabel: string
-  typeLabel: string
-  whatChanges: string
-  how: string
-  prepareFirst: string
-  /** The impact word ("High"). */
-  impact: string
-  impactReason: string
-  /** The feasibility word ("Medium"). */
-  feasibility: string
-  feasibilityReason: string
-  evidence: string
-  evidenceLabel: string
-  /** The review status text ("Accepted by IT"), or null. */
-  review: string | null
-}
-
-export interface ReportStayHuman {
-  stepsLabel: string
-  reason: string
-  evidence: string
-}
-
-export interface AssessmentPart extends PartBase {
-  summary: string
-  opportunities: ReportOpportunity[]
-  stayHuman: ReportStayHuman[]
-}
-
-export interface StepValueRow {
-  number: number
-  name: string
-  hoursPerRun: string
-  runsPerYear: string
-  hoursPerYear: string
-}
-
-export interface OpportunityValueRow {
-  id: string
-  title: string
-  stepsLabel: string
-  stepHours: string
-}
-
-export interface PotentialPart extends PartBase {
-  complete: boolean
-  steps: StepValueRow[]
-  opportunities: OpportunityValueRow[]
-  totals: { hours: string }
-  formulas: string[]
-  assumptions: string[]
-  problems: string[]
-  /** The server's sentence that euro values are not shown yet (R5). */
-  parkedLine: string
-}
-
 export interface ReadinessRow {
   key: string
   label: string
@@ -232,82 +150,50 @@ export interface ReadinessRow {
   note: string
 }
 
-export interface ReadinessPart extends PartBase {
-  dimensions: ReadinessRow[]
-  footer: string
+export interface QuestionRow {
+  key: 'q1' | 'q2' | 'q3'
+  question: string
+  level: string
+  /** The server's words ("Strong fit", "Either can work"); never yes / no. */
+  levelLabel: string
+  why: string
+  /** The expert's words behind the motivation, or "". */
+  quote: string
 }
 
-export interface PathItem {
-  opportunityId: string
-  title: string
-  stepsLabel: string
-  stepHours: string
-}
-
-export interface PathGroup {
-  key: string
-  title: string
-  prepareLines: string[]
-  items: PathItem[]
-  emptyText: string | null
-}
-
-export interface PathPart extends PartBase {
-  groups: PathGroup[]
-}
-
-export interface GapsPart extends PartBase {
-  fields: ReportField[]
-  documents: { name: string; outcome: string }[]
-  closingNote: string
+/** Part 6 (spec 27 §3.1): A the three questions, B readiness, C bullets and the gaps line. */
+export interface FeasibilityPart extends PartBase {
+  questions: QuestionRow[]
+  readiness: ReadinessRow[]
+  readinessFooter: string
+  bullets: string[]
+  gaps: string
 }
 
 export interface DiscoveryReport {
   cover: ReportCover
-  atAGlance: AtAGlancePart
+  summary: SummaryPart
   process: FieldsPart
   measures: FieldsPart
   map: MapPart
   steps: StepsPart
-  route: RoutePart
-  assessment: AssessmentPart
-  potential: PotentialPart
-  readiness: ReadinessPart
-  path: PathPart
-  gaps: GapsPart
+  feasibility: FeasibilityPart
   generatedAt: string
 }
 
-/** The eleven part keys in report order (spec 20 §3.3); the client fixes the order, not the titles. */
-export const PART_KEYS = [
-  'atAGlance',
-  'process',
-  'measures',
-  'map',
-  'steps',
-  'route',
-  'assessment',
-  'potential',
-  'readiness',
-  'path',
-  'gaps',
-] as const
+/** The six part keys in report order (spec 27 §3.1); the client fixes the order, not the titles. */
+export const PART_KEYS = ['summary', 'process', 'measures', 'map', 'steps', 'feasibility'] as const
 
 export type PartKey = (typeof PART_KEYS)[number]
 
 /** Fallback headings for a part that is missing from the JSON (spec 23 §11.11.3). */
 export const PART_FALLBACK_TITLES: Record<PartKey, string> = {
-  atAGlance: 'At a glance',
+  summary: 'Summary',
   process: 'The process',
   measures: 'Volume and measures',
   map: 'Process map and steps',
   steps: 'Step-by-step AI assessment',
-  route: 'Recommended route',
-  assessment: 'Transformation assessment',
-  potential: 'Hours a year',
-  readiness: 'Readiness checklist',
-  path: 'Suggested path',
-  gaps: 'Gaps and sources',
+  feasibility: 'AI readiness and feasibility',
 }
 
 /** A report as the page holds it: a part that failed its guard is null (shown as missing). */

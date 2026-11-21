@@ -33,7 +33,8 @@ export type FieldStatus =
   | 'deferred'
   | 'given_up'
 
-export type FinishBlock = 'below_gate' | 'substeps_incomplete' | 'roles_not_confirmed' | 'tools_not_confirmed'
+/** The *Finish* blockers (spec 13, amended 2026-11-21: the roles / systems confirmations no longer block). */
+export type FinishBlock = 'below_gate' | 'substeps_incomplete'
 
 export type ConfirmTarget = 'substeps' | 'roles' | 'tools'
 
@@ -52,7 +53,7 @@ export interface FieldView {
   status: FieldStatus
   reason: string
   missing: string[]
-  source: 'expert' | 'document' | 'specialist' | null
+  source: 'expert' | 'document' | 'specialist' | 'agent' | null
   quote: string | null
   documentName: string | null
   asks: number
@@ -68,7 +69,7 @@ export interface FieldView {
 export interface FieldItemView {
   sub: string | null
   item: string | null
-  source: 'expert' | 'document' | 'specialist' | null
+  source: 'expert' | 'document' | 'specialist' | 'agent' | null
   documentName: string | null
   fromImage: boolean
 }
@@ -84,6 +85,8 @@ export interface Score {
   value: number
   filledPoints: number
   totalPoints: number
+  /** How far along the interview path, 0–1, computed by the server for the bar (spec 23 §3.6 rule 7). */
+  progress?: number
 }
 
 /* ---- Profile: registry keys of spec 12 §3.11, as stored (snake_case), no sidecars ---- */
@@ -121,6 +124,10 @@ export interface Step {
   approvals: Array<NoneRow | ApprovalRow>
   exceptions: Array<NoneRow | ExceptionRow>
   handover: string
+  /** S13 "Rules or judgement" (spec 14 §3.19 short step walk): scored, weight 1. */
+  decision_type: { kind: string; evidence: string }
+  /** S14 "Decision criteria" (spec 12 §3.13): optional, unscored, only for a judgement or mix step. */
+  decision_criteria: { basis: string; set_by: string; written: string; varies: string }
 }
 
 export interface ProcessProfile {
@@ -317,8 +324,9 @@ export interface DeletedCounts {
 
 /* ---- Display constants ---- */
 
-/** The eight non-terminal phases in order (spec 12 §3.1 `PHASE_ORDER`). */
-export const PHASE_ORDER: Phase[] = ['context', 'find', 'boundaries', 'measure', 'step_count', 'steps', 'confirm', 'review']
+/** The seven non-terminal phases in order (spec 12 §3.1 `PHASE_ORDER`). */
+/** `confirm` is no longer on the path (spec 14 §3.20 O10); it stays a `Phase` value for old sessions. */
+export const PHASE_ORDER: Phase[] = ['context', 'find', 'boundaries', 'measure', 'step_count', 'steps', 'review']
 
 /** The rungs of the phase meter: `PHASE_ORDER`, then Finished (spec 23 §3.6.1). */
 export const PHASE_STRIP: Phase[] = [...PHASE_ORDER, 'finished']
@@ -338,7 +346,7 @@ export const PHASE_LABELS: Record<Phase, string> = {
 
 /** The five `ProcessCard` sections, keyed by the field view phase (spec 23 §3.8.2). */
 export type ProcessSectionId = 'context' | 'find' | 'boundaries' | 'measure' | 'step_count'
-export type PanelSectionId = ProcessSectionId | 'steps' | 'confirm' | 'documents'
+export type PanelSectionId = ProcessSectionId | 'steps' | 'documents'
 
 export const PROCESS_SECTIONS: ProcessSectionId[] = ['context', 'find', 'boundaries', 'measure', 'step_count']
 
@@ -353,14 +361,17 @@ export const SECTION_OF_PHASE: Record<ProcessSectionId, string> = {
 export const FINISH_BLOCKED_MESSAGES: Record<FinishBlock, (pct: number) => string> = {
   below_gate: (pct) => `Your map is ${pct} % complete. It needs 80 % to finish.`,
   substeps_incomplete: () => 'Some steps are not fully described yet.',
-  roles_not_confirmed: () => 'Please confirm the list of roles.',
-  tools_not_confirmed: () => 'Please confirm the list of systems.',
 }
 
 /** Message length limit (spec 15 route 5). */
 export const MESSAGE_MAX_CHARS = 16000
 
-/** S01–S11 leaves are scored; S12 (`handover`) is not (spec 12 §3.4). */
+/**
+ * Step leaves in registry order: S01–S11 and S13 (`decision_type`) are scored; S12 (`handover`) is
+ * not (spec 12 §3.4 and the short step walk amendment; AC-23.33). S14 (`decision_criteria`) is
+ * optional and unscored; the server sends its view only for a judgement or mix step (spec 12
+ * §3.13), so the panel lists it only then (spec 23 §3.6 rule 12; AC-23.151).
+ */
 export const STEP_LEAVES = [
   'name',
   'goal',
@@ -374,9 +385,11 @@ export const STEP_LEAVES = [
   'approvals',
   'exceptions',
   'handover',
+  'decision_type',
+  'decision_criteria',
 ] as const
-export const UNSCORED_STEP_LEAVES = ['handover']
-export const SCORED_CELLS_PER_STEP = 11
+export const UNSCORED_STEP_LEAVES = ['handover', 'decision_criteria']
+export const SCORED_CELLS_PER_STEP = 12
 
 /** Extension or kind → the word the panel shows (spec 23 §11.3.2); unknown ones show upper case. */
 export const DOCUMENT_KIND_WORDS: Record<string, string> = {

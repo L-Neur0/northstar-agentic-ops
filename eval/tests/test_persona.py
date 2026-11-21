@@ -11,7 +11,7 @@ import pytest
 import yaml
 
 from eval.evalkit.calibrate import CalibrationFileError, load_pairs
-from eval.evalkit.persona import EVAL_DIR, PersonaError, load_personas
+from eval.evalkit.persona import EVAL_DIR, PROCESS_KEYS, STEP_LEAVES, PersonaError, load_personas
 
 from .conftest import FIXTURES, tiny_data
 
@@ -53,14 +53,28 @@ def test_ac_24_1_unknown_top_level_keys_are_refused(tmp_path, company):
         load_personas(_write(tmp_path, data), quick=False, company=company, documents_dir=FIXTURES)
 
 
-def test_ac_24_2_the_four_personas_load_and_quick_selects_two(company):
+def test_ac_24_2_the_personas_load_and_quick_selects_two(company):
     every = load_personas(EVAL_DIR / "personas", quick=False, company=company)
-    assert [p.id for p in every] == ["p01-cooperative", "p02-vague", "p03-task-mixed-week", "p04-stale-document"]
+    assert [p.id for p in every] == [
+        "p01-cooperative",
+        "p02-vague",
+        "p03-task-mixed-week",
+        "p04-stale-document",
+        "p05-cv-screening",
+        "p06-work-order-priority",
+    ]  # AC-24.56
     quick = load_personas(EVAL_DIR / "personas", quick=True, company=company)
     assert [p.id for p in quick] == ["p01-cooperative", "p02-vague"]
     p01 = every[0]
-    assert p01.truth_field_count == 71  # §3.7 item 5
-    assert [p.kind for p in every] == ["cooperative", "difficult", "difficult", "cooperative"]
+    assert p01.truth_field_count == len(PROCESS_KEYS) + 5 * len(STEP_LEAVES) == 76  # §3.7 item 5: 16 + 5 × 12
+    assert [p.kind for p in every] == [
+        "cooperative",
+        "difficult",
+        "difficult",
+        "cooperative",
+        "cooperative",
+        "cooperative",
+    ]
 
 
 def test_ac_24_18_calibration_file_shape():
@@ -75,3 +89,30 @@ def test_ac_24_18_a_calibration_file_with_too_few_false_pairs_is_refused(tmp_pat
     path.write_text(yaml.safe_dump({"pairs": [pair] * 30}), encoding="utf-8")
     with pytest.raises(CalibrationFileError):
         load_pairs(path)
+
+
+# --- §12 V2: decision criteria (S14) in the truth (AC-24.51, AC-24.52) ------------------------------
+
+
+def test_ac_24_51_every_registry_step_leaf_has_a_tier():
+    """AC-24.51: tiers.yaml maps every registry step leaf, S14 included (Tier B)."""
+    from app.services.process_discovery.domain.field_spec import STEP_SPECS
+    from eval.evalkit.score_employee import load_tiers
+
+    tiers = load_tiers(EVAL_DIR / "tiers.yaml")
+    assert {s.key for s in STEP_SPECS} <= set(tiers.step_leaves)
+    assert tiers.step_leaves["decision_criteria"] == "B"
+
+
+def test_ac_24_52_criteria_on_a_rules_step_is_refused(company):
+    """AC-24.52: S14 truth on a `rules` step stops the load with a clear reason; on a mix step it loads."""
+    from eval.evalkit.persona import _check  # pyright: ignore[reportPrivateUsage]
+
+    from .conftest import make_persona, tiny_data
+
+    data = tiny_data()
+    data["truth"]["steps"][0]["decision_criteria"] = {"basis": "the threshold", "written": "yes"}
+    problems = _check(make_persona(truth=data["truth"]), company, EVAL_DIR / "documents")
+    assert any("decision_criteria" in p and "judgement or mix" in p for p in problems)
+    data["truth"]["steps"][0]["decision_type"] = {"kind": "mix", "evidence": "x"}
+    assert _check(make_persona(truth=data["truth"]), company, EVAL_DIR / "documents") == []

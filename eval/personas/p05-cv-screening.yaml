@@ -1,0 +1,95 @@
+# Persona p05 (spec 24 §3.3): a cooperative talent acquisition specialist; CV screening, 3 simple steps. Synthetic.
+# Tests that the agent asks for the selection criteria (who sets them, do they change) without being told,
+# and that the assessment proposes the existing CV screening tool. v2 (spec 24 §12 V6): S14 truth on step 3.
+id: p05-cv-screening
+version: 2
+quick: false
+seed: true
+kind: cooperative
+profile: >
+  You are a talent acquisition specialist in the HR department of NIG, working in Europe. You recruit
+  engineers and site staff for project roles. You have screened CVs for four years. You write in short,
+  friendly, practical sentences in English.
+behaviour:
+  - Answer what is asked, with numbers when you have them.
+  - You have one process in mind, screening the applications for an open role, and you stay on it.
+  - When asked for the steps, name the three steps first, then describe each one when asked.
+  - Do not explain the selection criteria unless asked how you decide who passes, what the requirements are, or who sets them.
+  - When asked about the criteria, say each hiring manager sends their own must-haves, often a short e-mail that misses things, so you fill the gaps from the job ad.
+  - Each application is a package - CV, cover letter and certificates; say so when asked what comes in.
+  - Give roles, never people's names.
+truth:
+  fields:
+    department: HR
+    user_function: Talent acquisition specialist
+    region: Europe
+    process.name: Screening applications for an open role
+    process.cluster: HR
+    process.trigger: The job ad closes and the applications are in the recruiting system
+    process.end_result: A shortlist of about 8 candidates with a short note on each, sent to the hiring manager
+    process.value_at_end: The hiring manager uses it to pick who to invite for interviews
+    process.business_pain: Screening about 120 applications by hand takes three working days per role, so good candidates accept other offers before we call them
+    process.volume: {count: 6, period: month}
+    process.process_owner: {role: Head of Talent Acquisition}
+    process.baseline_metric: {value: "3", unit: working days}
+    process.target_metric: {value: "1", unit: working days}
+    process.variation: {same: partly, differences: Each hiring manager sets different must-haves, and some send none, so the detailed screening changes from role to role}
+    process.sensitive_data: [{item: personal data of the candidates, detail: CVs, cover letters and certificates with names, contact details and work history}]
+    process.substep_count: 3
+  steps:
+    - name: Download and organise the applications
+      goal: Every application package is complete and in one folder per role
+      activities: [download the CVs cover letters and certificates from the recruiting system, rename the files by candidate, log each candidate in the tracking sheet]
+      roles: [{role: Talent acquisition specialist, contribution: downloads and organises}]
+      owner: Talent acquisition specialist
+      systems: [Recruiting system, SharePoint, Excel]
+      data: {inputs: [application packages], outputs: [role folder, candidate tracking sheet]}
+      effort: {duration: 3 hours, frequency: each time}
+      pain_points: [the recruiting system exports files one candidate at a time with random file names]
+      approvals: [{none: true}]
+      exceptions: [{description: a package has no CV or the file does not open, so I e-mail the candidate}]
+      decision_type: {kind: rules, evidence: "it's pure admin, same every time"}
+    - name: Rough first screening
+      goal: Clearly unsuitable applications are out
+      activities: [skim each CV, check the basic must-haves from the job ad, mark yes no or maybe in the tracking sheet]
+      roles: [{role: Talent acquisition specialist, contribution: screens}]
+      owner: Talent acquisition specialist
+      systems: [Excel, SharePoint]
+      data: {inputs: [role folder, job ad], outputs: [about 30 candidates marked yes or maybe]}
+      effort: {duration: 1 day, frequency: each time}
+      pain_points: [reading 120 CVs in different layouts is slow and tiring, so late CVs get less attention]
+      approvals: [{none: true}]
+      exceptions: [{description: a strong candidate misses one basic must-have, and I keep them as maybe}]
+      decision_type: {kind: rules, evidence: "it's the basics from the ad - degree, years of experience, right to work"}
+    - name: Detailed screening and shortlist handoff
+      goal: The hiring manager has a shortlist that matches their requirements
+      activities: [compare the remaining candidates with the hiring manager's must-haves, read cover letters and certificates, write a short note per candidate, send the shortlist to the hiring manager]
+      roles: [{role: Talent acquisition specialist, contribution: screens and writes the shortlist}, {role: Hiring manager, contribution: sets the must-haves and receives the shortlist}]
+      owner: Talent acquisition specialist
+      systems: [Excel, E-mail, Recruiting system]
+      data: {inputs: [about 30 candidates, the hiring manager's must-haves, cover letters and certificates], outputs: [shortlist of about 8 candidates with notes]}
+      effort: {duration: 1 day, frequency: each time}
+      pain_points: [the must-haves arrive late or incomplete and differ for every hiring manager, so I guess and often redo the shortlist]
+      approvals: [{none: true}]
+      exceptions: [{description: the hiring manager rejects the shortlist and sends new must-haves, so I screen again}]
+      decision_type: {kind: judgement, evidence: "weighing experience against the manager's must-haves is my call, and every manager wants something different"}
+      decision_criteria: {basis: the hiring manager's must-haves and the job ad, set_by: Hiring manager, written: partly, varies: every hiring manager wants something different}
+  aliases:
+    Recruiting system: [the recruiting tool, ATS, applicant tracking system, recruiting platform]
+    SharePoint: [sharepoint folder, shared drive, team folder]
+    Excel: [spreadsheet, tracking sheet, excel sheet]
+    E-mail: [email, mail, outlook]
+    Hiring manager: [hiring managers, the manager, line manager]
+    Head of Talent Acquisition: [head of TA, talent acquisition lead, head of recruiting]
+    Talent acquisition specialist: [recruiter, TA specialist, me]
+  week: []
+documents: []
+expected:
+  cluster: HR
+  scope: process
+  steering: null
+  routes:
+    1: {fit: [automate, assist], route: [low-code-flow, it-integration-rpa, fix-first]}
+    2: {fit: [assist, automate], route: [cv-screening, low-code-agent, custom-ai-app]}
+    3: {fit: [assist], route: [cv-screening, m365-copilot, low-code-agent, fix-first]}
+  min_conflicts: 0

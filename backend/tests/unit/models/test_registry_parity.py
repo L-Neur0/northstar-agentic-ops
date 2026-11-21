@@ -124,6 +124,8 @@ EMPTY_STEP = {
     "approvals": [],
     "exceptions": [],
     "handover": "",
+    "decision_type": {"kind": "", "evidence": ""},
+    "decision_criteria": {"basis": "", "set_by": "", "written": "", "varies": ""},  # S14, spec 12 §3.13
     "__meta": {},
     "__skipped": [],
 }
@@ -149,6 +151,8 @@ def _full_step(i: int) -> dict:
         "approvals": [{"approver_role": "CFO", "waiting_time": "2 days"}] if i % 2 else [{"none": True}],
         "exceptions": [{"description": "missing data", "loops_back_to": 1}] if i > 1 else [{"none": True}],
         "handover": "email",
+        "decision_type": {"kind": "mix", "evidence": "mostly rules"},
+        "decision_criteria": {"basis": "the threshold", "set_by": "CFO", "written": "partly", "varies": ""},
         "__meta": {
             "systems": {
                 "source": "expert",

@@ -1,5 +1,5 @@
 {
   "code": "map_incomplete",
   "message": "The map is not complete yet.",
-  "reason": "roles_not_confirmed"
+  "reason": "below_gate"
 }

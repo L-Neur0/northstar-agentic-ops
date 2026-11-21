@@ -1,4 +1,4 @@
-"""The scorecard: one page per run with quality and efficiency side by side, targets and deltas (spec 24 §3.11).
+"""The scorecard: one page per run, the employee's time and burden first, targets and deltas (spec 24 §3.11, §3.9b).
 
 Why: a prompt or code change is only an improvement if the numbers say so, run over run. One fixed
 page (JSON for machines, Markdown for people, the Markdown rendered from the JSON with no extra
@@ -8,8 +8,12 @@ What: `PersonaScore`, `TargetRow`, `Scorecard` (Pydantic); `target_rows` (produc
 §3.9a targets per persona); `build_scorecard` (pass / fail with reasons: a target missed, a failed
 session, the judge below 90 %); `render_markdown`; `should_replace_latest` (only a full in-process
 run replaces `eval/reports/latest.*`).
+Amended 2026-11-20: the headline leads with employee time, detail burden, Tier A + core quality
+and the assessment match (fit, route); overall report quality and messages to *Finish* are
+reported without a target.
 Must not: add a fact to the Markdown that is not in the JSON, or let a `n/a` target fail the run.
-Spec 24 §3.11; AC-24.23, AC-24.24, AC-24.25.
+The headline also shows the average answer length in words (AC-24.48).
+Spec 24 §3.11, §3.9b; AC-24.23, AC-24.24, AC-24.25, AC-24.31, AC-24.38, AC-24.41, AC-24.42, AC-24.48.
 """
 
 from __future__ import annotations
@@ -20,14 +24,21 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from .calibrate import Calibration
+from .persona import HARD_CAP
 from .score_behaviour import BehaviourScores
 from .score_efficiency import WASTED_TARGET, CurvePoint, EfficiencyScores, sparkline
+from .score_employee import DetailBurden, EmployeeTime, QualitySplit
 from .score_fields import FieldResult
 from .score_labels import LabelScores
 
-QUALITY_TARGET = 0.85
+QUALITY_TARGET = 0.85  # Tier A + process core (§3.9b)
+TIME_TARGET_MIN = 20.0  # mirrors `employee_time.yaml` target_minutes; the runner passes the file's value
+BURDEN_TARGET = 0.15
+FINISHED_ROW = f"session finished (safety net {HARD_CAP})"
 REPEAT_TARGET = 2
 FIT_ROUTE_TARGET = 0.70
+CRITERIA_TARGET = 1.0  # §12 V3 (assumption)
+HOURS_TARGET = 1.0  # §12 V4
 TURN_MEDIAN_S, TURN_MAX_S, FINISH_S = 10.0, 150.0, 30.0
 APP_COST_EUR = 0.50
 
@@ -50,6 +61,10 @@ class PersonaScore(BaseModel):
     labels: LabelScores | None = None
     behaviour: BehaviourScores = Field(default_factory=BehaviourScores)
     efficiency: EfficiencyScores
+    employee: EmployeeTime | None = None
+    burden: DetailBurden | None = None
+    split: QualitySplit = Field(default_factory=QualitySplit)
+    time_target_min: float = TIME_TARGET_MIN
     curve: list[CurvePoint] = Field(default_factory=list)
     wrong: list[FieldResult] = Field(default_factory=list)
 
@@ -79,6 +94,9 @@ class Scorecard(BaseModel):
     pooled_quality: float = 0.0
     pooled_quality_code: float = 0.0
     pooled_messages: int = 0
+    mean_minutes: float | None = None
+    pooled_burden: float | None = None
+    pooled_core_quality: float = 0.0
     app_euros_per_finished: float | None = None
     targets: list[TargetRow] = Field(default_factory=list)
     worst: list[dict[str, Any]] = Field(default_factory=list)
@@ -94,25 +112,52 @@ def _row(persona: str, name: str, value: Any, target: str, ok: bool | None, *, f
     return TargetRow(persona=persona, name=name, value=str(value), target=target, status=status, fails=fails and not ok)
 
 
+def _ratio(part: int, whole: int) -> float | None:
+    return part / whole if whole else None
+
+
 def _pct(value: float | None) -> str | None:
     return None if value is None else f"{value:.0%}"
 
 
+def _share(p: PersonaScore) -> float | None:
+    return None if p.burden is None else p.burden.share
+
+
+def _minutes(p: PersonaScore) -> float | None:
+    return None if p.employee is None else round(p.employee.minutes, 1)
+
+
 def target_rows(p: PersonaScore) -> list[TargetRow]:
-    """Every target that applies to one persona (product §8, spec 24 §3.9, §3.9a)."""
+    """Every target that applies to one persona, headline targets first (§3.9b, product §8, §3.9, §3.9a)."""
     b, e, labels = p.behaviour, p.efficiency, p.labels
-    rows = [_row(p.id, "session finished (hard cap 60)", p.status, "finished", not e.failed)]
+    minutes = _minutes(p)
+    share = _share(p)
+    rows = [
+        _row(p.id, "employee time (min)", minutes, f"≤ {p.time_target_min:g}",
+             None if minutes is None else minutes <= p.time_target_min),
+        _row(p.id, "detail burden", _pct(share), f"≤ {BURDEN_TARGET:.0%}", None if share is None else share <= BURDEN_TARGET),
+    ]  # fmt: skip
     if p.kind == "cooperative":
-        rows.append(_row(p.id, "report quality", _pct(p.quality), "≥ 85%", p.quality >= QUALITY_TARGET))
+        core = p.split.core_quality if p.split.core_total else None
+        rows.append(_row(p.id, "Tier A + core quality", _pct(core), f"≥ {QUALITY_TARGET:.0%}",
+                         None if core is None else core >= QUALITY_TARGET))  # fmt: skip
+    if labels is not None and labels.routed_steps:
+        fit, route = labels.fit_hits / labels.routed_steps, labels.route_hits / labels.routed_steps
+        rows.append(_row(p.id, "step fit", _pct(fit), "≥ 70%", fit >= FIT_ROUTE_TARGET))
+        rows.append(_row(p.id, "step route", _pct(route), "≥ 70%", route >= FIT_ROUTE_TARGET))
     rows += [
-        _row(p.id, "messages to Finish", e.messages_to_finish, f"≤ {e.message_target}",
-             None if e.messages_to_finish is None else e.messages_to_finish <= e.message_target),
+        _row(p.id, FINISHED_ROW, p.status, "finished", not e.failed),
         _row(p.id, "wasted turns", e.wasted, f"≤ {WASTED_TARGET}", e.wasted <= WASTED_TARGET),
         _row(p.id, "plateaus", len(e.plateaus), "0 (flag)", not e.plateaus, fails=False),
         _row(p.id, "loops", b.loops, "0", b.loops == 0),
         _row(p.id, "repeated questions", b.repeats, f"≤ {REPEAT_TARGET}", b.repeats <= REPEAT_TARGET),
         _row(p.id, "invented values", p.invented_values, "0", p.invented_values == 0),
         _row(p.id, "stale kept", b.stale_kept, "0", b.stale_kept == 0),
+        _row(p.id, "criteria asked", _pct(_ratio(b.criteria_asked, b.criteria_steps)), f"{CRITERIA_TARGET:.0%}",
+             None if not b.criteria_steps else b.criteria_asked / b.criteria_steps >= CRITERIA_TARGET),
+        _row(p.id, "hours computed", _pct(_ratio(b.hours_steps_with_number, b.hours_steps)), f"{HOURS_TARGET:.0%}",
+             None if not b.hours_steps else b.hours_steps_with_number / b.hours_steps >= HOURS_TARGET),
         _row(p.id, "conflicts", b.conflicts, f"≥ {p.min_conflicts}", b.conflicts >= p.min_conflicts),
         _row(p.id, "turn time median (s)", b.turn_median_s, f"< {TURN_MEDIAN_S:g}",
              None if b.turn_median_s is None else b.turn_median_s < TURN_MEDIAN_S),
@@ -128,10 +173,6 @@ def target_rows(p: PersonaScore) -> list[TargetRow]:
             _row(p.id, "scope", labels.scope, "hit", labels.scope),
             _row(p.id, "steering", labels.steering, "hit", labels.steering),
         ]
-        if labels.routed_steps:
-            fit, route = labels.fit_hits / labels.routed_steps, labels.route_hits / labels.routed_steps
-            rows.append(_row(p.id, "step fit", _pct(fit), "≥ 70%", fit >= FIT_ROUTE_TARGET))
-            rows.append(_row(p.id, "step route", _pct(route), "≥ 70%", route >= FIT_ROUTE_TARGET))
     return rows
 
 
@@ -146,7 +187,7 @@ def _delta(now: Any, before: Any, *, pct: bool = False) -> str:
     if now is None or before is None:
         return ""
     diff = float(now) - float(before)
-    return f"{diff * 100:+.0f} pt" if pct else f"{diff:+g}"
+    return f"{diff * 100:+.0f} pt" if pct else f"{round(diff, 4):+g}"
 
 
 def build_scorecard(
@@ -157,11 +198,10 @@ def build_scorecard(
     **header: Any,
 ) -> Scorecard:
     targets = [row for p in personas for row in target_rows(p)]
+    burdens = [p.burden for p in personas if p.burden is not None]
     reasons = [f"{p.id}: session failed ({p.status})" for p in personas if p.efficiency.failed]
     reasons += [
-        f"{r.persona}: {r.name} {r.value} (target {r.target})"
-        for r in targets
-        if r.fails and r.name != "session finished (hard cap 60)"
+        f"{r.persona}: {r.name} {r.value} (target {r.target})" for r in targets if r.fails and r.name != FINISHED_ROW
     ]
     if not calibration.passed:
         reasons.insert(0, f"judge failed calibration ({calibration.agreement:.0%} < 90%)")
@@ -185,6 +225,13 @@ def build_scorecard(
         pooled_quality=sum(p.correct for p in personas) / total if total else 0.0,
         pooled_quality_code=sum(p.quality_code * p.total for p in personas) / total if total else 0.0,
         pooled_messages=sum(p.efficiency.messages for p in personas),
+        mean_minutes=round(sum(m) / len(m), 1)
+        if (m := [x for p in personas if (x := _minutes(p)) is not None])
+        else None,
+        pooled_burden=(sum(b.low_value for b in burdens) / q) if (q := sum(b.questions for b in burdens)) else None,
+        pooled_core_quality=(sum(p.split.core_correct for p in personas) / c)
+        if (c := sum(p.split.core_total for p in personas))
+        else 0.0,
         app_euros_per_finished=(
             round(sum(p.behaviour.app.euros or 0 for p in finished) / len(finished), 4) if finished else None
         ),
@@ -203,9 +250,16 @@ def _apply_deltas(card: Scorecard, previous: Scorecard) -> None:
     for p in card.personas:
         old = before.get(p.id)
         if old is None or old.version != p.version:
-            card.deltas[p.id] = {"quality": "new", "messages": "new", "efficiency": "new"}
+            card.deltas[p.id] = {k: "new" for k in ("minutes", "burden", "tier_a", "quality", "messages", "efficiency")}
             continue
         card.deltas[p.id] = {
+            "minutes": _delta(_minutes(p), _minutes(old)),
+            "burden": _delta(_share(p), _share(old), pct=True),
+            "tier_a": _delta(
+                p.split.core_quality if p.split.core_total else None,
+                old.split.core_quality if old.split.core_total else None,
+                pct=True,
+            ),  # fmt: skip
             "quality": _delta(p.quality, old.quality, pct=True),
             "messages": _delta(p.efficiency.messages_to_finish, old.efficiency.messages_to_finish),
             "efficiency": _delta(p.efficiency.efficiency, old.efficiency.efficiency),
@@ -245,23 +299,57 @@ def render_markdown(card: Scorecard) -> str:
         f"| Judge | {card.judge_prompt_version}, agreement {card.calibration.agreement:.0%} "
         f"({card.calibration.agreed}/{card.calibration.pairs}){trust} |",
         "",
-        "## Headline: report quality and messages to Finish",
+        "## Headline: employee time, detail burden, Tier A quality, assessment",
         "",
-        "| Persona | Report quality | Δ | Code-only | Messages to Finish | Δ | Efficiency | Δ | Wasted | Plateaus |",
-        "|---|---|---|---|---|---|---|---|---|---|",
+        "| Persona | Employee time (min) | Δ | Read / type / think / upload (min) | Avg answer words "
+        "| Detail burden | Δ | Tier A + core quality | Δ | Fit | Route |",
+        "|---|---|---|---|---|---|---|---|---|---|---|",
+    ]
+    for p in card.personas:
+        d, t, lb = card.deltas.get(p.id, {}), p.employee, p.labels
+        name = f"**{p.id} (failed: {p.status})**" if p.efficiency.failed else p.id
+        minutes = "n/a" if t is None else f"{t.minutes:.1f} (target {p.time_target_min:g})"
+        parts = (
+            "n/a"
+            if t is None
+            else " / ".join(f"{x / 60:.1f}" for x in (t.reading_s, t.typing_s, t.think_s, t.upload_s))
+        )
+        burden = "n/a" if p.burden is None else f"{p.burden.share:.0%} ({p.burden.low_value}/{p.burden.questions})"
+        core = (
+            f"{p.split.core_quality:.0%} ({p.split.core_correct}/{p.split.core_total})" if p.split.core_total else "n/a"
+        )
+        fit = f"{lb.fit_hits}/{lb.routed_steps}" if lb and lb.routed_steps else "n/a"
+        route = f"{lb.route_hits}/{lb.routed_steps}" if lb and lb.routed_steps else "n/a"
+        words = "n/a" if t is None else f"{t.avg_expert_words:.1f}"
+        lines.append(
+            f"| {name} | {minutes} | {d.get('minutes', '')} | {parts} | {words} | {burden} | {d.get('burden', '')} "
+            f"| {core} | {d.get('tier_a', '')} | {fit} | {route} |"
+        )
+    mean = "n/a" if card.mean_minutes is None else f"{card.mean_minutes:.1f} mean"
+    pooled_burden = "n/a" if card.pooled_burden is None else f"{card.pooled_burden:.0%}"
+    lines += [
+        f"| **Pooled** | {mean} | | | | {pooled_burden} | | {card.pooled_core_quality:.0%} | | | |",
+        "",
+        "Employee time is an estimate from the words on the screen; speeds and think times are assumptions "
+        "(`eval/employee_time.yaml`). Tiers: `eval/tiers.yaml`.",
+        "",
+        "## Also reported",
+        "",
+        "| Persona | Report quality | Δ | Code-only | Rest quality | Messages to Finish | Δ | Efficiency | Δ | Wasted | Plateaus |",
+        "|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for p in card.personas:
         d = card.deltas.get(p.id, {})
         e = p.efficiency
-        name = f"**{p.id} (failed: {p.status})**" if e.failed else p.id
-        msgs = "n/a" if e.messages_to_finish is None else f"{e.messages_to_finish} (target {e.message_target})"
+        msgs = "n/a" if e.messages_to_finish is None else str(e.messages_to_finish)
         eff = "n/a" if e.efficiency is None else f"{e.efficiency:.2f}"
+        rest = f"{p.split.rest_quality:.0%}" if p.split.rest_total else "n/a"
         lines.append(
-            f"| {name} | {p.quality:.0%} ({p.correct}/{p.total}) | {d.get('quality', '')} | {p.quality_code:.0%} | {msgs} "
-            f"| {d.get('messages', '')} | {eff} | {d.get('efficiency', '')} | {e.wasted} | {len(e.plateaus)} |"
+            f"| {p.id} | {p.quality:.0%} ({p.correct}/{p.total}) | {d.get('quality', '')} | {p.quality_code:.0%} | {rest} "
+            f"| {msgs} | {d.get('messages', '')} | {eff} | {d.get('efficiency', '')} | {e.wasted} | {len(e.plateaus)} |"
         )
     lines += [
-        f"| **Pooled** | {card.pooled_quality:.0%} | | {card.pooled_quality_code:.0%} | {card.pooled_messages} messages | | | | | |",
+        f"| **Pooled** | {card.pooled_quality:.0%} | | {card.pooled_quality_code:.0%} | | {card.pooled_messages} messages | | | | | |",
         "",
     ]
     lines += ["## Targets", "", "| Persona | Target | Value | Goal | Result | Δ |", "|---|---|---|---|---|---|"]

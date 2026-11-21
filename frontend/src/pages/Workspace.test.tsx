@@ -36,7 +36,7 @@ describe('token on load (AC-23.106)', () => {
   it('no token shows the login', () => {
     open()
     expect(screen.getByRole('heading', { name: 'Workspace' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 1, name: 'Process Discovery · Workspace' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'AI Use Case Discovery Agent · Workspace' })).toBeInTheDocument()
   })
 
   it('a valid stored token shows the list without asking again', async () => {

@@ -1,5 +1,5 @@
 {
-  "id": "1d0c8768-5604-4638-ae45-5be829fe29fc",
+  "id": "ff6206f1-d2d8-4096-b4b5-eb4919e147d3",
   "status": "active",
   "phase": "context",
   "displayName": "Anna",
@@ -8,9 +8,9 @@
   "finishedAt": null,
   "messages": [
     {
-      "id": "59a9aed2-1ab6-43c4-9120-64879cf6f883",
+      "id": "2c5207f3-af1f-4e27-8623-3d86864d2678",
       "role": "agent",
-      "text": "Hi Anna! I'm the Discovery Agent. Together we'll find a piece of recurring work in your week that is worth mapping, and map it step by step; it takes about 15–20 minutes. You don't need a process in mind, we'll find one by talking through your week. You can add a document (a procedure, a process map, an example report) at any time; I'll read it and you confirm what I found. The tool maps processes, not people: it never reports anyone's individual time. The transformation team may read this conversation to improve the tool. To start: Which department are you in?",
+      "text": "Hi Anna! I'm the AI Use Case Discovery Agent. Together we'll find a recurring workflow in your daily work that is worth transforming with AI. We'll map it step by step (it takes about 20 minutes), then assess where and how AI can help and how much transformation potential it has. You can add a document (a procedure, a process map, an example) at any time; I'll read it and you confirm what I found. Your answers describe the work, not you, and the transformation team may read this conversation to improve the tool. To start: Which department are you in?",
       "at": "2026-11-19T10:00:00+00:00"
     }
   ],
@@ -359,7 +359,8 @@
   "score": {
     "value": 0.0,
     "filledPoints": 0,
-    "totalPoints": 18
+    "totalPoints": 18,
+    "progress": 0.0
   },
   "finish": {
     "ready": false,

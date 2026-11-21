@@ -1,12 +1,12 @@
 {
   "reply": {
-    "id": "0d568082-1be6-4aa6-986a-dfaed6add3b5",
+    "id": "f921d8c5-db27-4af8-b3f4-0f45fbd6ccf0",
     "role": "agent",
     "text": "Could you tell me more?",
     "at": "2026-11-19T10:00:04+00:00"
   },
   "session": {
-    "id": "1d0c8768-5604-4638-ae45-5be829fe29fc",
+    "id": "ff6206f1-d2d8-4096-b4b5-eb4919e147d3",
     "status": "active",
     "phase": "find",
     "displayName": "Anna",
@@ -15,55 +15,55 @@
     "finishedAt": null,
     "messages": [
       {
-        "id": "59a9aed2-1ab6-43c4-9120-64879cf6f883",
+        "id": "2c5207f3-af1f-4e27-8623-3d86864d2678",
         "role": "agent",
-        "text": "Hi Anna! I'm the Discovery Agent. Together we'll find a piece of recurring work in your week that is worth mapping, and map it step by step; it takes about 15–20 minutes. You don't need a process in mind, we'll find one by talking through your week. You can add a document (a procedure, a process map, an example report) at any time; I'll read it and you confirm what I found. The tool maps processes, not people: it never reports anyone's individual time. The transformation team may read this conversation to improve the tool. To start: Which department are you in?",
+        "text": "Hi Anna! I'm the AI Use Case Discovery Agent. Together we'll find a recurring workflow in your daily work that is worth transforming with AI. We'll map it step by step (it takes about 20 minutes), then assess where and how AI can help and how much transformation potential it has. You can add a document (a procedure, a process map, an example) at any time; I'll read it and you confirm what I found. Your answers describe the work, not you, and the transformation team may read this conversation to improve the tool. To start: Which department are you in?",
         "at": "2026-11-19T10:00:00+00:00"
       },
       {
-        "id": "dd677227-7da5-4b0f-bc51-0d818c95cd80",
+        "id": "d32b011f-bfeb-4530-88c0-7574226f48a0",
         "role": "expert",
         "text": "I work in Finance.",
         "at": "2026-11-19T10:00:01+00:00"
       },
       {
-        "id": "d7261c5b-fc88-42eb-9c3a-0bd3e065a233",
+        "id": "0029d5fd-7065-40e8-bcf4-9656b5ab1ea0",
         "role": "agent",
         "text": "Could you tell me more?",
         "at": "2026-11-19T10:00:01+00:00"
       },
       {
-        "id": "dc958865-c15a-4e47-92d8-2025a4e56cda",
+        "id": "b852f763-ce9d-439b-b09e-a531e22376e0",
         "role": "expert",
         "text": "I am a cost controller.",
         "at": "2026-11-19T10:00:02+00:00"
       },
       {
-        "id": "2c6c5537-d114-4c47-8fc0-34131b9ea8e6",
+        "id": "d69f8086-6458-46eb-9e0e-88004760f7b8",
         "role": "agent",
         "text": "Could you tell me more?",
         "at": "2026-11-19T10:00:02+00:00"
       },
       {
-        "id": "758e86b9-81e7-4567-9522-ae7c397e5101",
+        "id": "d1e06be4-bdee-4d30-91f5-88bf10f33b7d",
         "role": "expert",
         "text": "Europe.",
         "at": "2026-11-19T10:00:03+00:00"
       },
       {
-        "id": "2c33f91d-42fe-4c14-935c-348cfb05a6c4",
+        "id": "915e2fd1-8c2a-4cf3-9f8a-e7ade6777544",
         "role": "agent",
         "text": "Could you tell me more?",
         "at": "2026-11-19T10:00:03+00:00"
       },
       {
-        "id": "61a7e420-9e15-42fa-8da2-21cf72f587ee",
+        "id": "ee099141-dae7-474a-83cb-b6707361e22c",
         "role": "expert",
         "text": "The monthly cost review. We also onboard suppliers, but that is another story.",
         "at": "2026-11-19T10:00:04+00:00"
       },
       {
-        "id": "0d568082-1be6-4aa6-986a-dfaed6add3b5",
+        "id": "f921d8c5-db27-4af8-b3f4-0f45fbd6ccf0",
         "role": "agent",
         "text": "Could you tell me more?",
         "at": "2026-11-19T10:00:04+00:00"
@@ -406,7 +406,8 @@
     "score": {
       "value": 0.2222,
       "filledPoints": 4,
-      "totalPoints": 18
+      "totalPoints": 18,
+      "progress": 0.08
     },
     "finish": {
       "ready": false,

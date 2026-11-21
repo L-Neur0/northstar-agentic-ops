@@ -1,0 +1,36 @@
+# Field value tiers (spec 24 §3.9b, amended 2026-11-20 and 2026-11-21 (owner test)), from the short step walk.
+# Keys are the field registry's step leaf keys (S01-S14) and process keys.
+# A test fails when a registry step leaf has no tier here, so a new or renamed field is mapped here.
+
+step_leaves:
+  name: A            # S01
+  activities: A      # S03
+  roles: A           # S04 (amended 2026-11-21, owner test: in the big walk question)
+  systems: A         # S06
+  data: A            # S07 data in / out
+  effort: A          # S08
+  pain_points: A     # S09
+  decision_type: A   # S13 rules or judgement
+  approvals: B       # S10 (amended 2026-11-21: the one optional question per step)
+  exceptions: B      # S11
+  handover: B        # S12
+  goal: C            # S02
+  owner: C           # S05 step owner
+  decision_criteria: B  # S14 (spec 24 §12 V1, 2026-11-21): inside the optional question of a judgement step
+
+# A question that asks only for fields of these tiers is a low-value question.
+low_value_tiers: [C]
+
+# Process fields that are low value (P13 target).
+low_value_process: [process.target_metric]
+
+# Process fields scored with Tier A in the quality split (assumption: what the assessment needs).
+process_core:
+  - process.name            # P04
+  - process.cluster         # P05
+  - process.trigger         # P06
+  - process.end_result      # P07
+  - process.business_pain   # P09
+  - process.volume          # P10
+  - process.baseline_metric # P12
+  - process.substep_count   # P16

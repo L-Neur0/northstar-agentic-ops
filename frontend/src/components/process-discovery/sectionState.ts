@@ -1,7 +1,7 @@
 /**
  * Open / closed state of the panel sections and its automatic rules (spec 23 §3.8.7; AC-23.32).
  * Why: the panel follows the interview: on `steps` the five upper sections fold away and Steps
- * opens, on `confirm` Roles and systems opens, on `review` every section with a gap opens again.
+ * opens, on `review` every section with a gap opens again (no Roles and systems section since 2026-11-21).
  * A section the expert clicked is pinned and never changes by itself after that.
  * The Documents section (spec 23 §11.1) starts open and no phase rule ever closes it.
  * Rules: pure functions over one map `{[sectionId]: {collapsed, pinned}}` kept in page state;
@@ -17,7 +17,7 @@ export interface SectionState {
 
 export type SectionStateMap = Record<PanelSectionId, SectionState>
 
-const ALL: PanelSectionId[] = [...PROCESS_SECTIONS, 'steps', 'confirm', 'documents']
+const ALL: PanelSectionId[] = [...PROCESS_SECTIONS, 'steps', 'documents']
 
 export function defaultSections(): SectionStateMap {
   return Object.fromEntries(ALL.map((id) => [id, { collapsed: false, pinned: false }])) as SectionStateMap
@@ -34,7 +34,6 @@ function hasGap(id: PanelSectionId, session: SessionOut): boolean {
   if (id === 'steps') {
     return !p.substeps_complete || session.fieldViews.some((v) => v.phase === 'steps' && v.status !== 'complete' && !v.key.endsWith('.handover'))
   }
-  if (id === 'confirm') return !p.roles_confirmed || !p.tools_confirmed
   return sectionHasGaps(sectionViews(session.fieldViews, id))
 }
 
@@ -47,9 +46,7 @@ export function applyPhase(map: SectionStateMap, phase: Phase, session: SessionO
   if (phase === 'steps') {
     PROCESS_SECTIONS.forEach((id) => set(id, true))
     set('steps', false)
-  } else if (phase === 'confirm') {
-    set('confirm', false)
-  } else if (phase === 'review') {
+  } else if (phase === 'review' || phase === 'confirm') {
     ALL.forEach((id) => {
       if (hasGap(id, session)) set(id, false)
     })

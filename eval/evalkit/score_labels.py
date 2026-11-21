@@ -6,8 +6,10 @@ persona's `expected` block keeps those scores exact and free.
 What: `score_labels` reads the final `SessionOut`, the stored session (in process, for the steering
 state), the ideas list and the report's step rows, and returns hits and misses. Steering names
 match by normalised containment either way ("onboarding new site staff" and "onboarding").
+Fit and route use the same content match as the field scores (spec 24 §3.7 item 2): a product
+step that merges several true steps is checked against each of them.
 Must not: guess when data is absent: no stored session (URL mode) makes steering `None` (n/a).
-Spec 24 §3.9; AC-24.19.
+Spec 24 §3.9; AC-24.19, AC-24.50.
 """
 
 from __future__ import annotations
@@ -59,10 +61,12 @@ def score_labels(persona: Persona, run: PersonaRun) -> LabelScores:
     scope_out = session.get("scope") or {}
     scope = scope_out.get("verdict") == persona.expected.scope if run.finished else None  # judged at Finish only
     rows = list(((run.report or {}).get("steps") or {}).get("rows") or [])
-    captured_steps = [{"name": r.get("name")} for r in rows]
+    # the report's row k is the profile's step k: match on the profile's content (AC-24.50)
+    captured_steps = list(process.get("substeps") or []) or [{"name": r.get("name")} for r in rows]
     by_number = {r.get("number"): r for r in rows}
     fit_hits = route_hits = 0
-    for true_n, cap_n in align_steps(persona.truth.steps, captured_steps):
+    groups = [{normalise(k), *(normalise(a) for a in v)} for k, v in persona.truth.aliases.items()]
+    for true_n, cap_n in align_steps(persona.truth.steps, captured_steps, groups):
         expected = persona.expected.routes.get(true_n)
         if expected is None:
             continue

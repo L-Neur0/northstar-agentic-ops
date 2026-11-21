@@ -176,15 +176,35 @@ def parse_duration(text: str) -> Duration | None:
     elif per == 1 and (bare := re.match(r"^(\d{1,2})\b\s*", rest)):
         hours, rest = hours + int(bare.group(1)) / 60, rest[bare.end() :]  # "1h30"
     rest = rest.strip()
-    if rest and rest not in DURATION_TAILS:
+    if rest and rest not in DURATION_TAILS and not _per_unit_tail(rest):
         return None
     return Duration(hours=hours, text=text.strip(), midpoint=midpoint)
+
+
+# --- Per-run tails with a unit of work (§3.8) -------------------------------------------------------
+
+_UNIT_OF_WORK_TAIL = re.compile(r"^(?:per|each|for each|for every)\s+([a-z][a-z'-]*(?:\s+[a-z][a-z'-]*){0,2})$")
+
+
+def _is_unit_of_work(words: str) -> bool:
+    """1-3 words whose first word is not a period word nor run / time / cycle ("role", "new starter")."""
+    first = words.split()[0]
+    return first not in _NOT_A_UNIT_OF_WORK and first.removesuffix("s") not in _NOT_A_UNIT_OF_WORK
+
+
+def _per_unit_tail(rest: str) -> bool:
+    """`per N`, `each N`, `for each N`, `for every N` with N a unit of work: one run of the process."""
+    m = _UNIT_OF_WORK_TAIL.match(rest.strip())
+    return m is not None and _is_unit_of_work(m.group(1))
 
 
 # --- Step 4: frequencies --------------------------------------------------------------------------
 
 _PERIOD_WORDS = sorted({*WORKING_YEAR, *(f"{p}s" for p in WORKING_YEAR), *WEEKDAYS}, key=len, reverse=True)
 _PERIOD = "|".join(re.escape(p) for p in _PERIOD_WORDS)
+_NOT_A_UNIT_OF_WORK = frozenset(
+    {*_PERIOD_WORDS, "run", "time", "cycle", "working", "business", "half", "weekday", "weekend", "shift"}
+)
 
 
 def periods_a_year(word: str) -> float | None:
@@ -199,8 +219,26 @@ def periods_a_year(word: str) -> float | None:
 
 
 def parse_frequency(text: str) -> Frequency | None:
-    """Per run (× the process runs) or periodic (runs a year), or `None` outside the grammar."""
-    s, given = _clean(text), text.strip()
+    """Per run (× the process runs) or periodic (runs a year), or `None` outside the grammar.
+
+    A text that does not parse whole is read part by part (split on "," and ";"): the first per-run
+    part wins, else the first part that parses (§3.8 F3).
+    """
+    given = text.strip()
+    whole = _parse_frequency_part(_clean(text), given)
+    if whole is not None or not re.search(r"[,;]", text):
+        return whole
+    parts = [f for f in (_parse_frequency_part(_clean(p), given) for p in re.split(r"[,;]", text)) if f is not None]
+    return next((f for f in parts if f.kind == "per_run"), parts[0] if parts else None)
+
+
+def _parse_frequency_part(s: str, given: str) -> Frequency | None:
+    """One part of a frequency answer, already cleaned."""
+    if s.startswith("every time "):
+        return Frequency("per_run", 1, given, False)  # "every time we hire" (§3.8 F1)
+    once = re.match(r"^(?:once )?(.+)$", s)
+    if once is not None and _per_unit_tail(once.group(1)):
+        return Frequency("per_run", 1, given, False)  # "once per role", "for every request"
     if s in PER_RUN_EXACT:
         return Frequency("per_run", 1, given, False)
     if s in ADVERBS:
@@ -217,7 +255,7 @@ def parse_frequency(text: str) -> Frequency | None:
         return None
     value, midpoint, rest = qty
     rest = re.sub(r"^times?\b\s*", "", rest).strip()
-    if rest in PER_RUN_TAILS:
+    if rest in PER_RUN_TAILS or _per_unit_tail(rest):
         return Frequency("per_run", value, given, midpoint)
     periodic = re.match(rf"^(?:a|an|per|every|each|/)\s*({_PERIOD})$", rest)
     if periodic is None:

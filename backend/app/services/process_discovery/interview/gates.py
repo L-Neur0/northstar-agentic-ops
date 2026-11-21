@@ -10,7 +10,8 @@ What: `current_name` (P04 only when it counts), `needs_scope`, `needs_placement`
 `needs_classification`, `classification_subject` (the name, plus the widening question and the
 expert's answer on a widening pass) and `apply_scope_verdict`.
 Must not: call a model, write the profile or mutate its inputs.
-Spec 14 §3.1, §3.4; AC-14.33 to AC-14.36.
+Spec 14 §3.1, §3.4; AC-14.33 to AC-14.36. Amended 2026-11-21 (owner test, §3.20 O3): no widening
+question for recurring work (AC-14.119).
 """
 
 from __future__ import annotations
@@ -18,10 +19,10 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from ..domain.field_spec import WIDENING_LIMIT, Vocabulary
-from ..domain.scope import VERDICT_BORDERLINE, VERDICT_TASK
+from ..domain.field_spec import WIDENING_LIMIT, Vocabulary, recompute_derived
+from ..domain.scope import RECURRING, VERDICT_BORDERLINE, VERDICT_TASK, refresh_scope_from_map
 from ..profile.coercion import coerce_count
-from ..profile.shapes import as_mapping, as_text, process_of
+from ..profile.shapes import as_mapping, as_text, process_of, rows_of
 from ..profile.verdicts import field_counts
 from .replies import last_agent_message, last_expert_message
 
@@ -84,7 +85,7 @@ def apply_scope_verdict(
     """Fold a fresh verdict into the widening machine; returns new `(scope, counters)`.
 
     First pass `borderline` or `task` with `widening_count < 2` arms one widening question and bumps
-    the count. The second pass is terminal: the flag clears, `widening_asked` is recorded, and a
+    the count, unless the work recurs: recurring individual work is a valid candidate (§3.20 O3). The second pass is terminal: the flag clears, `widening_asked` is recorded, and a
     second-pass `task` sets the sticky `overridden`.
     """
     second_pass = scope.get("awaiting_widening") is True
@@ -103,7 +104,24 @@ def apply_scope_verdict(
         if label == VERDICT_TASK:
             new_scope["overridden"] = True
         return new_scope, new_counters
-    if label in (VERDICT_BORDERLINE, VERDICT_TASK) and count < WIDENING_LIMIT:
+    recurring = (as_mapping(verdict.get("signals")) or {}).get(RECURRING) is True
+    if label in (VERDICT_BORDERLINE, VERDICT_TASK) and not recurring and count < WIDENING_LIMIT:
         new_scope["awaiting_widening"] = True
         new_counters["widening_count"] = count + 1
     return new_scope, new_counters
+
+
+def refresh_scope(scope: Mapping[str, Any], profile: Mapping[str, Any]) -> dict[str, Any]:
+    """The stored scope with its verdict refreshed from the mapped steps (spec 12 §3.13, spec 14 §3.21 P6).
+
+    Roles are every step's S04 roles and S05 owner; systems every step's S06. The map only turns
+    `multi_role` / `multi_system` on; the widening flags are never touched, so no question is re-armed.
+    """
+    verdict = as_mapping(scope.get("verdict"))
+    if verdict is None:
+        return dict(scope)
+    rolled = recompute_derived(profile)
+    owners = [str(r.get("owner") or "") for r in rows_of(profile)]
+    roles = [*rolled.get("process.all_roles", []), *owners]
+    refreshed = refresh_scope_from_map(verdict, roles=roles, systems=rolled.get("process.all_tools", []))
+    return {**dict(scope), "verdict": refreshed}

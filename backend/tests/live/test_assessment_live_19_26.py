@@ -49,7 +49,9 @@ async def test_live_assess_steps_rates_every_step_from_the_catalogue() -> None:
     profile = load_profile("eu")
     llm = create_llm(Settings(llm_cache_enabled=False))  # pyright: ignore[reportCallIssue]
     try:
-        ratings, dropped = await run_step_assessment(profile, llm, config.solutions, vocab=nig_vocabulary())
+        ratings, dropped, _motivations = await run_step_assessment(
+            profile, llm, config.solutions, vocab=nig_vocabulary()
+        )
     finally:
         await llm.aclose()
     route = route_summary(ratings, compute_value(profile, [], config.rates), config.solutions)

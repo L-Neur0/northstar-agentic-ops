@@ -53,3 +53,10 @@ def test_ac_15_47_health_includes_the_store_check():
     body = response.json()
     assert body["status"] == "ok" and body["stage"] == "local" and body["version"]
     assert body["store"] == {"ok": True, "ttlEnabled": None}  # the memory store does not simulate ttl
+
+
+def test_product_name_comes_from_config_and_titles_the_api(api: ApiHarness, company: CompanyConfig):
+    """Renamed 2026-11-21: the user-facing name lives once, in organisation.yaml; the API title uses it."""
+    assert company.organisation.product_name == "AI Use Case Discovery Agent"
+    assert api.client.app.title == company.organisation.product_name  # type: ignore[attr-defined]
+    assert api.client.get("/openapi.json").json()["info"]["title"] == company.organisation.product_name

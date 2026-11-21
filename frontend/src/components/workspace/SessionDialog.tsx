@@ -1,7 +1,8 @@
 /**
  * The read-only session popup of the workspace (spec 23 §19.4, §19.5, §19.7; AC-23.122–23.137).
  * Why: from the list, the specialist opens one session and sees its summary, its steps (now or
- * as first told), the documents, the AI assessment and the map, reads the conversation, downloads
+ * as first told), the documents, the report v2 summary, the steps with their AI fit levels, the
+ * three guiding questions and the map (amended 2026-11-21 (report v2)), reads the conversation, downloads
  * the report PDF, or deletes the session.
  * Rules: one view call per open and one conversation call when that tab is first opened (both
  * dropped when the popup closes); the report parts reuse the part 2 components inside error
@@ -22,7 +23,7 @@ import { Spinner } from '../ui/Spinner'
 import { Pill } from '../ui/Pill'
 import { ReportNoteBox } from '../report/ReportNote'
 import { ReportPartBoundary } from '../report/ReportPartBoundary'
-import { OpportunityList, RecommendedRoute, StepAssessmentTable } from '../report/ReportParts'
+import { QuestionsTable, StepLevelTable, SummarySentences } from '../report/ReportParts'
 import { ProcessMap, type MapRenderer } from '../report/ProcessMap'
 import { SummaryCards } from './SummaryCards'
 import { StepGrid } from './StepGrid'
@@ -72,17 +73,18 @@ function ReportBlock({ partKey, part, children }: { partKey: PartKey; part: Part
   )
 }
 
+/** The finished session's report blocks (report v2, spec 23 §19.4 as amended 2026-11-21). */
 function ReportBlocks({ report, mapRenderer }: { report: LoadedReport; mapRenderer?: MapRenderer }) {
   return (
     <>
+      <ReportBlock partKey="summary" part={report.summary}>
+        {report.summary && <SummarySentences part={report.summary} />}
+      </ReportBlock>
       <ReportBlock partKey="steps" part={report.steps}>
-        {report.steps && <StepAssessmentTable part={report.steps} />}
+        {report.steps && <StepLevelTable part={report.steps} />}
       </ReportBlock>
-      <ReportBlock partKey="route" part={report.route}>
-        {report.route && <RecommendedRoute part={report.route} headingLevel={3} />}
-      </ReportBlock>
-      <ReportBlock partKey="assessment" part={report.assessment}>
-        {report.assessment && <OpportunityList part={report.assessment} headingLevel={3} />}
+      <ReportBlock partKey="feasibility" part={report.feasibility ? { ...report.feasibility, title: 'The three questions' } : null}>
+        {report.feasibility && <QuestionsTable questions={report.feasibility.questions} />}
       </ReportBlock>
       <ReportBlock partKey="map" part={report.map ? { ...report.map, title: 'Process map' } : null}>
         {report.map && <ProcessMap diagram={report.map.diagram} caption={report.map.caption} render={mapRenderer} />}

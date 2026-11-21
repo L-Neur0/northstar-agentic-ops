@@ -1,0 +1,11 @@
+# Employee time model (spec 24 §3.9b, amended 2026-11-20).
+# Estimates the minutes a real employee spends in one interview from the words on the screen.
+# Every number here is an ASSUMPTION, not a measurement; change it here, never in code.
+
+reading_wpm: 230              # assumption: average reading speed of on-screen text, words a minute
+typing_wpm: 40                # assumption: average typing speed of a chat reply, words a minute
+think_seconds: 8              # assumption: time to think before each expert message
+short_answer_think_seconds: 3 # assumption: think time for a yes/no-style short answer
+short_answer_max_words: 3     # a reply of at most this many words is a short answer
+upload_seconds: 20            # assumption: time to pick and upload one document
+target_minutes: 20            # target per session (product: a 15-20 minute interview)

@@ -7,15 +7,15 @@ Scope ("is it a process?") and placement ("which cluster?") are kept apart on pu
 place confidently and must still be caught by the rubric.
 What: the five signals with their questions, `build_scope_verdict` and its banding (with
 `external_consumer` as a cap, not a fifth vote), the neutral verdict for a failed call, the
-calibration rows, and `build_placement` with its confidence floor and runner-up margin.
+calibration rows, `refresh_scope_from_map` (signals from the mapped steps, spec 12 §3.13), and `build_placement` with its confidence floor and runner-up margin.
 Must not: read the environment or a clock, call a model, or recompute a verdict from a stored score
 (the neutral verdict is the one case where they differ). Thresholds passed in are checked, never
-clamped. Tests: AC-12.33 to AC-12.37.
+clamped. Tests: AC-12.33 to AC-12.37, AC-12.60.
 """
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from typing import Any, cast
 
 from .taxonomy import UNKNOWN_CODE, Taxonomy
@@ -102,6 +102,39 @@ def build_scope_verdict(raw: Any) -> dict[str, Any]:
 def neutral_scope_verdict() -> dict[str, Any]:
     """What a failed CLASSIFY yields: borderline with score 0. Not knowing earns one more question."""
     return {"verdict": VERDICT_BORDERLINE, "score": 0, "signals": dict.fromkeys(SIGNAL_KEYS, False), "reasoning": ""}
+
+
+def _distinct(values: Sequence[str]) -> int:
+    """Distinct non-blank values, lower case, trimmed, whitespace collapsed (§3.13 M1)."""
+    return len({" ".join(v.casefold().split()) for v in values if v.strip()})
+
+
+def refresh_scope_from_map(
+    verdict: Mapping[str, Any], *, roles: Sequence[str], systems: Sequence[str]
+) -> dict[str, Any]:
+    """Turn `multi_role` / `multi_system` on from the mapped roll-ups (2+ each) and re-band (spec 12 §3.13).
+
+    The map only turns a signal on, never off: a short map may simply be incomplete (M2). The other
+    signals keep the model's first answer (M3). Unchanged signals return the verdict as it was (M4).
+    """
+    source = dict(_mapping(verdict))
+    signals = normalise_signals(source.get("signals"))
+    n_roles, n_systems = _distinct(roles), _distinct(systems)
+    updated = {**signals, "multi_role": signals["multi_role"] or n_roles >= 2,
+               "multi_system": signals["multi_system"] or n_systems >= 2}  # fmt: skip
+    if updated == signals:
+        return source
+    score = sum(updated.values())
+    reasoning = str(source.get("reasoning") or "").strip()
+    note = f"Updated from the map: {n_roles} roles, {n_systems} systems."
+    return {
+        **source,
+        "verdict": verdict_for(score, updated[EXTERNAL_CONSUMER]),
+        "score": score,
+        "signals": updated,
+        "reasoning": f"{reasoning} {note}".strip(),
+        "refreshed": True,
+    }
 
 
 def failed_signals(verdict: Mapping[str, Any]) -> tuple[str, ...]:

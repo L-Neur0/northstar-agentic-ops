@@ -1,4 +1,4 @@
-"""Playing one persona: document timing, the *Finish* rule, snapshots, artefacts, isolated failures (spec 24 §3.5, §3.6; AC-24.5, AC-24.6, AC-24.9, AC-24.27, AC-24.30).
+"""Playing one persona: document timing, the *Finish* rule, snapshots, artefacts, isolated failures (spec 24 §3.5, §3.6; AC-24.5, AC-24.6, AC-24.9, AC-24.27, AC-24.30, AC-24.49).
 
 Why: the order of actions changes the scores, so it is pinned against a fake driver whose phase,
 readiness and *Finish* answers follow a script. What: `FakeDriver` (a session that moves phase by
@@ -14,7 +14,7 @@ from typing import Any
 from app.services.process_discovery.fake_llm import FakeLLM
 from app.services.process_discovery.llm import CallType, LLMUnavailableError
 from eval.evalkit.persona import HARD_CAP, PersonaDocument
-from eval.evalkit.play import play
+from eval.evalkit.play import PersonaRun, Snapshot, play, write_artefacts
 
 from .conftest import make_persona
 
@@ -83,7 +83,7 @@ class FakeDriver:
         return ""
 
 
-def expert(n: int = 70) -> FakeLLM:
+def expert(n: int = HARD_CAP + 10) -> FakeLLM:
     return FakeLLM({CallType.EXPERT: [f"answer {i}" for i in range(1, n + 1)]})
 
 
@@ -127,6 +127,31 @@ async def test_ac_24_6_review_ends_early_when_the_agent_stops_asking():
     driver = FakeDriver(phase_at=lambda n: "review" if n >= 5 else "steps", ready_at=5, agent="All set. Press Finish.")
     run = await play(make_persona(), driver, expert(), None)  # pyright: ignore[reportArgumentType]
     assert run.messages_to_finish == 5
+
+
+async def test_ac_24_49_the_persona_saying_finish_presses_it_without_a_message():
+    driver = FakeDriver(phase_at=lambda n: "review" if n >= 5 else "steps", ready_at=5)
+    llm = FakeLLM({CallType.EXPERT: [*[f"answer {i}" for i in range(1, 7)], "FINISH", "answer 8"]})
+    run = await play(make_persona(), driver, llm, None)  # pyright: ignore[reportArgumentType]
+    assert run.status == "finished" and run.messages_to_finish == 6
+    assert "FINISH" not in [text for kind, text in driver.log if kind == "send"]
+
+
+async def test_ac_24_49_finish_said_before_ready_is_sent_as_a_yes():
+    driver = FakeDriver(phase_at=lambda n: "steps", ready_at=None)
+    llm = FakeLLM({CallType.EXPERT: ["FINISH", *[f"answer {i}" for i in range(HARD_CAP + 5)]]})
+    await play(make_persona(), driver, llm, None)  # pyright: ignore[reportArgumentType]
+    assert [text for kind, text in driver.log if kind == "send"][0] == "yes"
+
+
+async def test_ac_24_49_a_correction_in_the_review_does_not_use_up_the_review_answers():
+    correction = "No, two steps are missing: set the category and assign it to a resolver group."
+    driver = FakeDriver(phase_at=lambda n: "review" if n >= 5 else "steps", ready_at=5)
+    llm = FakeLLM(
+        {CallType.EXPERT: [*[f"answer {i}" for i in range(1, 6)], correction, correction, "yes", "yes", "yes"]}
+    )
+    run = await play(make_persona(), driver, llm, None)  # pyright: ignore[reportArgumentType]
+    assert run.messages_to_finish == 10  # 5 to reach review, 2 corrections, then 3 short review answers
 
 
 async def test_ac_24_6_no_finish_within_the_hard_cap_is_never_finished():
@@ -184,3 +209,13 @@ async def test_ac_24_27_one_persona_failing_does_not_stop_the_others(tmp_path):
     assert runs[0].status == "error" and "ExpertError" in runs[0].error
     assert runs[1].status == "finished"
     assert (tmp_path / "bad" / "session.json").exists()
+
+
+def test_ac_24_9_an_expert_message_is_labelled_with_the_phase_it_answered(tmp_path):
+    run = PersonaRun("tiny")
+    run.snapshots = [Snapshot(n, "message", phase, 0.0, 0, 0, {}, {}, []) for n, phase in ((0, "context"), (1, "find"))]
+    run.transcript = [{"role": "agent", "text": "Which department?"}, {"role": "expert", "text": "Finance."},
+                      {"role": "agent", "text": "What recurs in your week?"}]  # fmt: skip
+    write_artefacts(run, tmp_path)
+    rows = __import__("json").loads((tmp_path / "transcript.json").read_text())
+    assert [r["phase"] for r in rows] == ["context", "context", "find"]

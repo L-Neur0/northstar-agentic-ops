@@ -38,6 +38,7 @@ truth:
       pain_points: [slow]
       approvals: [{none: true}]
       exceptions: [{none: true}]
+      decision_type: {kind: rules, evidence: same checks every month}
     - name: Step 2
       goal: Step 2 is done
       activities: [export, check]
@@ -49,6 +50,7 @@ truth:
       pain_points: [slow]
       approvals: [{none: true}]
       exceptions: [{none: true}]
+      decision_type: {kind: rules, evidence: same checks every month}
   aliases:
     SAP: [the ledger, ledger system]
   week: []

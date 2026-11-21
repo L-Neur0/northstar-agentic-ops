@@ -7,14 +7,15 @@
  * decides whether something is answered. Proposals show their source, the quote on request and
  * ✓ / ✎ (`ProposalActions`, part 2). A field (or step cell) with an open conflict shows the chip
  * "Conflict – answer in the chat" and no button: the expert settles it in the chat (spec 23 §11.7,
- * amended 2026-11-20; AC-23.146). Must not render a document's full text.
+ * amended 2026-11-20; AC-23.146). A value proposed from the expert's answers (source `agent`, short
+ * step walk) shows "suggested from your answers", like a document's file name, before and after
+ * the expert's yes. Must not render a document's full text.
  * Colours are theme tokens only, never raw palette classes (spec 23 §3.13.2; AC-23.57).
  */
 import type { ReactNode } from 'react'
 import type { FieldView } from '../../types/process-discovery'
 import { STATUS } from './fieldStatus'
-import { ProposalActions, type ProposalControls } from './ProposalActions'
-
+import { AGENT_SOURCE, ProposalActions, type ProposalControls } from './ProposalActions'
 
 function Chip({ children, tone = 'neutral' }: { children: ReactNode; tone?: 'neutral' | 'info' | 'warning' }) {
   const cls =
@@ -75,6 +76,7 @@ export function FieldRow({
           {view.conflict === 'open' && <Chip tone="warning">Conflict – answer in the chat</Chip>}
           {view.status === 'complete' && view.source === 'document' && <Chip>from {view.documentName ?? 'a removed document'}</Chip>}
           {view.status === 'complete' && view.source === 'specialist' && <Chip>edited by IT</Chip>}
+          {view.status === 'complete' && view.source === 'agent' && <Chip>{AGENT_SOURCE}</Chip>}
         </div>
         {view.status === 'proposed' && <ProposalActions view={view} controls={proposals} />}
         {children}

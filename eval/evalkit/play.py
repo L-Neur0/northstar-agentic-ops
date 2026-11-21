@@ -6,13 +6,15 @@ without any change in the product, so the order is fixed here, in one place, and
 What: `play` loops until *Finish* or `HARD_CAP` expert messages: it uploads any document now due,
 else gets the expert's reply (code first, rule E6, then the EXPERT call) and sends it; after every
 message and upload it reads `GET /api/sessions/{id}` and keeps a snapshot; it presses *Finish* when
-`finish.ready` is true in the review phase after the review has run (at most 3 review answers), or
-before the message that would pass the cap; a 409 is recorded and the loop goes on. Then it reads
+`finish.ready` is true in the review phase after the review has run (at most 3 short review
+answers; a correction does not count), when the persona replies `FINISH` (rule E8: it presses the
+button instead of writing), or before the message that would pass the cap; a 409 is recorded and
+the loop goes on. Then it reads
 the report and writes the artefacts. One persona failing never raises: it ends as `error` or
 `rate_limited`.
 Must not: show the expert anything but the conversation (`expert.py` decides what it sees), write
 to the session except through the API, or count a GET, an upload or *Finish* as a message.
-Spec 24 §3.5, §3.6; AC-24.5, AC-24.6, AC-24.9, AC-24.27, AC-24.30.
+Spec 24 §3.5, §3.6; AC-24.5, AC-24.6, AC-24.9, AC-24.27, AC-24.30, AC-24.49.
 """
 
 from __future__ import annotations
@@ -26,10 +28,11 @@ from typing import Any
 from app.services.process_discovery.llm import LLM
 
 from .driver import PERSONA, Driver, RateLimited
-from .expert import code_reply, expert_reply
+from .expert import FINISH_WORD, code_reply, expert_reply
 from .persona import EVAL_DIR, HARD_CAP, Persona, PersonaDocument
 
 REVIEW_ANSWERS = 3
+REVIEW_SHORT_WORDS = 6  # a review answer counts towards REVIEW_ANSWERS only when this short (a correction does not)
 APP_EXCLUDED = ("EXPERT", "JUDGE")
 
 
@@ -166,14 +169,10 @@ async def _loop(persona: Persona, driver: Driver, expert_llm: LLM, run: PersonaR
         last_agent = next((m for m in reversed(session.get("messages") or []) if m.get("role") == "agent"), {})
         review_done = in_review and (review_answers >= REVIEW_ANSWERS or "?" not in str(last_agent.get("text", "")))
         if ready and (review_done or run.messages >= HARD_CAP):
-            status, body, seconds = await driver.finish(sid)
-            logs = driver.capture.for_call(driver.last_call(sid)) if driver.capture else []
-            if status == 200:
-                run.status, run.messages_to_finish, run.finish_seconds = "finished", run.messages, seconds
-                run.finish_cached = any(r.get("outcome") == "cache_hit" for r in logs if r["event"] == "llm_call")
-                session = body
+            done = await _press_finish(run, driver, sid)
+            if done is not None:
+                session = done
                 break
-            run.finish_409.append({"n": run.messages, "reason": body.get("reason")})
         if run.messages >= HARD_CAP:
             break
         reply = code_reply(persona, session)
@@ -181,9 +180,15 @@ async def _loop(persona: Persona, driver: Driver, expert_llm: LLM, run: PersonaR
             run.code_replies.append(run.messages + 1)
         else:
             reply = await expert_reply(persona, session.get("messages") or [], uploaded, expert_llm)
+        if reply.strip().rstrip(".!").upper() == FINISH_WORD:  # rule E8: the persona presses Finish
+            done = await _press_finish(run, driver, sid) if ready else None
+            if done is not None:
+                session = done
+                break
+            reply = "yes"
         turn, seconds = await driver.send(sid, reply)
         run.messages += 1
-        if in_review:
+        if in_review and len(reply.split()) <= REVIEW_SHORT_WORDS:
             review_answers += 1
         session = turn["session"]
         run.turns.append(_turn_record(run, driver, sid, session, seconds, "message"))
@@ -196,6 +201,18 @@ async def _loop(persona: Persona, driver: Driver, expert_llm: LLM, run: PersonaR
     run.ideas = await driver.ideas(sid)
     if run.finished:
         run.report, run.pdf = await driver.report(sid)
+
+
+async def _press_finish(run: PersonaRun, driver: Driver, sid: str) -> dict[str, Any] | None:
+    """POST .../finish; the finished session, or `None` after a recorded 409."""
+    status, body, seconds = await driver.finish(sid)
+    logs = driver.capture.for_call(driver.last_call(sid)) if driver.capture else []
+    if status == 200:
+        run.status, run.messages_to_finish, run.finish_seconds = "finished", run.messages, seconds
+        run.finish_cached = any(r.get("outcome") == "cache_hit" for r in logs if r["event"] == "llm_call")
+        return body
+    run.finish_409.append({"n": run.messages, "reason": body.get("reason")})
+    return None
 
 
 def _jsonl(path: Path, rows: list[Any]) -> None:
@@ -212,7 +229,9 @@ def write_artefacts(run: PersonaRun, folder: Path) -> None:
     for message in run.transcript:
         if message.get("role") == "expert":
             expert_n += 1
-        phase = phases.get(expert_n, "")
+            phase = phases.get(expert_n - 1, "")  # the phase of the question it answered
+        else:
+            phase = phases.get(expert_n, "")
         rows.append({"turn": expert_n, "phase": phase, "role": message.get("role"), "text": message.get("text")})
         lines.append(f"**{message.get('role')}** (turn {expert_n}, {phase}): {message.get('text')}\n")
     (folder / "transcript.md").write_text("\n".join(lines), encoding="utf-8")

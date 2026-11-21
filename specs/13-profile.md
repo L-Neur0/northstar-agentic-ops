@@ -1,6 +1,6 @@
 # 13 · Profile: applying changes, proposals, completeness, *Finish*
 
-> **Status:** approved · **§3.13 amendment (conflicts, a source per item): approved and built 2026-11-20** (deviations: spec 17 §3.22, spec 14 §3.17 build notes) · **Implements:** F-05, F-08, F-10, F-11 (product); the write side of F-04 (proposals) and F-09 (skipped cells, assumed step count); architecture §3.2 (`profile`), §5 (session document) · **Depends on:** specs 10, 12
+> **Status:** approved · **amended 2026-11-21 (owner test): skipped optional cells leave the total; *Finish* without list confirmations (AC-13.62, AC-13.63)** · **short step walk (approved 2026-11-20): `step_is_complete` treats a proposed Tier C cell as settled; `propose_tier_c` (spec 14 §3.19 W6, W7)** · **§3.13 amendment (conflicts, a source per item): approved and built 2026-11-20** (deviations: spec 17 §3.22, spec 14 §3.17 build notes) · **Implements:** F-05, F-08, F-10, F-11 (product); the write side of F-04 (proposals) and F-09 (skipped cells, assumed step count); architecture §3.2 (`profile`), §5 (session document) · **Depends on:** specs 10, 12
 > **Code:** `backend/app/services/process_discovery/profile/{constants,shapes,coercion,verdicts,mutate,proposals,scoring,views,raw_snapshot}.py`
 > **Tests:** `backend/tests/unit/process_discovery/profile/`
 
@@ -207,6 +207,8 @@ After the batch: resize (§3.5, P16 is not set by proposals), reopen the loop if
 
 Declaring more steps lowers the percentage (the denominator grows). That is correct, not a bug.
 
+**Amended 2026-11-21 (owner test), spec 14 §3.20 O8.** A **skipped optional step cell** (S10, S11; spec 12 owner test amendment) is left out of the score: its weight is taken off `total_points` (and it adds nothing to `filled_points`). Answered or none-row optional cells count as before. So the one optional question per step never counts against the gate when the expert says nothing.
+
 ### 3.10 *Finish* (`scoring.finish_check`)
 
 `finish_check(profile, *, vocab, scope=None) -> FinishCheck(ready, blocked_by, looks_like_task)`. One function, used by the guide prompt, the API and the screen, so they cannot disagree. The checks run **in this order**; the first that fails is `blocked_by` (spec 12 `FinishBlock`):
@@ -234,7 +236,7 @@ Declaring more steps lowers the percentage (the denominator grows). That is corr
 
 ### 3.11 Field views for the screens (`views.py`)
 
-`field_views(profile, *, counters, vocab, documents=()) -> list[dict]` builds one `FieldView` (spec 12) per process field and per step cell of every row (S01–S12). The client never computes a status.
+`field_views(profile, *, counters, vocab, documents=()) -> list[dict]` builds one `FieldView` (spec 12) per process field and per step cell of every row (S01–S13). The client never computes a status.
 
 | `FieldView` key | Value |
 |---|---|
@@ -291,6 +293,13 @@ Declaring more steps lowers the percentage (the denominator grows). That is corr
 | AC-13.59 | `resolve_conflicts` for `current`, `offered` and `both` writes exactly the table above, with parts per item for `both`; a sub-field choice on a field proposed with `replaces` stays `proposed` and is also written into `replaces.value`, so `reject_proposals` afterwards restores the chosen sub-value |
 | AC-13.60 | An expert write through `apply_changes` on a field with an open conflict closes it (`conflicts_closed`); `mark_conflicts_left` changes only `status` |
 | AC-13.61 | Neither an open nor a left conflict changes the score, the counting rule or the *Finish* check |
+
+**Amended 2026-11-21 (owner test), spec 14 §3.20 O10.** *Finish* checks only (1) score ≥ 0.80 and (2) the walk is closed (`substeps_complete`). The roles and systems list confirmations are no longer checks: `roles_not_confirmed` and `tools_not_confirmed` are never returned (the codes stay in the `FinishBlock` type for old clients). `confirm_rollup` and the flags stay readable for old sessions; nothing in the flow sets or reads them.
+
+| ID | Given / when / then |
+|---|---|
+| AC-13.62 | A 3-step profile whose S10 and S11 cells are all skipped has `total_points` = 18 + 36 − 6; with them answered "none" the total is 18 + 36 |
+| AC-13.63 | `finish_check` on a profile at ≥ 0.80 with the walk closed and `roles_confirmed` / `tools_confirmed` false is ready |
 
 ## 4. Interfaces
 

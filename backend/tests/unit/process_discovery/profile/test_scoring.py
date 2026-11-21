@@ -26,7 +26,7 @@ def test_the_score_table(vocab):
     """AC-13.45."""
     assert tuple(score(empty_profile(), vocab=vocab)) == (0.0, 0, 18)
     assert tuple(score(write(vocab, empty_profile(), context_changes()), vocab=vocab)) == (0.1667, 3, 18)
-    assert tuple(score(cost_review_profile(vocab, steps=4, filled_steps=0), vocab=vocab)) == (0.2903, 18, 62)
+    assert tuple(score(cost_review_profile(vocab, steps=4, filled_steps=0), vocab=vocab)) == (0.2727, 18, 66)
     partial = cost_review_profile(vocab, steps=4, filled_steps=3)
     six_cells = {
         step_cell_key(4, leaf): v
@@ -40,7 +40,7 @@ def test_the_score_table(vocab):
         )
     }
     partial = write(vocab, partial, six_cells)
-    assert tuple(score(partial, vocab=vocab)) == (0.9194, 57, 62)
+    assert tuple(score(partial, vocab=vocab)) == (0.9091, 60, 66)
     six = cost_review_profile(vocab, steps=6, filled_steps=4)
     six = write(
         vocab,
@@ -57,7 +57,7 @@ def test_the_score_table(vocab):
             )
         },
     )
-    assert tuple(score(six, vocab=vocab)) == (0.8095, 68, 84)
+    assert tuple(score(six, vocab=vocab)) == (0.8, 72, 90)
 
 
 def test_double_weights_and_zero_for_non_counting_values(vocab):
@@ -79,7 +79,9 @@ def test_expected_steps(vocab):
 
 def finished(vocab, steps, skip_cells):
     profile = cost_review_profile(vocab, steps=steps)
-    keys = [step_cell_key(i, leaf) for i in range(1, steps + 1) for leaf in SCORED][:skip_cells]
+    # optional cells (approvals, exceptions) leave the total when skipped (AC-13.62), so the gate cases skip others
+    leaves = [leaf for leaf in SCORED if leaf not in ("approvals", "exceptions")]
+    keys = [step_cell_key(i, leaf) for i in range(1, steps + 1) for leaf in leaves][:skip_cells]
     blanked = profile
     for key in keys:
         idx = int(key.split("[")[1].split("]")[0]) - 1
@@ -99,13 +101,13 @@ def finished(vocab, steps, skip_cells):
 
 def test_the_gate(vocab):
     """AC-13.47."""
-    ready = finished(vocab, 4, 12)
-    assert score(ready, vocab=vocab)[1:] == (50, 62)
+    ready = finished(vocab, 4, 13)
+    assert score(ready, vocab=vocab)[1:] == (53, 66)
     assert finish_check(ready, vocab=vocab) == (True, None, False)
-    below = finished(vocab, 4, 13)
-    assert score(below, vocab=vocab)[1:] == (49, 62)
+    below = finished(vocab, 4, 14)
+    assert score(below, vocab=vocab)[1:] == (52, 66)
     assert finish_check(below, vocab=vocab).blocked_by == "below_gate"
-    exact = finished(vocab, 2, 8)
+    exact = finished(vocab, 6, 18)
     assert score(exact, vocab=vocab).value == 0.8
     assert finish_check(exact, vocab=vocab).ready
 
@@ -115,7 +117,7 @@ def test_blocking_reasons_in_order(vocab):
     ready = finished(vocab, 4, 0)
     assert finish_check(ready, vocab=vocab).ready
     seen = []
-    for flag in ("substeps_complete", "roles_confirmed", "tools_confirmed"):
+    for flag in ("substeps_complete",):  # the list confirmations no longer block (AC-13.63)
         ready["process"][flag] = False
         seen.append(finish_check(ready, vocab=vocab).blocked_by)
         ready["process"][flag] = True

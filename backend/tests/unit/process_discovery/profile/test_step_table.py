@@ -48,7 +48,7 @@ def test_a_gapped_table_pads_scores_and_keeps_the_far_step(vocab):
     profile = cost_review_profile(vocab, steps=3, filled_steps=0)
     profile = write(vocab, profile, step_changes(3)).profile
     assert expected_steps(profile, vocab=vocab) == 3
-    assert score(profile, vocab=vocab).total_points == 18 + 33
+    assert score(profile, vocab=vocab).total_points == 18 + 36
     profile = write(vocab, profile, {**step_changes(1), **step_changes(2)}).profile
     assert profile["process"]["substeps_complete"] is True
     assert profile["process"]["substeps"][2]["name"] == "Step 3"
@@ -108,6 +108,7 @@ def test_closing_trims_the_count_to_what_was_described(vocab):
             "pain_points",
             "approvals",
             "exceptions",
+            "decision_type",
         )
     ]
     closed = mark_cells_skipped(profile, skip, vocab=vocab)
@@ -130,6 +131,7 @@ def test_closing_trims_the_count_to_what_was_described(vocab):
             "pain_points",
             "approvals",
             "exceptions",
+            "decision_type",
         )
     ]
     trimmed = mark_cells_skipped(four, skip_all, vocab=vocab)
@@ -152,6 +154,7 @@ def test_closing_trims_the_count_to_what_was_described(vocab):
             "pain_points",
             "approvals",
             "exceptions",
+            "decision_type",
         )
     ]
     floor = mark_cells_skipped(one, skip_two, vocab=vocab)

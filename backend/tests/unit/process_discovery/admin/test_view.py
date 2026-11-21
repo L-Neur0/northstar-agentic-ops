@@ -43,13 +43,13 @@ def test_ac_21_8_finished_session_has_cards_grid_documents_and_report():
         "Monthly cost review", "Finance", "finished", "finished",
     )  # fmt: skip
     assert summary.steps_started == 5 and summary.steps_expected == 5
-    assert summary.fields_total == 16 + 5 * 12 and 0 < summary.fields_filled <= summary.fields_total
+    assert summary.fields_total == 16 + 5 * 13 and 0 < summary.fields_filled <= summary.fields_total
     assert summary.completeness == session.score.value
     assert (summary.filled_points, summary.total_points) == (session.score.filled_points, session.score.total_points)
     assert (summary.message_count, summary.document_count) == (0, 1)
     grid = view.steps
     assert len(grid.step_names) == 5 and grid.step_names[0] == session.profile.process.substeps[0].name
-    assert [r.id for r in grid.rows] == [s.id for s in STEP_SPECS]
+    assert [r.id for r in grid.rows] == [s.id for s in STEP_SPECS if s.applies_when is None]  # no judgement step
     name_row = grid.rows[0]
     assert name_row.label == "Step name" and name_row.key == "name"
     assert name_row.cells[0].value == session.profile.process.substeps[0].name

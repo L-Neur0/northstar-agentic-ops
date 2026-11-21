@@ -92,6 +92,22 @@ def test_ac_26_6_step_value_wins_over_process_value() -> None:
     assert ratings[1].evidence_key == "process.substeps[2].pain_points"
 
 
+def test_ac_26_6_rules_or_judgement_words_are_accepted() -> None:
+    """AC-26.6 (S13, short step walk): a quote of the step's own "rules or judgement" words is kept;
+    the same words on another step are still dropped (`quote`)."""
+    profile = load_profile("eu")
+    profile["process"]["substeps"][3]["decision_type"] = {
+        "kind": "judgement",
+        "evidence": "I decide when to chase again",
+    }
+    reply = _reply()
+    reply["steps"][3]["evidence"] = "I decide when to chase again"  # step 4's own S13 words
+    reply["steps"][4]["evidence"] = "I decide when to chase again"  # step 5 quoting step 4
+    ratings, dropped = ground_step_ratings(reply, profile, CAT)
+    assert ratings[3].fit is not None and ratings[3].evidence_key == "process.substeps[4].decision_type"
+    assert ratings[4].fit is None and dropped["quote"] == 1
+
+
 def test_ac_26_7_unknown_route() -> None:
     """AC-26.7: an unknown id → route None, fit and reason kept, counted; "" → None, not counted."""
     reply = _reply()

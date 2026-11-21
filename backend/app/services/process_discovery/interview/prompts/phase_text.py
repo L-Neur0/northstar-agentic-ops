@@ -24,6 +24,9 @@ from app.utils.prompt_safety import single_line
 
 from ...domain.field_spec import (
     DERIVED_SPECS,
+    GROUP_B,
+    GROUP_EFFORT,
+    GROUP_NAMES,
     MAX_STEPS,
     MIN_STEPS,
     PHASE_BOUNDARIES,
@@ -42,8 +45,8 @@ from ...domain.field_spec import (
 )
 from ...domain.scope import SIGNAL_QUESTIONS, SIGNALS, failed_signals, proposable_code
 from ...profile.shapes import as_mapping, parse_step_key, process_of, rows_of
-from ...profile.verdicts import expected_steps
-from .common import field_brief, inline_name, text_value
+from ...profile.verdicts import expected_steps, volume_words
+from .common import inline_name, text_value
 
 PHASE_HEADLINES: dict[str, str] = {
     PHASE_CONTEXT: (
@@ -80,14 +83,21 @@ PHASE_HEADLINES: dict[str, str] = {
         "get to, whether others do it the same way, and whether it touches sensitive data or a regulation."
     ),
     PHASE_STEP_COUNT: (
-        "Agree how {process_name} breaks down before walking through it. Ask for one number from "
-        f"{MIN_STEPS} to {MAX_STEPS}: anything outside that range cannot be recorded, so if their list is longer, "
-        "help them group it first rather than accepting the larger number."
+        "Agree how {process_name} breaks down before walking through it. Ask the expert to list the main steps "
+        f"in order, {MIN_STEPS} to {MAX_STEPS}: one answer gives both the names and the number. Anything outside "
+        "that range cannot be recorded, so if their list is longer, help them group it first rather than "
+        "accepting the larger number."
     ),
-    PHASE_STEPS: "Walk through {process_name} one step at a time, one field at a time.",
+    PHASE_STEPS: (
+        "Walk through {process_name} one step at a time, in grouped questions chosen by the system: one open "
+        "question per step (including who else is involved), a short follow-up only for what is missing, then "
+        "one optional question about sign-offs, what goes wrong and passing the work on. Effort is asked once for "
+        "all steps at the end. Goal and owner are never asked: the system fills them in for the expert to "
+        "confirm in the review."
+    ),
     PHASE_CONFIRM: (
-        "Read back the roles and the systems collected across the steps of {process_name}, each list as it "
-        "stands, and get each list confirmed. A correction belongs on the step it came from."
+        "The walk of {process_name} is done; ask whether anything should be corrected (this phase is no longer "
+        "used and moves on to the review)."
     ),
     PHASE_REVIEW: (
         "Ask the remaining fields of {process_name} once more. When nothing is missing, summarise {process_name} "
@@ -112,31 +122,100 @@ def phase_headline(phase: str, profile: Mapping[str, Any]) -> str:
     return headline.replace("{process_name}", inline_name(process_of(profile).get("name")))
 
 
-def step_instructions(profile: Mapping[str, Any], focus: str | None, *, vocab: Vocabulary) -> str:
-    """Where the walk is ("You are on step k of N — "<name>"") and the one cell to ask now."""
+def _labels(keys: Sequence[str], vocab: Vocabulary) -> list[str]:
+    out: list[str] = []
+    for key in keys:
+        parsed = parse_step_key(key)
+        spec = step_spec_by_leaf(parsed[1]) if parsed else None
+        if spec is not None:
+            out.append(f"- {vocab.label(spec)} (`{key}`): {vocab.question(spec)}")
+    return out
+
+
+def step_instructions(
+    profile: Mapping[str, Any], keys: Sequence[str], *, vocab: Vocabulary, asked_before: bool = False
+) -> str:
+    """Where the walk is and the one grouped question to ask now (§3.19 W10); the fields come from code."""
     expected = expected_steps(profile, vocab=vocab)
-    if expected == 0 or focus is None or parse_step_key(focus) is None:
+    parsed = [p for p in (parse_step_key(k) for k in keys) if p is not None]
+    if expected == 0 or not parsed:
         if expected == 0:
             return (
-                "The number of steps is not known yet, so the walk cannot start. Ask how many main steps "
-                f"{inline_name(process_of(profile).get('name'))} has from start to finish, a number from {MIN_STEPS} "
-                f"to {MAX_STEPS}, and nothing else this turn."
+                f"The steps are not known yet, so the walk cannot start. Ask the expert to list the main steps of "
+                f"{inline_name(process_of(profile).get('name'))} in order, {MIN_STEPS} to {MAX_STEPS}, and "
+                "nothing else this turn."
             )
         return f"All {expected} steps are described."
-    parsed = parse_step_key(focus)
-    assert parsed is not None
-    index, leaf = parsed
     rows = rows_of(profile)
-    name = single_line(rows[index - 1].get("name") or "", 120) if index <= len(rows) else ""
+
+    def name_of(index: int) -> str:
+        return single_line(rows[index - 1].get("name") or "", 120) if index <= len(rows) else ""
+
+    together = "Ask about ALL of these together in ONE question; that is the only question for this turn."
+    steps = sorted({i for i, _ in parsed})
+    spec = step_spec_by_leaf(parsed[0][1])
+    group = spec.group if spec is not None else None
+    if group == GROUP_NAMES:
+        return (
+            f"The process has {expected} main steps but not all have a name. Ask for the names of the steps in "
+            f"order, all in one question. {together}"
+        )
+    if group == GROUP_EFFORT or len(steps) > 1:
+        listed = "\n".join(f'- step {i}: "{name_of(i)}"' for i in steps)
+        runs = volume_words(profile, vocab=vocab) if group == GROUP_EFFORT else None
+        if runs:
+            return (
+                "All steps are walked; now effort. Ask ONE question listing every step below by number and name: "
+                "roughly how long each step takes each time. Say you will assume each step happens once per run "
+                f"of the process (about {single_line(runs, 60)}), and that the expert should say if one happens "
+                "more often. Do not ask how often. A rough answer per step is fine.\n"
+                f"{listed}\n{together}"
+            )
+        return (
+            "All steps are walked; now effort. Ask ONE question listing every step below by number and name: "
+            "roughly how long each takes and how often. A rough answer per step is fine.\n"
+            f"{listed}\n{together}"
+        )
+    index = steps[0]
+    name = name_of(index)
     heading = f"You are on step {index} of {expected}" + (f' — "{name}".' if name else ", which has no name yet.")
-    spec = step_spec_by_leaf(leaf)
-    brief = field_brief(spec, vocab, key=focus) if spec else ""
-    tail = f"step {index + 1}" if index < expected else "the roles and systems review"
+    fields = "\n".join(_labels(keys, vocab))
+    if group == GROUP_B:
+        how = (
+            "One short OPTIONAL question about this step: any sign-off needed, anything that often goes wrong, or "
+            'anything special about passing it on. Say plainly that "no" is a fine answer, for example: "Any '
+            "sign-off needed, anything that often goes wrong, or anything special about passing it on? If nothing, "
+            'just say no."'
+        )
+        if any(k.endswith(".decision_criteria") for k in keys):
+            evidence = (
+                single_line((as_mapping(rows[index - 1].get("decision_type")) or {}).get("evidence") or "", 160)
+                if index <= len(rows)
+                else ""
+            )
+            said = f'You said "{evidence}". ' if evidence else ""
+            how += (
+                "\nThis step involves judgement, so in the SAME question, first ask what the decision is based on, "
+                "tied to the expert's own words about it, for example: "
+                f'"{said}What do you base that decision on, who sets those criteria, and are they written down '
+                'anywhere? And any sign-off needed or anything that often goes wrong? If nothing, just say no."'
+            )
+    elif asked_before:
+        how = (
+            "This is the follow-up: ask only the missing ones below, short, and repeat back what you already have "
+            "for this step so the expert sees it landed."
+        )
+    else:
+        how = (
+            f'One open question: ask the expert to walk you through step {index}, "{name}", covering every field '
+            "below in their own words. For example: \"Walk me through 'Collect the cost data': what you do, who "
+            "else is involved, with which systems and files, what comes in and goes out, what's annoying, and is "
+            'it mostly fixed rules, judgement or a mix?"'
+        )
+    tail = f"step {index + 1}" if index < expected else "the effort question for all steps"
     return (
-        f"{heading}\n"
-        f"Ask about {vocab.label(spec).lower() if spec else leaf} now; that is the only question for this turn.\n"
-        f"{brief}\n"
-        f'Once this step\'s fields all have an answer (including "there are none"), the walk moves on to {tail}.'
+        f"{heading}\n{how}\nThe fields for this turn:\n{fields}\n{together}\n"
+        f'Once these have an answer (including "there are none"), the walk moves on to {tail}.'
     )
 
 

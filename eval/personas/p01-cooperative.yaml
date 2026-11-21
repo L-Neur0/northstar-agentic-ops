@@ -1,6 +1,6 @@
 # Persona p01 (spec 24 §3.3): a cooperative cost controller with one process in mind. Synthetic.
 id: p01-cooperative
-version: 1
+version: 3
 quick: true
 seed: true
 kind: cooperative
@@ -43,6 +43,7 @@ truth:
       pain_points: [site cost reports arrive late and in different formats]
       approvals: [{none: true}]
       exceptions: [{description: a site cost report is still missing at the deadline}]
+      decision_type: {kind: rules, evidence: "it's the same export every month, no thinking involved"}
     - name: Consolidate the costs
       goal: One workbook with every cost centre on the same structure
       activities: [copy the data into the consolidation workbook, map site cost lines to cost centres, check the totals against the ledger]
@@ -54,6 +55,7 @@ truth:
       pain_points: [copying and mapping by hand causes errors]
       approvals: [{none: true}]
       exceptions: [{none: true}]
+      decision_type: {kind: rules, evidence: "the mapping table tells me which cost centre each line goes to"}
     - name: Analyse the variances
       goal: Every cost centre variance above the threshold is flagged
       activities: [compare actuals with budget, flag variances above 5 percent, draft questions for the sites]
@@ -65,6 +67,7 @@ truth:
       pain_points: [the budget file and the actuals use different cost centre codes]
       approvals: [{none: true}]
       exceptions: [{none: true}]
+      decision_type: {kind: mix, evidence: "the 5 percent threshold is fixed, but which questions to ask is my call"}
     - name: Get explanations from the sites
       goal: Every flagged variance has an explanation
       activities: [e-mail the questions to the site managers, chase answers, record the explanations]
@@ -76,6 +79,7 @@ truth:
       pain_points: [some site managers answer only after three reminders]
       approvals: [{none: true}]
       exceptions: [{description: a site manager does not answer and the variance stays unexplained}]
+      decision_type: {kind: judgement, evidence: "I have to judge whether a site's explanation actually holds up"}
     - name: Write and send the report
       goal: The CFO and the regional directors have the cost report
       activities: [write the summary, build the charts, send the report]
@@ -87,6 +91,7 @@ truth:
       pain_points: [the charts are rebuilt by hand every month]
       approvals: [{approver_role: Head of Controlling}]
       exceptions: [{none: true}]
+      decision_type: {kind: mix, evidence: "the charts are a fixed template, the summary I write from experience"}
   aliases:
     Ledger system: [the ledger, ledger, general ledger, GL, ERP]
     E-mail: [email, mail, outlook]
@@ -103,7 +108,7 @@ expected:
   scope: process
   steering: null
   routes:
-    1: {fit: [assist, automate], route: [fix-first, low-code-flow, it-integration-rpa]}
+    1: {fit: [assist, automate], route: [fix-first, low-code-flow, it-integration-rpa, low-code-agent]}  # varying site report layouts (catalogue: low-code-agent choose_when)
     2: {fit: [automate], route: [custom-ai-app, low-code-flow, it-integration-rpa]}
     3: {fit: [assist, automate], route: [m365-copilot, custom-ai-app, low-code-agent]}
     4: {fit: [assist, automate], route: [low-code-flow, low-code-agent, m365-copilot]}

@@ -17,7 +17,14 @@ import {
   type RoleRow,
   type SensitiveRow,
   type SessionSummary,
+  type Step,
 } from '../types/process-discovery'
+
+/** S13 kinds (spec 12 short step walk amendment) in the words the panel shows. */
+const DECISION_KIND_WORDS: Record<string, string> = { rules: 'Rules', judgement: 'Judgement', mix: 'A mix' }
+
+/** S14 `written` (spec 12 §3.13) in the report's words (spec 20 §3.3; AC-23.151). */
+const WRITTEN_WORDS: Record<string, string> = { yes: 'written down', partly: 'partly written down', no: 'not written down' }
 
 const CELL_KEY = /^process\.substeps\[(\d+)\]\.(\w+)$/
 
@@ -102,6 +109,23 @@ export function formatValue(profile: Profile, key: string): string {
     case 'effort': {
       const e = value as { duration: string; frequency: string }
       return [e.duration, e.frequency].filter((s) => s.trim()).join(' · ')
+    }
+    case 'decision_type': {
+      const d = value as { kind: string; evidence: string }
+      const kind = DECISION_KIND_WORDS[d.kind.trim().toLowerCase()] ?? d.kind.trim()
+      return [kind, d.evidence.trim()].filter(Boolean).join(': ')
+    }
+    case 'decision_criteria': {
+      // S14, worded like the report cell (spec 20 §3.3): "Based on: …; set by …; not written down; varies: …"
+      const c = value as Step['decision_criteria']
+      return [
+        c.basis.trim() ? `Based on: ${c.basis.trim()}` : '',
+        c.set_by.trim() ? `set by ${c.set_by.trim()}` : '',
+        WRITTEN_WORDS[c.written.trim().toLowerCase()] ?? '',
+        c.varies.trim() ? `varies: ${c.varies.trim()}` : '',
+      ]
+        .filter(Boolean)
+        .join('; ')
     }
   }
   if (Array.isArray(value)) return value.join(', ')

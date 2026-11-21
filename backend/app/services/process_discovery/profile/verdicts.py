@@ -5,9 +5,10 @@ the same two questions ("is it answered?", "does it count?"). The first is the r
 `evaluate_field` (spec 12); the second adds provenance: a proposed value never counts. Asking them
 anywhere else is how a stored value ends up counted in one place and missing in another.
 What: `grade` (any address form), `field_counts`, `answer_started`, the row helpers (`cell_counts`,
-`cell_skipped`, `step_is_started`, `step_is_complete`, `last_started_row`) and the step-table
+`cell_skipped`, `cell_settled`, `step_is_started`, `step_is_complete`, `last_started_row`) and the step-table
 numbers (`declared_step_count`, `expected_steps`, `current_step_index`).
-Must not: write anything. A row that holds only proposals is *started* (it is never trimmed) but
+Short step walk (approved 2026-11-20): `cell_settled` lets a Tier C proposal settle a cell for
+the walk (spec 14 §3.19 W7). Must not: write anything. A row that holds only proposals is *started* (it is never trimmed) but
 never *complete*. Spec 13 §3.5, §3.9; AC-13.32, AC-13.46.
 """
 
@@ -18,9 +19,11 @@ from typing import Any
 
 from ..domain.field_spec import (
     COMPLETE,
+    GROUP_C,
     MAX_STEPS,
     META_KEY,
     SKIPPED_KEY,
+    SOURCE_AGENT,
     STEP_SPECS,
     Verdict,
     Vocabulary,
@@ -91,11 +94,24 @@ def step_is_started(row: Mapping[str, Any], *, vocab: Vocabulary) -> bool:
     return any(cell_verdict(row, spec.key, vocab=vocab).is_complete for spec in STEP_SPECS)
 
 
-def step_is_complete(row: Mapping[str, Any], *, vocab: Vocabulary) -> bool:
-    """Every scored cell counts or is skipped. S12 (weight 0) never blocks."""
-    return all(
-        cell_counts(row, spec.key, vocab=vocab) or cell_skipped(row, spec.key) for spec in STEP_SPECS if spec.weight > 0
+def cell_settled(row: Mapping[str, Any], leaf: str, *, vocab: Vocabulary) -> bool:
+    """The walk is done with this cell: it counts, is skipped, or is a Tier C cell holding an agent proposal.
+
+    Short step walk (spec 14 §3.19 W7): Tier C (goal, owner, hand-over) is proposed by code and
+    confirmed in bulk in the review, so a waiting proposal never holds the walk; it still adds 0 points.
+    """
+    if cell_counts(row, leaf, vocab=vocab) or cell_skipped(row, leaf):
+        return True
+    spec = step_spec_by_leaf(leaf)
+    meta = _cell_meta(row, leaf) or {}
+    return (
+        spec is not None and spec.group == GROUP_C and cell_proposed(row, leaf) and meta.get("source") == SOURCE_AGENT
     )
+
+
+def step_is_complete(row: Mapping[str, Any], *, vocab: Vocabulary) -> bool:
+    """Every scored cell is settled (counts, skipped, or a Tier C proposal). S12 (weight 0) never blocks."""
+    return all(cell_settled(row, spec.key, vocab=vocab) for spec in STEP_SPECS if spec.weight > 0)
 
 
 def last_started_row(rows: Any, *, vocab: Vocabulary) -> int:
@@ -131,3 +147,20 @@ def current_step_index(profile: Mapping[str, Any], *, vocab: Vocabulary) -> int 
         if not step_is_complete(row, vocab=vocab):
             return i
     return None
+
+
+VOLUME_KEY = "process.volume"
+#: The step frequency assumed when the process volume is known (spec 14 §3.21 P3).
+ASSUMED_FREQUENCY = "each time"
+
+
+def volume_words(profile: Mapping[str, Any], *, vocab: Vocabulary) -> str | None:
+    """P10 in plain words ("6 a month") when it counts, else `None` (spec 14 §3.21 P3)."""
+    if not field_counts(profile, VOLUME_KEY, vocab=vocab):
+        return None
+    volume = as_mapping(process_of(profile).get("volume")) or {}
+    count, period = volume.get("count"), str(volume.get("period") or "").strip()
+    if isinstance(count, int | float) and not isinstance(count, bool) and period:
+        return f"{count:g} a {period}"
+    raw = str(volume.get("raw") or "").strip()
+    return raw or None

@@ -1,6 +1,6 @@
 # Persona p02 (spec 24 §3.3): a vague service desk team lead who never gives a number. Synthetic.
 id: p02-vague
-version: 1
+version: 3
 quick: true
 seed: false
 kind: difficult
@@ -44,6 +44,7 @@ truth:
       pain_points: [descriptions are often one line like "laptop broken"]
       approvals: [{none: true}]
       exceptions: [{description: the description is unclear and the agent calls the user back}]
+      decision_type: {kind: judgement, evidence: "you have to read it and get a feel for what the user really means"}
     - name: Set category and priority
       goal: The ticket has the right category and priority
       activities: [pick the category, set the priority from the priority matrix]
@@ -55,6 +56,7 @@ truth:
       pain_points: [agents pick different categories for the same problem]
       approvals: [{none: true}]
       exceptions: [{none: true}]
+      decision_type: {kind: mix, evidence: "there's a priority matrix, but half the time you go on gut feeling"}
     - name: Assign to a resolver group
       goal: The ticket sits with the group that can fix it
       activities: [look up the resolver group, assign the ticket]
@@ -66,6 +68,7 @@ truth:
       pain_points: [tickets bounce between groups]
       approvals: [{none: true}]
       exceptions: [{description: no group accepts the ticket and it comes back to the desk}]
+      decision_type: {kind: mix, evidence: "there's a list of groups, but you need to know who actually handles what"}
     - name: Follow up unassigned tickets
       goal: No ticket stays unassigned for long
       activities: [check the unassigned queue, escalate old tickets]
@@ -77,6 +80,7 @@ truth:
       pain_points: [urgent tickets are found only at the end of the shift]
       approvals: [{none: true}]
       exceptions: [{none: true}]
+      decision_type: {kind: rules, evidence: "anything unassigned past the limit gets escalated, that's the rule"}
   aliases:
     Ticketing system: [the ticket tool, ticket system, ticketing tool, service desk tool, ITSM tool]
     Priority matrix: [priority table, the matrix]

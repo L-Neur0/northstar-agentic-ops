@@ -9,7 +9,8 @@ What: `ground_step_ratings` applies rules A1–A10 and returns one `StepRating` 
 (a step without a kept entry is *not assessed*) plus the drop counts by reason.
 Must not: call a model, read a clock, do I/O, trust a step name from the model, or keep a route id
 that is not in the catalogue (product rule 8: company tools come from configuration).
-Spec 26 §3.5, §4.1; AC-26.4 to AC-26.10, AC-26.17.
+Spec 26 §3.5, §4.1; AC-26.4 to AC-26.10, AC-26.17. Spec 27 §3.2: signals grounded in that step's words
+(a dropped signal counts as false), and `raw_motivations`; AC-27.2.
 """
 
 from __future__ import annotations
@@ -22,14 +23,18 @@ from app.core.config import SolutionCatalogue
 from app.models.process_discovery_schemas import StepRating
 
 from ...profile.shapes import as_list, as_mapping, rows_of
-from ..evidence import find_evidence, profile_values, restrict_to_step_or_process
+from ..evidence import find_evidence, profile_values, restrict_to_step, restrict_to_step_or_process
 from .schemas import AssessStepsOut
 
 MAX_RAW_ENTRIES = 50  # A1
 MAX_REASON_CHARS = 600  # A4
 MAX_ROUTE_REASON_CHARS = 400  # A8
 FITS = ("automate", "assist", "human")
-DROP_REASONS: tuple[str, ...] = ("step", "quote", "invalid", "cap", "route")
+SIGNAL_NAMES = frozenset(
+    ("reads_unstructured", "compares_to_criteria", "finds_patterns", "drafts_text", "must_be_exact", "fixed_rules")
+)
+MOTIVATION_KEYS = {"q1": "fit_motivation", "q2": "assistant_motivation", "q3": "worth_motivation"}
+DROP_REASONS: tuple[str, ...] = ("step", "quote", "invalid", "cap", "route", "signal")
 _ELLIPSIS = "…"
 
 
@@ -81,6 +86,16 @@ def ground_step_ratings(
         if route_id and (solution is None or fit not in solution.fits):
             dropped["route"] += 1
             solution = None
+        signals: dict[str, bool] = {}
+        signal_evidence: dict[str, str] = {}
+        for raw_signal in as_list(entry.get("signals")) or []:  # spec 27 §3.2: only that step's words
+            sig = as_mapping(raw_signal) or {}
+            name = sig.get("name")
+            quote = find_evidence(sig.get("evidence"), restrict_to_step(values, step))
+            if name not in SIGNAL_NAMES or quote is None:
+                dropped["signal"] += 1
+                continue
+            signals[str(name)], signal_evidence[str(name)] = True, quote.quote
         kept[step] = StepRating(
             step=step,
             name=names[step - 1],
@@ -91,7 +106,22 @@ def ground_step_ratings(
             evidence_source=hit.source,
             route_id=solution.id if solution is not None else None,
             route_reason=clean_text(entry.get("route_reason"), MAX_ROUTE_REASON_CHARS) if solution else "",
+            signals=signals,
+            signal_evidence=signal_evidence,
         )
 
     ratings = [kept.get(k) or StepRating(step=k, name=names[k - 1]) for k in range(1, len(rows) + 1)]
     return ratings, dropped
+
+
+def raw_motivations(reply: AssessStepsOut | Mapping[str, Any]) -> dict[str, tuple[str, str]]:
+    """The three motivations as (text, quote), unchecked: `questions.answer_questions` keeps a motivation
+    only when its quote is the expert's words (spec 27 §3.2)."""
+    data = reply.model_dump() if isinstance(reply, AssessStepsOut) else as_mapping(reply) or {}
+    out: dict[str, tuple[str, str]] = {}
+    for key, field in MOTIVATION_KEYS.items():
+        item = as_mapping(data.get(field)) or {}
+        text, quote = clean_text(item.get("text"), 400), clean_text(item.get("evidence"), 400)
+        if text and quote:
+            out[key] = (text, quote)
+    return out

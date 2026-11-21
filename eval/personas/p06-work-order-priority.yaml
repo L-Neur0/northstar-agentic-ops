@@ -1,0 +1,109 @@
+# Persona p06 (spec 24 §12 V7): a cooperative maintenance planner; prioritising corrective work orders. Synthetic.
+# A second judgement-heavy domain next to p05: the priority criteria are partly written (an old matrix)
+# and change by site manager. Checks that the agent asks what a judgement is based on in any domain.
+id: p06-work-order-priority
+version: 1
+quick: false
+seed: true
+kind: cooperative
+profile: >
+  You are a maintenance planner in the Operations team of NIG, working in North America. You plan the
+  corrective maintenance for three water treatment plants. You have done it for five years. You write
+  short, practical sentences in English.
+behaviour:
+  - Answer what is asked, with numbers when you have them.
+  - You have one process in mind, prioritising the corrective work orders each week, and you stay on it.
+  - When asked for the steps, name the four steps first, then describe each one when asked.
+  - Do not explain how you decide the priorities unless asked what you base them on, what the rules are, or who sets them.
+  - When asked about the priority criteria, say there is an old priority matrix from 2019 that nobody keeps up to date, so in practice each site manager has their own idea of what is urgent.
+  - Give roles, never people's names.
+truth:
+  fields:
+    department: Operations
+    user_function: Maintenance planner
+    region: North America
+    process.name: Prioritising corrective maintenance work orders
+    process.cluster: KNW
+    process.trigger: New corrective work orders are raised in the maintenance system during the week
+    process.end_result: A ranked work list for next week, with each urgent order assigned to a crew
+    process.value_at_end: The crew supervisors use it to plan who fixes what first
+    process.business_pain: Ranking about 60 orders by hand takes most of Friday, and urgent faults wait because each site manager calls everything urgent
+    process.volume: {count: 1, period: week}
+    process.process_owner: {role: Maintenance manager}
+    process.baseline_metric: {value: "6", unit: hours}
+    process.target_metric: {value: "2", unit: hours}
+    process.variation: {same: partly, differences: Each site manager pushes their own idea of what is urgent}
+    process.sensitive_data: [{none: true}]
+    process.substep_count: 4
+  steps:
+    - name: Collect the new work orders
+      goal: Every new corrective work order of the week is on one list
+      activities: [export the open work orders from the maintenance system, add the orders phoned in by the sites, remove duplicates]
+      roles: [{role: Maintenance planner, contribution: collects}, {role: Site manager, contribution: phones in orders}]
+      owner: Maintenance planner
+      systems: [Maintenance system, Excel]
+      data: {inputs: [open work orders, phoned-in orders], outputs: [weekly order list]}
+      effort: {duration: 1 hour, frequency: each time}
+      pain_points: [orders phoned in are not in the system, so I type them in]
+      approvals: [{none: true}]
+      exceptions: [{description: the same fault is raised twice by two sites}]
+      decision_type: {kind: rules, evidence: "it's an export and a clean-up, same every week"}
+    - name: Check each order's details
+      goal: Every order has the asset, the fault and the parts needed
+      activities: [open each order, check the asset history, check which parts are in stock]
+      roles: [{role: Maintenance planner, contribution: checks}]
+      owner: Maintenance planner
+      systems: [Maintenance system, Stock system]
+      data: {inputs: [weekly order list], outputs: [checked orders with parts status]}
+      effort: {duration: 2 hours, frequency: each time}
+      pain_points: [the fault description is often one line like "pump noisy"]
+      approvals: [{none: true}]
+      exceptions: [{description: a part is out of stock and the order waits}]
+      decision_type: {kind: rules, evidence: "I just look things up"}
+    - name: Rank the orders by priority
+      goal: Every order has a priority from 1 to 4
+      activities: [score each order for safety, water quality and cost of downtime, agree disputed priorities with the site managers]
+      roles: [{role: Maintenance planner, contribution: ranks}, {role: Site manager, contribution: argues for their orders}]
+      owner: Maintenance planner
+      systems: [Excel, Phone]
+      data: {inputs: [checked orders with parts status], outputs: [ranked order list]}
+      effort: {duration: 2 hours, frequency: each time}
+      pain_points: [every site manager says their orders are urgent, so I spend the time arguing]
+      approvals: [{none: true}]
+      exceptions: [{description: a safety fault comes in on Friday afternoon and the ranking is redone}]
+      decision_type: {kind: judgement, evidence: "in the end it's my call which fault hurts most"}
+      decision_criteria: {basis: safety, water quality and the cost of downtime, set_by: Maintenance planner, written: partly, varies: each site manager has their own idea of what is urgent}
+    - name: Assign the urgent orders to crews
+      goal: Every priority 1 and 2 order has a crew and a day
+      activities: [check crew availability, assign orders to crews, send the work list to the crew supervisors]
+      roles: [{role: Maintenance planner, contribution: assigns}, {role: Crew supervisor, contribution: receives the work list}]
+      owner: Maintenance planner
+      systems: [Maintenance system, E-mail]
+      data: {inputs: [ranked order list, crew roster], outputs: [weekly work list]}
+      effort: {duration: 1 hour, frequency: each time}
+      pain_points: [the crew roster is in a separate spreadsheet that is often out of date]
+      approvals: [{approver_role: Maintenance manager}]
+      exceptions: [{none: true}]
+      decision_type: {kind: mix, evidence: "priority decides the order, but who goes where I judge from experience"}
+  aliases:
+    Maintenance system: [CMMS, the maintenance tool, work order system]
+    Stock system: [stock list, inventory system, parts system]
+    Excel: [spreadsheet, excel sheet]
+    E-mail: [email, mail, outlook]
+    Phone: [phone calls, calling]
+    Site manager: [site managers, plant manager, plant managers]
+    Crew supervisor: [crew supervisors, supervisors, crew leads]
+    Maintenance manager: [head of maintenance, maintenance lead]
+    Maintenance planner: [planner, me]
+  week: []
+documents: []
+expected:
+  cluster: KNW
+  scope: process
+  steering: null
+  routes:
+    1: {fit: [automate, assist], route: [low-code-flow, it-integration-rpa, fix-first]}
+    2: {fit: [assist, automate], route: [low-code-flow, low-code-agent, it-integration-rpa, m365-copilot]}
+    3: {fit: [assist], route: [fix-first, low-code-agent, custom-ai-app, m365-copilot, ticket-routing]}
+    4: {fit: [assist], route: [low-code-flow, m365-copilot, low-code-agent, fix-first]}
+  min_conflicts: 0

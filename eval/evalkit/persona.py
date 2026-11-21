@@ -23,10 +23,10 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_valida
 
 from app.services.process_discovery.domain.field_spec import PROFILE_SPECS, STEP_SPECS
 
-HARD_CAP = 60
+HARD_CAP = 80  # safety net (spec 24 §3.9a, amended 2026-11-20; was 60)
 EVAL_DIR = Path(__file__).resolve().parents[1]
 PROCESS_KEYS: tuple[str, ...] = tuple(s.key for s in PROFILE_SPECS)
-STEP_LEAVES: tuple[str, ...] = tuple(s.key for s in STEP_SPECS if s.weight > 0)  # S01-S11
+STEP_LEAVES: tuple[str, ...] = tuple(s.key for s in STEP_SPECS if s.weight > 0)  # scored leaves: S01-S11, S13
 OPTIONAL_STEP_LEAVES: tuple[str, ...] = tuple(s.key for s in STEP_SPECS if s.weight == 0)  # S12
 FITS = ("automate", "assist", "human")
 DEFAULT_CONFLICT_WORDS = ("mine", "the document's", "the documents", "both", "my version", "the document")
@@ -113,8 +113,9 @@ class Persona(Strict):
 
     @property
     def truth_field_count(self) -> int:
-        """P01-P16 plus S01-S11 of every true step (§3.7 item 5)."""
-        return len(PROCESS_KEYS) + len(STEP_LEAVES) * len(self.truth.steps)
+        """P01-P16 plus every scored step leaf (registry weight > 0) of every true step (§3.7 item 5)."""
+        criteria = sum(1 for step in self.truth.steps if "decision_criteria" in step)  # §12 V2
+        return len(PROCESS_KEYS) + len(STEP_LEAVES) * len(self.truth.steps) + criteria
 
 
 @dataclass(frozen=True)
@@ -161,6 +162,9 @@ def _check(persona: Persona, company: Company, documents_dir: Path) -> list[str]
             f"truth.steps[{i}].{k}: not a registry key" for k in step if k not in (*STEP_LEAVES, *OPTIONAL_STEP_LEAVES)
         ]
         problems += [f"truth.steps[{i}].{k}: missing" for k in STEP_LEAVES if k not in step]
+        kind = str((step.get("decision_type") or {}).get("kind") or "")
+        if "decision_criteria" in step and kind not in ("judgement", "mix"):
+            problems.append(f"truth.steps[{i}].decision_criteria: only for a judgement or mix step (§12 V2)")
     if fields.get("process.cluster") not in company.clusters:
         problems.append(f"truth.fields.process.cluster: unknown cluster {fields.get('process.cluster')!r}")
     if company.regions and fields.get("region") not in company.regions:

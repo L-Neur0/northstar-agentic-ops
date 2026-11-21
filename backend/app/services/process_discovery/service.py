@@ -58,6 +58,7 @@ from app.models.process_discovery_schemas import (
     Phase,
     Profile,
     ReportState,
+    ScopeState,
     Session,
     SessionStatus,
 )
@@ -100,7 +101,9 @@ from .domain.field_spec import CONFLICTS_KEY, META_KEY, SKIPPED_KEY, Vocabulary
 from .export.branding import Brand
 from .export.report_pdf import write_pdf
 from .interview.doc_question import document_question
+from .interview.gates import refresh_scope
 from .interview.graph import build_graph
+from .interview.phases import progress
 from .interview.replies import Lexicon, cluster_armed
 from .interview.turn import TurnResult, after_action, run_turn, welcome
 from .interview.types import InterviewContext, InterviewSettings
@@ -560,6 +563,7 @@ class DiscoveryService:
             check = self._finish(session)
             if not check.ready:
                 raise MapIncomplete(check.blocked_by or "below_gate")
+            session = self._scope_from_map(session)  # spec 14 §3.21 P6
             now = self.clock()
             if self.company is None:
                 return await self._save(self._closed(session, None, now), now)
@@ -588,7 +592,12 @@ class DiscoveryService:
                 ) == map_fingerprint(profile)
                 if fresh.status != SessionStatus.ACTIVE or not self._finish(fresh).ready or not unchanged:
                     raise
-                return await self._save(self._closed(fresh, assessment, now, spent), now)
+                return await self._save(self._closed(self._scope_from_map(fresh), assessment, now, spent), now)
+
+    def _scope_from_map(self, session: Session) -> Session:
+        """The scope verdict refreshed from the mapped steps (spec 12 §3.13), kept on the saved session."""
+        refreshed = refresh_scope(session.scope.model_dump(mode="json"), self._profile(session))
+        return session.model_copy(update={"scope": ScopeState.model_validate(refreshed)})
 
     @staticmethod
     def _closed(session: Session, assessment: Assessment | None, now: str, spent: Cost | None = None) -> Session:
@@ -830,6 +839,7 @@ class DiscoveryService:
                 value=session.score.value,
                 filled_points=session.score.filled_points,
                 total_points=session.score.total_points,
+                progress=progress(profile, session.counters.model_dump(mode="json"), vocab=vocab),
             ),
             finish=FinishState(ready=check.ready, blocked_by=check.blocked_by, looks_like_task=check.looks_like_task),  # pyright: ignore[reportArgumentType]
             scope=ScopeOut(verdict=verdict.verdict, widened=session.scope.widening_asked) if verdict else None,

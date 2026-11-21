@@ -12,12 +12,14 @@ Must not: patch a route, a node or a writer, or reach into the store to move the
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
+from app.core.access import owner_from_key
 from app.services.process_discovery.llm import CallType
 from tests.unit.process_discovery.profile.builders import step_changes
 
-from .conftest import ApiHarness, visitor
+from .conftest import KEY_A, ApiHarness, visitor
 
 SCOPE = {
     "multi_role": True,
@@ -108,16 +110,7 @@ def test_ac_15_51_a_scripted_interview_reaches_finish_through_the_api(api: ApiHa
     response = api.client.put(f"/api/sessions/{sid}/cluster", json={"code": "FIN"}, headers=visitor())
     assert response.status_code == 200
     session = response.json()
-    assert session["phase"] == "confirm"
-    assert session["finish"]["blockedBy"] == "roles_not_confirmed"
-
-    early = api.client.post(f"/api/sessions/{sid}/finish", headers=visitor())
-    assert early.status_code == 409 and early.json()["reason"] == "roles_not_confirmed"
-
-    for target in ("roles", "tools"):
-        response = api.client.post(f"/api/sessions/{sid}/confirm", json={"target": target}, headers=visitor())
-        assert response.status_code == 200
-        session = response.json()
+    # no roles and systems confirmation (spec 14 §3.20 O10, AC-14.127): straight to the review
     assert session["phase"] == "review" and session["finish"]["ready"] is True
 
     finished = api.client.post(f"/api/sessions/{sid}/finish", headers=visitor())
@@ -130,3 +123,92 @@ def test_ac_15_51_a_scripted_interview_reaches_finish_through_the_api(api: ApiHa
     assert summary["messageCount"] == 1 + 2 * len(SCRIPT)
     [idea] = api.client.get("/api/ideas", headers=visitor()).json()["ideas"]
     assert idea["name"] == "Supplier onboarding"
+
+
+def _tier_a(index: int) -> dict[str, Any]:
+    cell = f"process.substeps[{index}]"
+    return {
+        f"{cell}.activities": ["export the actuals", "check the totals"],
+        f"{cell}.systems": ["SAP", "Excel"],
+        f"{cell}.data": {"inputs": [f"input {index}"], "outputs": [f"output {index}"]},
+        f"{cell}.pain_points": ["chasing the sites"],
+        f"{cell}.roles": [{"role": "Site controller"}],
+        f"{cell}.decision_type": {"kind": "mix", "evidence": "mostly fixed rules"},
+    }
+
+
+SHORT_WALK: list[tuple[str, dict[str, Any]]] = [
+    *SCRIPT[:9],
+    (
+        "Collect the cost data, then report.",
+        {"process.substep_count": 2, "process.substeps[1].name": "Collect", "process.substeps[2].name": "Report"},
+    ),
+    ("I export the actuals from SAP ...", _tier_a(1)),
+    (
+        "No sign-off; sometimes the totals do not match.",
+        {
+            "process.substeps[1].approvals": [{"none": True}],
+            "process.substeps[1].exceptions": [{"description": "the totals do not match"}],
+        },
+    ),  # fmt: skip
+    ("I write the report in Excel ...", _tier_a(2)),
+    ("No.", {}),
+    (
+        "Two hours and one day, monthly.",
+        {
+            "process.substeps[1].effort": {"duration": "2 hours", "frequency": "monthly"},
+            "process.substeps[2].effort": {"duration": "1 day", "frequency": "monthly"},
+        },
+    ),
+]
+
+
+def _view(session: dict[str, Any], key: str) -> dict[str, Any]:
+    return next(v for v in session["fieldViews"] if v["key"] == key)
+
+
+def test_ac_14_114_the_short_step_walk_through_the_api(api: ApiHarness):
+    """Spec 14 §3.19 (amended §3.20) through the HTTP API: grouped questions, agent proposals, one bulk yes in the
+    review; the step names show at once (AC-14.124) and the progress is on the wire (AC-14.120)."""
+    llm = api.llm
+    assert llm is not None
+    llm.add(CallType.EXTRACT, *(reply for _, reply in SHORT_WALK), {}, {})
+    llm.add(CallType.GUIDE, *["Could you tell me more?"] * 40)
+    llm.add(CallType.CLASSIFY, *[CLASSIFY] * 10)
+    sid = api.create()["id"]
+    session: dict[str, Any] = {}
+    focus: list[list[str]] = []
+    views: list[dict[str, Any]] = []
+    for text, _ in SHORT_WALK:
+        response = api.client.post(f"/api/sessions/{sid}/messages", json={"text": text}, headers=visitor())
+        assert response.status_code == 200, response.text
+        session = response.json()["session"]
+        views.append(session)
+        stored = asyncio.run(api.repo.get_session(owner_from_key(KEY_A), sid))
+        assert stored is not None
+        focus.append(stored.last_question.focus)
+    assert focus[9] == [f"process.substeps[1].{leaf}" for leaf in
+                        ("activities", "roles", "systems", "data", "pain_points", "decision_type")]  # fmt: skip
+    assert focus[10] == [f"process.substeps[1].{leaf}" for leaf in
+                         ("approvals", "exceptions", "handover", "decision_criteria")]  # §3.21 P1: a mix step  # fmt: skip
+    # AC-14.124: the names are in the profile and the step views right after the expert listed them
+    assert [r["name"] for r in views[9]["profile"]["process"]["substeps"]] == ["Collect", "Report"]
+    assert _view(views[9], "process.substeps[1].name")["status"] == "complete"
+    assert 0 < views[8]["score"]["progress"] < views[9]["score"]["progress"] < 1  # AC-14.120 on the wire
+    assert focus[13] == ["process.substeps[1].effort", "process.substeps[2].effort"]
+    assert not any(k.endswith((".goal", ".owner")) for f in focus for k in f)
+    goal = _view(session, "process.substeps[1].goal")
+    assert (goal["status"], goal["source"]) == ("proposed", "agent") and goal["quote"]
+
+    session = api.client.put(f"/api/sessions/{sid}/cluster", json={"code": "FIN"}, headers=visitor()).json()
+    assert session["phase"] == "review" and session["finish"]["ready"] is True
+
+    # The buttons do not speak: the next message gets the review question, the agent's proposals in one group.
+    api.client.post(f"/api/sessions/{sid}/messages", json={"text": "What else?"}, headers=visitor())
+    stored = asyncio.run(api.repo.get_session(owner_from_key(KEY_A), sid))
+    assert stored is not None and "process.substeps[1].goal" in stored.last_question.proposals
+    response = api.client.post(f"/api/sessions/{sid}/messages", json={"text": "yes"}, headers=visitor())
+    after = response.json()["session"]
+    assert _view(after, "process.substeps[1].goal")["status"] == "complete"
+    assert _view(after, "process.substeps[2].owner")["status"] == "complete"
+    assert after["score"]["value"] > session["score"]["value"]

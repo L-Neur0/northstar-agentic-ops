@@ -10,6 +10,7 @@ expert message, scored with the same field scorer, so a value judged before is n
 and `sparkline` (one character per message, `▁` to `█`).
 Must not: count uploads, *Finish*, snapshots or button presses as messages; count a confirmation
 answer ("yes", "no", "mine", a code-answered cluster reply) as wasted.
+Since the 2026-11-20 amendment messages have no target; the hard cap (80) is only a safety net.
 Spec 24 §3.9a; AC-24.31 to AC-24.36.
 """
 
@@ -25,7 +26,6 @@ from .persona import HARD_CAP, Persona
 from .play import Snapshot
 from .score_fields import JudgeLike, score_fields
 
-MESSAGE_TARGET = {"cooperative": 30, "difficult": 40}
 WASTED_TARGET = 3
 PLATEAU_LENGTH = 5
 CONFIRM_MAX_WORDS = 6
@@ -34,8 +34,7 @@ BARS = "▁▂▃▄▅▆▇█"
 
 class EfficiencyScores(BaseModel):
     messages: int
-    messages_to_finish: int | None
-    message_target: int
+    messages_to_finish: int | None  # reported, no target (amended 2026-11-20)
     failed: bool
     efficiency: float | None
     wasted: int
@@ -101,7 +100,6 @@ def score_efficiency(
     return EfficiencyScores(
         messages=messages,
         messages_to_finish=None if failed else messages_to_finish,
-        message_target=MESSAGE_TARGET[persona.kind],
         failed=failed,
         efficiency=efficiency,
         wasted=len(wasted),

@@ -74,7 +74,7 @@ export interface ReviewSummary {
   documentCount: number
 }
 
-export type CellSource = 'expert' | 'document' | 'specialist'
+export type CellSource = 'expert' | 'document' | 'specialist' | 'agent'
 
 export interface GridCell {
   /** Display text made by the server (Q15); empty when not answered. */

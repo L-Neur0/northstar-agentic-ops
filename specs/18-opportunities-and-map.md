@@ -1,6 +1,6 @@
 # 18 · Opportunities and process map
 
-> **Status:** approved · **Implements:** F-12 (items 1–3, 5, 6), F-13 (product); §3.3 finish, §6.2 OPPORTUNITIES and MAP, §6.4 grounding (architecture) · **Depends on:** specs 11 (LLM client, strict schema, fences), 12 (models, `OpportunityType`, `Grade`, `rank_nodes`), 13 (profile dicts), 14 (`render_profile`)
+> **Status:** approved · **built 2026-11-20** · **Implements:** F-12 (items 1–3, 5, 6), F-13 (product); §3.3 finish, §6.2 OPPORTUNITIES and MAP, §6.4 grounding (architecture) · **Depends on:** specs 11 (LLM client, strict schema, fences), 12 (models, `OpportunityType`, `Grade`, `rank_nodes`), 13 (profile dicts), 14 (`render_profile`)
 > **Code:** `backend/app/services/process_discovery/artifacts/{profile_fence,evidence,fingerprint}.py`, `artifacts/analysis/{schemas,prompts,analysis}.py`, `artifacts/diagram/{schemas,prompts,grounding,diagram}.py`
 > **Tests:** `backend/tests/unit/process_discovery/artifacts/`
 
@@ -50,7 +50,7 @@ Used by OPPORTUNITIES, stay-human steps and LABEL (spec 19). One rule: **the quo
    | P04, P06–P09 | The text |
    | P10–P14 | Each non-empty text sub-field (`raw`, `period`, `role`, `value`, `unit`, `qualitative`, `same`, `differences`) |
    | P15 | Each row's `item` and `detail` |
-   | Each step | `name`, `goal`, `owner`, `handover`; each item of `activities`, `systems`, `pain_points`, `data.inputs`, `data.outputs`; `effort.duration`, `effort.frequency`; each row's `role`, `contribution`, `approver_role`, `waiting_time`, `description` |
+   | Each step | `name`, `goal`, `owner`, `handover`; each item of `activities`, `systems`, `pain_points`, `data.inputs`, `data.outputs`; `effort.duration`, `effort.frequency`; each row's `role`, `contribution`, `approver_role`, `waiting_time`, `description`; `decision_type.evidence` (S13, the expert's rules-or-judgement words; not the `kind`) *(as built 2026-11-20, short step walk)* |
 
    Address: the registry key (`process.business_pain`) or the step cell key (`process.substeps[2].pain_points`). Source: the field's `__meta.source` (`expert` when there is no meta). Proposed values are searched too; their source is `document`.
 2. **Normalising** (both sides): `normalize_for_matching` (spec 11: NFKC, invisibles removed, look-alikes folded, lower case, whitespace collapsed); typographic quotes and apostrophes folded to `"` and `'`; en and em dashes to `-`. From the quote only: surrounding whitespace, quote marks and the punctuation `. , ; : ! ?` stripped.

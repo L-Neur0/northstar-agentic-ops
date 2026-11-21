@@ -140,10 +140,9 @@ async def test_ac_14_99_two_unclear_replies_leave_it(ctx, nig_config):
     assert second.session.last_question.conflicts == []
     assert stored_value(profile, DATA)["outputs"] == ["a cost report"]
     report = build_report(second.session, nig_config.organisation, ctx.vocab, nig_config.solutions)
-    [gap] = [f for f in report.gaps.fields if f.key == OUTPUTS_KEY]
-    assert gap.value == (
+    assert (  # spec 27: the gaps are the last line of part 6
         'Not settled: the expert says "a cost report"; "site_report_march.xlsx" says "' + DESCRIPTION + '"'
-    )
+    ) in report.feasibility.gaps
 
 
 async def test_ac_14_100_tick_closes_a_document_conflict_and_the_log(ctx, caplog):

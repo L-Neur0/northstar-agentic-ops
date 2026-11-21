@@ -81,8 +81,9 @@ def test_the_welcome(ctx):
     text, question = welcome("Sam", ctx)
     assert text.startswith("Hi Sam!")
     assert ctx.product_name in text
+    assert "I'm the AI Use Case Discovery Agent." in text  # renamed 2026-11-21
     assert "document" in text
-    assert "processes, not people" in text
+    assert "describe the work, not you" in text  # §3.20 O1
     assert "transformation team may read this conversation" in text
     assert text.endswith("Which department are you in?")
     assert question.focus == ["department"]

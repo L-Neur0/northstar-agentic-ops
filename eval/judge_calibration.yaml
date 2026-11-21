@@ -18,6 +18,13 @@ pairs:
   - {field: Time today, rule: "A value with a unit if they have one, else their own description.", hidden: "5 working days", captured: "about a working week", label: true, note: "different unit, same amount"}
   - {field: Step owner, rule: "Exactly one role, never a name.", hidden: "Application owner", captured: "the owner of the application", label: true, note: synonym}
   - {field: Same way everywhere, rule: "same is yes, no or partly; for no or partly, say what differs.", hidden: "The night shift in Manila routes by a simpler list", captured: "Manila night shift uses a simpler routing list", label: true, note: reworded}
+  # true pairs added by the 2026-11-20 review, from wording seen in real runs
+  - {field: Exceptions, rule: "loops_back_to is a step number, never text.", hidden: "a site cost report is still missing at the deadline", captured: "a site report is still missing at the deadline", label: true, note: dropped qualifier}
+  - {field: Activities, rule: "Two to five activities.", hidden: "open the ticket; read the description; check attachments", captured: "open the ticket; read the description; check attachments; call the user back if unclear", label: true, note: one small extra}
+  - {field: Pain points, rule: "Keep the expert's own words.", hidden: "descriptions are often one line like \"laptop broken\"", captured: "the description can be thin", label: true, note: same pain in other words}
+  - {field: Goal, rule: "One sentence, phrased as a result rather than an activity.", hidden: "Every flagged variance has an explanation", captured: "explained variances ready", label: true, note: proposed from the outputs}
+  # true pair added by judge-v3 (spec 24 §12 V5): a per-unit-of-work qualifier only restates one run
+  - {field: Time today, rule: "A value with a unit if they have one, else their own description.", hidden: "3 working days", captured: "3 working days per role", label: true, note: per-run qualifier}
   # --- false ------------------------------------------------------------------------------------
   - {field: Trigger, rule: "A concrete event that starts the process, not only a schedule.", hidden: "The month-end close is finished in the ledger system", captured: "The first working day of the month", label: false, note: schedule instead of event}
   - {field: End result, rule: "A tangible result or change of state, phrased as a result.", hidden: "A monthly cost report with the variances per cost centre explained", captured: "A monthly cost report", label: false, note: key fact missing}
@@ -34,3 +41,8 @@ pairs:
   - {field: Department, rule: "A unit or department name, not a job title.", hidden: "HR", captured: "Finance", label: false, note: different department}
   - {field: Process name, rule: "A process name.", hidden: "Onboarding new site staff", captured: "Filing my timesheet", label: false, note: different process}
   - {field: Same way everywhere, rule: "same is yes, no or partly; for no or partly, say what differs.", hidden: "The night shift in Manila routes by a simpler list", captured: "Every site does it exactly the same way", label: false, note: negation}
+  # false pairs added by the 2026-11-20 review
+  - {field: Goal, rule: "One sentence, phrased as a result rather than an activity.", hidden: "The ticket has the right category and priority", captured: "categorised ticket ready", label: false, note: priority missing}
+  - {field: Step owner, rule: "Exactly one role, never a name.", hidden: "Service desk agent", captured: "Service desk team lead", label: false, note: neighbouring role}
+  # false pair added by judge-v3: a per-period qualifier turns a duration into a rate
+  - {field: Time today, rule: "A value with a unit if they have one, else their own description.", hidden: "3 hours", captured: "3 hours per week", label: false, note: per-period rate}

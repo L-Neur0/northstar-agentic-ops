@@ -1,6 +1,6 @@
 {
   "cover": {
-    "productName": "Discovery Agent",
+    "productName": "AI Use Case Discovery Agent",
     "companyName": "NorthStar Infrastructure Group",
     "processName": "Monthly cost review",
     "department": "Finance",
@@ -10,36 +10,18 @@
     "date": "19 November 2026",
     "status": "Mapped"
   },
-  "atAGlance": {
+  "summary": {
     "number": 1,
-    "title": "At a glance",
+    "title": "Summary",
     "note": null,
-    "hours": "About 342 hours a year.",
-    "routeHeadline": "Start with step 2 \"Consolidate into the master file\" (about 96 h a year) using Custom AI app or agent built by the AI engineering team (placeholder). Fix first: step 1 \"Collect site spreadsheets\".",
-    "top": [
-      {
-        "id": "o1",
-        "title": "Read the site spreadsheets into the master file",
-        "stepsLabel": "Steps 1–2",
-        "hours": "168 h"
-      },
-      {
-        "id": "o2",
-        "title": "Draft the variance summary",
-        "stepsLabel": "Step 5",
-        "hours": "72 h"
-      },
-      {
-        "id": "o3",
-        "title": "Chase variance explanations automatically",
-        "stepsLabel": "Step 4",
-        "hours": "30 h"
-      }
-    ],
-    "prepare": [
-      "Agree one way of working (one template) across teams and regions. What differs today: \"each site sends its own spreadsheet layout\".",
-      "Agree one site template",
-      "Confirm with IT how each system can be reached."
+    "sentences": [
+      "We mapped Monthly cost review in Finance (Finance): 5 steps, about 1 a month, 5 working days each time today.",
+      "AI fit: partial. Steps 1 and 5 (144 of 342 hours a year) read documents or text that vary in layout or wording and write or summarise text. Step 2: AI can assist, a person decides. Steps 3 and 4 follow fixed rules: a script or rules would do it.",
+      "Start with step 2 \"Consolidate into the master file\" (about 96 h a year) using Custom AI app or agent built by the AI engineering team (placeholder). Fix first: step 1 \"Collect site spreadsheets\".",
+      "Either can work: The AI would need to reach the SAP S/4HANA through a connector.",
+      "The expert's target is 2 working days instead of 5 working days.",
+      "About 342 hours a year go into this process today: a moderate process.",
+      "Before starting: Standard: Agree one way of working (one template) across teams and regions. What differs today: \"each site sends its own spreadsheet layout\"."
     ]
   },
   "process": {
@@ -484,6 +466,14 @@
             "status": "complete",
             "source": null,
             "quote": null
+          },
+          {
+            "key": "process.substeps[1].decision_type",
+            "label": "Rules or judgement",
+            "value": "—",
+            "status": "empty",
+            "source": null,
+            "quote": null
           }
         ]
       },
@@ -584,6 +574,14 @@
             "label": "Hand-over",
             "value": "the consolidated file goes to variance analysis",
             "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[2].decision_type",
+            "label": "Rules or judgement",
+            "value": "—",
+            "status": "empty",
             "source": null,
             "quote": null
           }
@@ -688,6 +686,14 @@
             "status": "complete",
             "source": null,
             "quote": null
+          },
+          {
+            "key": "process.substeps[3].decision_type",
+            "label": "Rules or judgement",
+            "value": "—",
+            "status": "empty",
+            "source": null,
+            "quote": null
           }
         ]
       },
@@ -788,6 +794,14 @@
             "label": "Hand-over",
             "value": "the explained list goes into the summary",
             "status": "complete",
+            "source": null,
+            "quote": null
+          },
+          {
+            "key": "process.substeps[4].decision_type",
+            "label": "Rules or judgement",
+            "value": "—",
+            "status": "empty",
             "source": null,
             "quote": null
           }
@@ -892,6 +906,14 @@
             "status": "complete",
             "source": null,
             "quote": null
+          },
+          {
+            "key": "process.substeps[5].decision_type",
+            "label": "Rules or judgement",
+            "value": "—",
+            "status": "empty",
+            "source": null,
+            "quote": null
           }
         ]
       }
@@ -908,7 +930,8 @@
       "Pain points",
       "Approvals",
       "Exceptions",
-      "Hand-over"
+      "Hand-over",
+      "Rules or judgement"
     ]
   },
   "steps": {
@@ -920,6 +943,11 @@
         "number": 1,
         "name": "Collect site spreadsheets",
         "hours": "72 h",
+        "level": "strong",
+        "levelLabel": "Strong fit",
+        "because": [
+          "read documents or text that vary in layout or wording"
+        ],
         "fit": "assist",
         "fitLabel": "AI assists a person",
         "routeId": "fix-first",
@@ -933,6 +961,12 @@
         "number": 2,
         "name": "Consolidate into the master file",
         "hours": "96 h",
+        "level": "partial",
+        "levelLabel": "Partial fit",
+        "because": [
+          "read documents or text that vary in layout or wording",
+          "the result must be exact, so a person checks it"
+        ],
         "fit": "automate",
         "fitLabel": "AI can do it",
         "routeId": "custom-ai-app",
@@ -946,6 +980,11 @@
         "number": 3,
         "name": "Analyse variances",
         "hours": "72 h",
+        "level": "weak",
+        "levelLabel": "Weak fit: rules or a script would do",
+        "because": [
+          "fixed rules: rules or a script would do it"
+        ],
         "fit": "automate",
         "fitLabel": "AI can do it",
         "routeId": "low-code-flow",
@@ -959,6 +998,11 @@
         "number": 4,
         "name": "Chase explanations",
         "hours": "30 h",
+        "level": "weak",
+        "levelLabel": "Weak fit: rules or a script would do",
+        "because": [
+          "fixed rules: rules or a script would do it"
+        ],
         "fit": "automate",
         "fitLabel": "AI can do it",
         "routeId": "low-code-flow",
@@ -972,6 +1016,11 @@
         "number": 5,
         "name": "Write the variance summary",
         "hours": "72 h",
+        "level": "strong",
+        "levelLabel": "Strong fit",
+        "because": [
+          "write or summarise text"
+        ],
         "fit": "assist",
         "fitLabel": "AI assists a person",
         "routeId": "office-assistant",
@@ -984,247 +1033,37 @@
     ],
     "catalogueNote": "Routes come from a placeholder solution list, not the company's real tools."
   },
-  "route": {
+  "feasibility": {
     "number": 6,
-    "title": "Recommended route",
+    "title": "AI readiness and feasibility",
     "note": null,
-    "headline": "Start with step 2 \"Consolidate into the master file\" (about 96 h a year) using Custom AI app or agent built by the AI engineering team (placeholder). Fix first: step 1 \"Collect site spreadsheets\".",
-    "groups": [
+    "questions": [
       {
-        "key": "start_with",
-        "title": "Start with",
-        "items": [
-          {
-            "number": 2,
-            "name": "Consolidate into the master file",
-            "hours": "96 h",
-            "routeName": "Custom AI app or agent built by the AI engineering team (placeholder)",
-            "reason": ""
-          },
-          {
-            "number": 3,
-            "name": "Analyse variances",
-            "hours": "72 h",
-            "routeName": "Low-code workflow automation",
-            "reason": ""
-          }
-        ]
+        "key": "q1",
+        "question": "Is this a good AI use case?",
+        "level": "partial",
+        "levelLabel": "Partial fit",
+        "why": "Steps 1 and 5 (144 of 342 hours a year) read documents or text that vary in layout or wording and write or summarise text. Step 2: AI can assist, a person decides. Steps 3 and 4 follow fixed rules: a script or rules would do it. Reading site files and drafting the commentary suit AI.",
+        "quote": "I write the commentary from scratch every month"
       },
       {
-        "key": "later",
-        "title": "Later",
-        "items": [
-          {
-            "number": 5,
-            "name": "Write the variance summary",
-            "hours": "72 h",
-            "routeName": "Office assistant",
-            "reason": ""
-          },
-          {
-            "number": 4,
-            "name": "Chase explanations",
-            "hours": "30 h",
-            "routeName": "Low-code workflow automation",
-            "reason": ""
-          }
-        ]
+        "key": "q2",
+        "question": "A dedicated AI solution, or a general assistant?",
+        "level": "partial",
+        "levelLabel": "Either can work",
+        "why": "The AI would need to reach the SAP S/4HANA through a connector. The files come from many sites into SAP.",
+        "quote": "reconcile totals with SAP"
       },
       {
-        "key": "fix_first",
-        "title": "Fix first",
-        "items": [
-          {
-            "number": 1,
-            "name": "Collect site spreadsheets",
-            "hours": "",
-            "routeName": "",
-            "reason": "The layouts must be agreed before any tool can read them."
-          }
-        ]
+        "key": "q3",
+        "question": "Is it worth it?",
+        "level": "partial",
+        "levelLabel": "Moderate",
+        "why": "About 342 hours a year go into this process (12 runs a year).",
+        "quote": ""
       }
     ],
-    "prepare": [
-      "A written rule for each decision",
-      "Connector access to the systems involved",
-      "A sponsor and an implementation brief"
-    ],
-    "catalogueNote": "Routes come from a placeholder solution list, not the company's real tools."
-  },
-  "assessment": {
-    "number": 7,
-    "title": "Transformation assessment",
-    "note": null,
-    "summary": "Most of the time goes into copying site numbers by hand; reading the files is the biggest lever.",
-    "opportunities": [
-      {
-        "id": "o1",
-        "title": "Read the site spreadsheets into the master file",
-        "stepsLabel": "Steps 1–2: Collect site spreadsheets, Consolidate into the master file",
-        "typeLabel": "Document AI",
-        "whatChanges": "Read the site spreadsheets into the master file: the step runs with less manual work.",
-        "how": "A generic tool category grounded in the systems the profile names.",
-        "prepareFirst": "Agree one template across sites.",
-        "impact": "High",
-        "impactReason": "The pain the expert describes.",
-        "feasibility": "Medium",
-        "feasibilityReason": "The systems are already in use.",
-        "evidence": "I copy the numbers into the master file by hand",
-        "evidenceLabel": "the expert's words",
-        "review": null
-      },
-      {
-        "id": "o2",
-        "title": "Draft the variance summary",
-        "stepsLabel": "Step 5: Write the variance summary",
-        "typeLabel": "AI assistant",
-        "whatChanges": "Draft the variance summary: the step runs with less manual work.",
-        "how": "A generic tool category grounded in the systems the profile names.",
-        "prepareFirst": "Agree one template across sites.",
-        "impact": "Medium",
-        "impactReason": "The pain the expert describes.",
-        "feasibility": "High",
-        "feasibilityReason": "The systems are already in use.",
-        "evidence": "I write the commentary from scratch every month",
-        "evidenceLabel": "the expert's words",
-        "review": null
-      },
-      {
-        "id": "o3",
-        "title": "Chase variance explanations automatically",
-        "stepsLabel": "Step 4: Chase explanations",
-        "typeLabel": "Workflow",
-        "whatChanges": "Chase variance explanations automatically: the step runs with less manual work.",
-        "how": "A generic tool category grounded in the systems the profile names.",
-        "prepareFirst": "Agree one template across sites.",
-        "impact": "Medium",
-        "impactReason": "The pain the expert describes.",
-        "feasibility": "High",
-        "feasibilityReason": "The systems are already in use.",
-        "evidence": "some site managers answer only after three reminders",
-        "evidenceLabel": "the expert's words",
-        "review": null
-      },
-      {
-        "id": "o4",
-        "title": "Agree one site template",
-        "stepsLabel": "Step 1: Collect site spreadsheets",
-        "typeLabel": "Standardise",
-        "whatChanges": "Agree one site template: the step runs with less manual work.",
-        "how": "A generic tool category grounded in the systems the profile names.",
-        "prepareFirst": "Agree one template across sites.",
-        "impact": "Medium",
-        "impactReason": "The pain the expert describes.",
-        "feasibility": "High",
-        "feasibilityReason": "The systems are already in use.",
-        "evidence": "each site sends its own spreadsheet layout",
-        "evidenceLabel": "the expert's words",
-        "review": null
-      }
-    ],
-    "stayHuman": [
-      {
-        "stepsLabel": "Step 5: Write the variance summary",
-        "reason": "The commentary to the CFO is the controller's judgement; a person decides what to say",
-        "evidence": "write the commentary"
-      }
-    ]
-  },
-  "potential": {
-    "number": 8,
-    "title": "Hours a year",
-    "note": null,
-    "complete": true,
-    "steps": [
-      {
-        "number": 1,
-        "name": "Collect site spreadsheets",
-        "hoursPerRun": "6 h",
-        "runsPerYear": "12",
-        "hoursPerYear": "72 h"
-      },
-      {
-        "number": 2,
-        "name": "Consolidate into the master file",
-        "hoursPerRun": "8 h",
-        "runsPerYear": "12",
-        "hoursPerYear": "96 h"
-      },
-      {
-        "number": 3,
-        "name": "Analyse variances",
-        "hoursPerRun": "6 h",
-        "runsPerYear": "12",
-        "hoursPerYear": "72 h"
-      },
-      {
-        "number": 4,
-        "name": "Chase explanations",
-        "hoursPerRun": "0.25 h",
-        "runsPerYear": "120",
-        "hoursPerYear": "30 h"
-      },
-      {
-        "number": 5,
-        "name": "Write the variance summary",
-        "hoursPerRun": "6 h",
-        "runsPerYear": "12",
-        "hoursPerYear": "72 h"
-      }
-    ],
-    "opportunities": [
-      {
-        "id": "o1",
-        "title": "Read the site spreadsheets into the master file",
-        "stepsLabel": "Steps 1–2",
-        "stepHours": "168 h"
-      },
-      {
-        "id": "o2",
-        "title": "Draft the variance summary",
-        "stepsLabel": "Step 5",
-        "stepHours": "72 h"
-      },
-      {
-        "id": "o3",
-        "title": "Chase variance explanations automatically",
-        "stepsLabel": "Step 4",
-        "stepHours": "30 h"
-      },
-      {
-        "id": "o4",
-        "title": "Agree one site template",
-        "stepsLabel": "Step 1",
-        "stepHours": "72 h"
-      }
-    ],
-    "totals": {
-      "hours": "342 h"
-    },
-    "formulas": [
-      "Process runs a year: 1 × 12 (\"1 per month\") = 12",
-      "Step 1 Collect site spreadsheets: 6 h (\"6 hours\") × 12 runs a year (\"every month\") = 72 h",
-      "Step 2 Consolidate into the master file: 8 h (\"1 day\") × 12 runs a year (\"each time\" = 1 × 12 process runs a year) = 96 h",
-      "Step 3 Analyse variances: 6 h (\"6 hours\") × 12 runs a year (\"monthly\") = 72 h",
-      "Step 4 Chase explanations: 0.25 h (\"15 minutes\") × 120 runs a year (\"10 times a month\") = 30 h",
-      "Step 5 Write the variance summary: 6 h (\"6 hours\") × 12 runs a year (\"every month\") = 72 h",
-      "Hours a year: 72 + 96 + 72 + 30 + 72 = 342 h",
-      "Opportunity o1 (steps 1, 2): 72 + 96 = 168 h",
-      "Opportunity o2 (steps 5): 72 = 72 h",
-      "Opportunity o3 (steps 4): 30 = 30 h",
-      "Opportunity o4 (steps 1): 72 = 72 h"
-    ],
-    "assumptions": [
-      "A working year is taken as 50 weeks of 5 working days, and a working day as 8 hours."
-    ],
-    "problems": [],
-    "parkedLine": "Euro value and savings are not shown yet: the method is still being agreed."
-  },
-  "readiness": {
-    "number": 9,
-    "title": "Readiness checklist",
-    "note": null,
-    "dimensions": [
+    "readiness": [
       {
         "key": "defined",
         "label": "Defined",
@@ -1286,71 +1125,13 @@
         "note": ""
       }
     ],
-    "footer": "A guide to what would make the change easier. Not a verdict."
-  },
-  "path": {
-    "number": 10,
-    "title": "Suggested path",
-    "note": null,
-    "groups": [
-      {
-        "key": "prepare_first",
-        "title": "Prepare first",
-        "prepareLines": [
-          "Agree one way of working (one template) across teams and regions. What differs today: \"each site sends its own spreadsheet layout\"."
-        ],
-        "items": [
-          {
-            "opportunityId": "o4",
-            "title": "Agree one site template",
-            "stepsLabel": "Step 1: Collect site spreadsheets",
-            "stepHours": "72 h"
-          },
-          {
-            "opportunityId": "o1",
-            "title": "Read the site spreadsheets into the master file",
-            "stepsLabel": "Steps 1–2: Collect site spreadsheets, Consolidate into the master file",
-            "stepHours": "168 h"
-          }
-        ],
-        "emptyText": null
-      },
-      {
-        "key": "quick_wins",
-        "title": "Quick wins",
-        "prepareLines": [],
-        "items": [
-          {
-            "opportunityId": "o2",
-            "title": "Draft the variance summary",
-            "stepsLabel": "Step 5: Write the variance summary",
-            "stepHours": "72 h"
-          },
-          {
-            "opportunityId": "o3",
-            "title": "Chase variance explanations automatically",
-            "stepsLabel": "Step 4: Chase explanations",
-            "stepHours": "30 h"
-          }
-        ],
-        "emptyText": null
-      },
-      {
-        "key": "bigger_changes",
-        "title": "Bigger changes",
-        "prepareLines": [],
-        "items": [],
-        "emptyText": "Nothing here."
-      }
-    ]
-  },
-  "gaps": {
-    "number": 11,
-    "title": "Gaps and sources",
-    "note": null,
-    "fields": [],
-    "documents": [],
-    "closingNote": "This is a first assessment from one expert's account in a short interview. Numbers are hours estimated from the expert's answers; the specialist review checks them."
+    "readinessFooter": "A guide to what would make the change easier. Not a verdict.",
+    "bullets": [
+      "Standard: Agree one way of working (one template) across teams and regions. What differs today: \"each site sends its own spreadsheet layout\".",
+      "Step 5: pure judgement decisions; keep a person in charge.",
+      "Exceptions in 3 of 5 steps."
+    ],
+    "gaps": "Gaps: Rules or judgement of step 1, Rules or judgement of step 2, Rules or judgement of step 3, Rules or judgement of step 4, Rules or judgement of step 5. Sources: the interview only."
   },
   "generatedAt": "2026-11-19T10:00:01+00:00"
 }

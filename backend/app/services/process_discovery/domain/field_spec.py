@@ -2,7 +2,7 @@
 
 Why: the profile used to be restated in many places (prompts, models, scoring, screens), and drift
 between them failed silently: a field was collected and stored but never counted. This module
-declares every field once, as data (P01–P16, S01–S12, D01–D02), and every list, weight, total,
+declares every field once, as data (P01–P16, S01–S13, D01–D02), and every list, weight, total,
 limit and whitelist is derived from it. Nothing else may restate them.
 What: `FieldSpec` and the registry, `Verdict` and `evaluate_field` (the single definition of
 "answered"), the counting rule for proposals (`counts`, `field_status`), address resolution, the
@@ -11,13 +11,16 @@ interview limits, and the company `Vocabulary` (regions, taxonomy, wording overr
 Rules it protects: a stored `false` is never an answer; a proposed value never counts; every
 reason is one finished sentence a person can read. Must not: do I/O, read a clock or the
 environment, or import anything outside the standard library, `pydantic` and `domain`.
-Tests: AC-12.1 to AC-12.28 and AC-12.45.
+Tests: AC-12.1 to AC-12.28 and AC-12.45. Short step walk amendment (approved 2026-11-20): the ask
+groups, `ask_part`, `optional`, S13 `decision_type` and the `agent` source (AC-12.50 to AC-12.52).
+Owner test amendment (amended 2026-11-21): roles in group A; approvals, exceptions and hand-over form
+the optional group B; group C is goal and owner; `progress_step_specs` (AC-12.53).
 """
 
 from __future__ import annotations
 
 import re
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal, NamedTuple, cast
 
@@ -41,12 +44,15 @@ PHASE_FINISHED = "finished"
 PHASE_NO_CANDIDATE = "no_candidate"
 
 COLLECTING_PHASES: tuple[str, ...] = (PHASE_CONTEXT, PHASE_FIND, PHASE_BOUNDARIES, PHASE_MEASURE, PHASE_STEP_COUNT)
-PHASE_ORDER: tuple[str, ...] = (*COLLECTING_PHASES, PHASE_STEPS, PHASE_CONFIRM, PHASE_REVIEW)
+#: `confirm` is no longer on the path (spec 14 §3.20 O10); the value stays readable for old sessions.
+PHASE_ORDER: tuple[str, ...] = (*COLLECTING_PHASES, PHASE_STEPS, PHASE_REVIEW)
 
 # --- Verdicts, sources, sidecars ----------------------------------------------------------------
 
 STATUS_COMPLETE, STATUS_PARTIAL, STATUS_INVALID = "complete", "partial", "invalid"
 SOURCE_EXPERT, SOURCE_DOCUMENT, SOURCE_SPECIALIST = "expert", "document", "specialist"
+#: A Tier C step cell proposed by code from the expert's other answers (short step walk, spec 14 §3.19 W6).
+SOURCE_AGENT = "agent"
 META_PROPOSED, META_CONFIRMED = "proposed", "confirmed"
 META_KEY, SKIPPED_KEY, NONE_KEY, NONE_FLAG = "__meta", "__skipped", "none", "none_identified"
 #: Open and left document conflicts (spec 17 §3.21): on the profile and on each row, never graded or shown to a model.
@@ -69,6 +75,12 @@ FIND_FOCUS_TURN, FIND_DIRECT_TURN = 4, 6
 ACTIVITIES_SOFT_MAX = 5
 
 VARIATION_ANSWERS = ("yes", "no", "partly")
+DECISION_KINDS = ("rules", "judgement", "mix")
+
+# --- Ask groups (short step walk, approved 2026-11-20; spec 12 §3.4, spec 14 §3.19) ---------------
+#: Fields asked together in one question. Process groups pair two fields; step groups are the tiers.
+GROUP_RESULT, GROUP_QUICK = "result", "quick"
+GROUP_NAMES, GROUP_A, GROUP_B, GROUP_EFFORT, GROUP_C = "names", "A", "B", "effort", "C"
 
 
 class Verdict(NamedTuple):
@@ -121,6 +133,14 @@ class FieldSpec:
     propose: bool = True
     max_items: int | None = None
     max_asks: int | None = None
+    #: Fields with the same group are asked together in one question (spec 14 §3.19).
+    group: str | None = None
+    #: The short phrase a code-built group question uses ("what is annoying or slow").
+    ask_part: str = ""
+    #: Asked at most `max_asks` times, then given up at once: never deferred, never in the review.
+    optional: bool = False
+    #: A step field asked, shown and counted only for some rows (spec 12 §3.13); `None` = always.
+    applies_when: str | None = None
 
     @property
     def leaf(self) -> str:
@@ -373,6 +393,17 @@ def _validate_cluster(value: Any, profile: Mapping[str, Any], vocab: Vocabulary)
     return COMPLETE
 
 
+def _unit_words(unit: str) -> list[str]:
+    """Lower case words with a plural "s" dropped: "Working Days" and "working day" read the same."""
+    return [w[:-1] if len(w) > 3 and w.endswith("s") and not w.endswith("ss") else w for w in unit.casefold().split()]
+
+
+def same_unit(a: str, b: str) -> bool:
+    """Spec 27 §3.6 R1: units match regardless of case, singular or plural ("1 working day per role" vs
+    "3 working days per role"); "hours" against "days" still differ."""
+    return _unit_words(a) == _unit_words(b)
+
+
 def _validate_target(value: Any, profile: Mapping[str, Any], vocab: Vocabulary) -> Verdict:
     container = _mapping(value) or {}
     unit = _text(container.get("unit"))
@@ -381,7 +412,7 @@ def _validate_target(value: Any, profile: Mapping[str, Any], vocab: Vocabulary) 
         return Verdict(STATUS_PARTIAL, missing, f"{_label_of('P13', vocab)} still needs: {', '.join(missing)}.")
     process = _mapping(profile.get("process")) or {}
     base_unit = _text((_mapping(process.get("baseline_metric")) or {}).get("unit"))
-    if base_unit and unit.casefold() != base_unit.casefold():
+    if base_unit and not same_unit(unit, base_unit):
         return Verdict(
             STATUS_INVALID,
             ("unit",),
@@ -400,6 +431,34 @@ def _validate_variation(value: Any, profile: Mapping[str, Any], vocab: Vocabular
         return Verdict(STATUS_INVALID, ("same",), f"{label} must be yes, no or partly.")
     if same != "yes" and not _text(container.get("differences")):
         return Verdict(STATUS_PARTIAL, ("differences",), f"{label} still needs: differences.")
+    return COMPLETE
+
+
+def _validate_decision(value: Any, profile: Mapping[str, Any], vocab: Vocabulary) -> Verdict:
+    label = _label_of("S13", vocab)
+    container = _mapping(value) or {}
+    kind = _text(container.get("kind")).casefold()
+    if not kind:
+        return Verdict(STATUS_PARTIAL, ("kind",), f"{label} has not been answered yet.")
+    if kind not in DECISION_KINDS:
+        return Verdict(STATUS_INVALID, ("kind",), f"{label} must be rules, judgement or a mix.")
+    if not _text(container.get("evidence")):
+        return Verdict(STATUS_PARTIAL, ("evidence",), f"{label} still needs: the expert's words.")
+    return COMPLETE
+
+
+WRITTEN_VALUES = ("yes", "partly", "no")
+
+
+def _validate_criteria(value: Any, profile: Mapping[str, Any], vocab: Vocabulary) -> Verdict:
+    """S14: `basis` completes it; `written`, when given, is yes, partly or no (spec 12 §3.13)."""
+    label = _label_of("S14", vocab)
+    container = _mapping(value) or {}
+    written = _text(container.get("written")).casefold()
+    if written and written not in WRITTEN_VALUES:
+        return Verdict(STATUS_INVALID, ("written",), f"{label}: written must be yes, partly or no.")
+    if not _text(container.get("basis")):
+        return Verdict(STATUS_PARTIAL, ("basis",), f"{label} has not been answered yet.")
     return COMPLETE
 
 
@@ -469,7 +528,7 @@ PROFILE_SPECS: tuple[FieldSpec, ...] = (
         kind="text",
         phase=PHASE_FIND,
         weight=1,
-        question="Thinking about a normal week, what work comes round again and again, and who else gets involved?",
+        question="Thinking about a normal week, which piece of work comes round again and again and takes you the most time?",
         rule=(
             "A process, judged on five signals (several roles, several systems, a trigger and an outcome, "
             "recurring, someone else depends on it), named in the expert's own words. Write it only once they agree."
@@ -515,6 +574,8 @@ PROFILE_SPECS: tuple[FieldSpec, ...] = (
         weight=1,
         question="What exists at the end that did not exist before?",
         rule="A tangible result or change of state, phrased as a result.",
+        group=GROUP_RESULT,
+        ask_part="what exists at the end that did not exist before",
     ),
     FieldSpec(
         id="P08",
@@ -525,6 +586,8 @@ PROFILE_SPECS: tuple[FieldSpec, ...] = (
         weight=1,
         question="Who uses that result, and what for?",
         rule="Who uses the end result and what for, not a restatement of the result.",
+        group=GROUP_RESULT,
+        ask_part="who uses it, and what for",
     ),
     FieldSpec(
         id="P09",
@@ -595,6 +658,8 @@ PROFILE_SPECS: tuple[FieldSpec, ...] = (
         rule="A value and a unit, in the same unit as the time today.",
         subfields=(SubFieldSpec("value", "text"), SubFieldSpec("unit", "text")),
         validator=_validate_target,
+        max_asks=1,
+        optional=True,
     ),
     FieldSpec(
         id="P14",
@@ -603,10 +668,12 @@ PROFILE_SPECS: tuple[FieldSpec, ...] = (
         kind="object",
         phase=PHASE_MEASURE,
         weight=1,
-        question="Do other teams or regions do this the same way?",
+        question="Do other teams or regions do this the same way? A yes or no is enough.",
         rule="same is yes, no or partly; for no or partly, say what differs.",
         subfields=(SubFieldSpec("same", "text"), SubFieldSpec("differences", "text", required=False)),
         validator=_validate_variation,
+        group=GROUP_QUICK,
+        ask_part="whether other teams or regions do it the same way (yes or no)",
     ),
     FieldSpec(
         id="P15",
@@ -615,9 +682,14 @@ PROFILE_SPECS: tuple[FieldSpec, ...] = (
         kind="object_list",
         phase=PHASE_MEASURE,
         weight=1,
-        question="Does it involve personal or sensitive data, or a regulation?",
-        rule='Personal or sensitive data, or a named regulation. "None" is an answer: record the none row.',
+        question="Does it involve personal or sensitive data, or a regulation? A yes or no is enough.",
+        rule=(
+            'Personal or sensitive data, or a named regulation. "None" is an answer: record the none row. After a '
+            "bare yes, ask which, with 2 or 3 examples typical for this work, offered for the expert to accept."
+        ),
         subfields=(SubFieldSpec("item", "text"), SubFieldSpec("detail", "text", required=False)),
+        group=GROUP_QUICK,
+        ask_part="whether it involves personal or sensitive data or a regulation (yes or no)",
     ),
     FieldSpec(
         id="P16",
@@ -626,12 +698,24 @@ PROFILE_SPECS: tuple[FieldSpec, ...] = (
         kind="number",
         phase=PHASE_STEP_COUNT,
         weight=1,
-        question="Into how many main steps would you split this process?",
+        question="List the main steps in order, 2 to 6.",
         rule="A whole number from 2 to 6. Outside the range, help the expert group the steps.",
         validator=_validate_step_count,
         propose=False,
     ),
 )
+
+APPLIES_DECISION_JUDGEMENT = "decision_judgement"
+APPLIES_WHEN_VALUES = frozenset({APPLIES_DECISION_JUDGEMENT})
+JUDGEMENT_KINDS = ("judgement", "mix")
+
+
+def check_registry(specs: tuple[FieldSpec, ...]) -> None:
+    """Import-time checks the dataclass cannot express (spec 12 §3.13: `applies_when` values)."""
+    for spec in specs:
+        if spec.applies_when is not None and spec.applies_when not in APPLIES_WHEN_VALUES:
+            raise ValueError(f"{spec.id}: unknown applies_when {spec.applies_when!r}")
+
 
 STEP_SPECS: tuple[FieldSpec, ...] = (
     FieldSpec(
@@ -643,6 +727,7 @@ STEP_SPECS: tuple[FieldSpec, ...] = (
         weight=1,
         question="What would you call this step?",
         rule="A step: not a single click and not a whole phase.",
+        group=GROUP_NAMES,
     ),
     FieldSpec(
         id="S02",
@@ -652,7 +737,10 @@ STEP_SPECS: tuple[FieldSpec, ...] = (
         phase=PHASE_STEPS,
         weight=1,
         question="What has to be true for this step to be done?",
-        rule="One sentence, phrased as a result rather than an activity.",
+        rule="One sentence, phrased as a result rather than an activity. Proposed by code, never asked.",
+        group=GROUP_C,
+        ask_part="what has to be true for the step to be done",
+        max_asks=2,
     ),
     FieldSpec(
         id="S03",
@@ -664,6 +752,9 @@ STEP_SPECS: tuple[FieldSpec, ...] = (
         question="What do you actually do in this step?",
         rule="Two to five activities. More than five suggests the step should be split.",
         max_items=ACTIVITIES_SOFT_MAX,
+        group=GROUP_A,
+        ask_part="what you do",
+        max_asks=2,
     ),
     FieldSpec(
         id="S04",
@@ -675,6 +766,9 @@ STEP_SPECS: tuple[FieldSpec, ...] = (
         question="Who else is involved, and what do they contribute?",
         rule='Roles, never names. "Nobody else" is an answer: record the none row.',
         subfields=(SubFieldSpec("role", "text"), SubFieldSpec("contribution", "text", required=False)),
+        group=GROUP_A,
+        ask_part="who else is involved",
+        max_asks=2,
     ),
     FieldSpec(
         id="S05",
@@ -684,7 +778,10 @@ STEP_SPECS: tuple[FieldSpec, ...] = (
         phase=PHASE_STEPS,
         weight=1,
         question="Who is accountable for this step?",
-        rule="Exactly one role, never a name. If several are named, ask which one is accountable.",
+        rule="Exactly one role, never a name. Proposed by code (the expert's role), never asked.",
+        group=GROUP_C,
+        ask_part="who is accountable for the step",
+        max_asks=2,
     ),
     FieldSpec(
         id="S06",
@@ -695,6 +792,9 @@ STEP_SPECS: tuple[FieldSpec, ...] = (
         weight=1,
         question="Which systems or tools do you use here?",
         rule="Systems, tools or documents, by their common name.",
+        group=GROUP_A,
+        ask_part="which systems and files you use",
+        max_asks=2,
     ),
     FieldSpec(
         id="S07",
@@ -706,6 +806,9 @@ STEP_SPECS: tuple[FieldSpec, ...] = (
         question="What information goes in, and what comes out?",
         rule="Both the inputs and the outputs are needed.",
         subfields=(SubFieldSpec("inputs", "list"), SubFieldSpec("outputs", "list")),
+        group=GROUP_A,
+        ask_part="what comes in and what goes out",
+        max_asks=2,
     ),
     FieldSpec(
         id="S08",
@@ -715,8 +818,11 @@ STEP_SPECS: tuple[FieldSpec, ...] = (
         phase=PHASE_STEPS,
         weight=1,
         question="How long does this step take, and how often?",
-        rule="Both a duration and a frequency: one without the other says nothing.",
+        rule="Both a duration and a frequency: one without the other says nothing. Asked once for all steps.",
         subfields=(SubFieldSpec("duration", "text"), SubFieldSpec("frequency", "text")),
+        group=GROUP_EFFORT,
+        ask_part="how long it takes and how often",
+        max_asks=2,
     ),
     FieldSpec(
         id="S09",
@@ -727,6 +833,9 @@ STEP_SPECS: tuple[FieldSpec, ...] = (
         weight=1,
         question="What is annoying or slow about this step?",
         rule="Keep the expert's own words.",
+        group=GROUP_A,
+        ask_part="what is annoying or slow",
+        max_asks=2,
     ),
     FieldSpec(
         id="S10",
@@ -738,6 +847,10 @@ STEP_SPECS: tuple[FieldSpec, ...] = (
         question="Does anything here need an approval or sign-off?",
         rule='Ask directly, never infer. "No approvals" is an answer: record the none row.',
         subfields=(SubFieldSpec("approver_role", "text"), SubFieldSpec("waiting_time", "text", required=False)),
+        group=GROUP_B,
+        ask_part="any sign-off needed",
+        max_asks=1,
+        optional=True,
     ),
     FieldSpec(
         id="S11",
@@ -749,6 +862,10 @@ STEP_SPECS: tuple[FieldSpec, ...] = (
         question="What goes wrong here, and where do you end up when it does?",
         rule='loops_back_to is a step number, never text. "Nothing goes wrong" is an answer: record the none row.',
         subfields=(SubFieldSpec("description", "text"), SubFieldSpec("loops_back_to", "number", required=False)),
+        group=GROUP_B,
+        ask_part="anything that often goes wrong",
+        max_asks=1,
+        optional=True,
     ),
     FieldSpec(
         id="S12",
@@ -758,10 +875,83 @@ STEP_SPECS: tuple[FieldSpec, ...] = (
         phase=PHASE_STEPS,
         weight=0,
         question="How does the work get to whoever does the next step?",
-        rule="Optional and unscored: asked at most once, never blocks the step.",
+        rule="Optional and unscored: asked once in the optional question of the step, never blocks.",
+        group=GROUP_B,
+        ask_part="anything special about passing it on",
         max_asks=1,
+        optional=True,
+    ),
+    FieldSpec(
+        id="S13",
+        key="decision_type",
+        label="Rules or judgement",
+        kind="object",
+        phase=PHASE_STEPS,
+        weight=1,
+        question="Is this step mostly fixed rules, judgement, or a mix?",
+        rule='kind is "rules", "judgement" or "mix"; evidence is the expert\'s own words, copied.',
+        subfields=(SubFieldSpec("kind", "text"), SubFieldSpec("evidence", "text")),
+        validator=_validate_decision,
+        group=GROUP_A,
+        ask_part="whether it runs on fixed rules, judgement or a mix",
+        max_asks=2,
+    ),
+    FieldSpec(
+        id="S14",
+        key="decision_criteria",
+        label="Decision criteria",
+        kind="object",
+        phase=PHASE_STEPS,
+        weight=0,
+        question="What do you base that decision on, who sets those criteria, and are they written down?",
+        rule=(
+            "basis is what the decision is based on, in the expert's words; set_by is the role that sets the "
+            "criteria; written is yes, partly or no; varies is what changes from case to case or person to person."
+        ),
+        subfields=(
+            SubFieldSpec("basis", "text"),
+            SubFieldSpec("set_by", "text", required=False),
+            SubFieldSpec("written", "text", required=False),
+            SubFieldSpec("varies", "text", required=False),
+        ),
+        validator=_validate_criteria,
+        group=GROUP_B,
+        ask_part="what the decision is based on, who sets the criteria and whether they are written down",
+        max_asks=1,
+        optional=True,
+        applies_when=APPLIES_DECISION_JUDGEMENT,
     ),
 )
+
+check_registry((*PROFILE_SPECS, *STEP_SPECS))
+
+
+def field_applies(spec: FieldSpec, row: Mapping[str, Any]) -> bool:
+    """Whether a step field applies to this row (spec 12 §3.13): S14 only for a judgement or mix step."""
+    if spec.applies_when is None:
+        return True
+    decision = _mapping(row.get("decision_type")) or {}
+    return _text(decision.get("kind")).casefold() in JUDGEMENT_KINDS
+
+
+def step_specs_shown(rows: Sequence[Mapping[str, Any]]) -> list[FieldSpec]:
+    """Step fields a step table shows: a conditional field (S14) only when at least one row it applies to."""
+    return [s for s in STEP_SPECS if s.applies_when is None or any(field_applies(s, r) for r in rows)]
+
+
+def step_specs_in_group(group: str) -> list[FieldSpec]:
+    """The step fields asked together in `group`, in registry order (spec 14 §3.19)."""
+    return [s for s in STEP_SPECS if s.group == group]
+
+
+#: Steps assumed by the progress bar while P16 is not known (spec 14 §3.20 O4, amended 2026-11-21).
+PROGRESS_DEFAULT_STEPS = 4
+
+
+def progress_step_specs() -> list[FieldSpec]:
+    """Scored step fields the expert is asked and that are not optional: their share of the progress bar."""
+    return [s for s in STEP_SPECS if s.weight > 0 and s.group != GROUP_C and not s.optional]
+
 
 # --- Derived roll-ups (D01–D02) -----------------------------------------------------------------
 

@@ -41,19 +41,14 @@ from reportlab.platypus import (
 from reportlab.platypus.doctemplate import LayoutError
 
 from app.models.process_discovery_wire import (
-    AssessmentPart,
-    AtAGlancePart,
     DiscoveryReport,
+    FeasibilityPart,
     FieldsPart,
-    GapsPart,
     MapPart,
-    PathPart,
-    PotentialPart,
-    ReadinessPart,
     ReportPartBase,
-    RoutePart,
     StepColumn,
     StepsPart,
+    SummaryPart,
 )
 
 from . import bpmn
@@ -163,19 +158,9 @@ def _section(title: str, content: list[Flowable], brand: Brand, width: float) ->
     return _keep_heading_with_first(section_heading_flowables(brand, title, width), content)
 
 
-def _at_a_glance(part: AtAGlancePart, brand: Brand, width: float) -> list[Flowable]:
-    out: list[Flowable] = []
-    if part.hours:
-        out.append(_p(part.hours, brand))
-    if part.route_headline:
-        out.append(_labelled("Recommended route", part.route_headline, brand))
-    if part.top:
-        out.append(Paragraph("Top opportunities", brand.style("label")))
-        out += _bullets([f"{t.title} ({t.steps_label}, {t.hours})" for t in part.top], brand)
-    if part.prepare:
-        out.append(Paragraph("To prepare", brand.style("label")))
-        out += _bullets(part.prepare, brand)
-    return out
+def _summary(part: SummaryPart, brand: Brand, width: float) -> list[Flowable]:
+    """Part 1 (spec 27 §3.5): the sentences as one paragraph each."""
+    return [_p(sentence, brand) for sentence in part.sentences]
 
 
 def _fields(part: FieldsPart, brand: Brand, width: float) -> list[Flowable]:
@@ -190,116 +175,43 @@ def _steps(part: StepsPart, brand: Brand, width: float) -> list[Flowable]:
         for r in part.rows:
             route = f"{r.route_name}: {r.route_reason}" if r.route_reason else r.route_name
             evidence = f'"{r.evidence}" ({r.evidence_label})' if r.evidence else "—"
-            rows.append([f"{r.number}. {r.name}", r.hours, r.fit_label, route, r.reason or "—", evidence])
-        out.append(_table(rows, (0.17, 0.09, 0.11, 0.22, 0.2, 0.21), width, brand))
+            fit = f"{r.level_label} ({r.fit_label})" if r.level_label else r.fit_label
+            rows.append([f"{r.number}. {r.name}", r.hours, fit, route, r.reason or "—", evidence])
+        out.append(_table(rows, (0.17, 0.09, 0.13, 0.21, 0.2, 0.2), width, brand))
     if part.catalogue_note:
         out.append(_p(part.catalogue_note, brand, "muted"))
     return out
 
 
-def _route(part: RoutePart, brand: Brand, width: float) -> list[Flowable]:
-    out: list[Flowable] = [_p(part.headline, brand)] if part.headline else []
-    for group in part.groups:
-        out.append(Paragraph(escape_for_pdf(group.title), brand.style("label")))
-        lines = []
-        for i in group.items:
-            detail = ", ".join(x for x in (i.hours, i.route_name) if x) or i.reason
-            lines.append(f"Step {i.number} {i.name}" + (f": {detail}" if detail else ""))
-        out += _bullets(lines, brand)
-    if part.prepare:
-        out.append(Paragraph("What to have in place", brand.style("label")))
-        out += _bullets(part.prepare, brand)
-    if part.catalogue_note:
-        out.append(_p(part.catalogue_note, brand, "muted"))
-    return out
-
-
-def _assessment(part: AssessmentPart, brand: Brand, width: float) -> list[Flowable]:
-    out: list[Flowable] = [_p(part.summary, brand)] if part.summary else []
-    for o in part.opportunities:
-        head = (f"<b>{escape_for_pdf(o.title)}</b> · {escape_for_pdf(o.type_label)} · Impact {escape_for_pdf(o.impact)}"
-                f" · Feasibility {escape_for_pdf(o.feasibility)}")  # fmt: skip
-        lines: list[Flowable] = [Spacer(1, 2 * mm), Paragraph(head, brand.style("body")),
-                                 _labelled("Steps", o.steps_label, brand)]  # fmt: skip
-        for label, value in (("What changes", o.what_changes), ("How", o.how), ("Prepare first", o.prepare_first),
-                             ("Impact", o.impact_reason), ("Feasibility", o.feasibility_reason)):  # fmt: skip
-            if value:
-                lines.append(_labelled(label, value, brand))
-        if o.evidence:
-            lines.append(_labelled("Evidence", f'"{o.evidence}" ({o.evidence_label})', brand))
-        if o.review:
-            lines.append(_labelled("Review", o.review, brand))
-        out += lines
-    if part.stay_human:
-        out.append(Paragraph("Stays with people", brand.style("label")))
-        out += _bullets([f"{s.steps_label}: {s.reason}" + (f' ("{s.evidence}")' if s.evidence else "")
-                         for s in part.stay_human], brand)  # fmt: skip
-    return out
-
-
-def _potential(part: PotentialPart, brand: Brand, width: float) -> list[Flowable]:
+def _feasibility(part: FeasibilityPart, brand: Brand, width: float) -> list[Flowable]:
+    """Part 6 (spec 27 §3.1): the three questions, readiness, before starting and risks, the gaps line."""
     out: list[Flowable] = []
-    if part.steps:
-        rows = [["Step", "Hours per run", "Runs a year", "Hours a year"]]
-        rows += [[f"{s.number}. {s.name}", s.hours_per_run, s.runs_per_year, s.hours_per_year] for s in part.steps]
-        rows.append(["Total", "", "", part.totals.hours])
-        out.append(_table(rows, (0.46, 0.18, 0.18, 0.18), width, brand))
-    if part.opportunities:
-        out.append(Paragraph("Hours of the steps each opportunity touches", brand.style("label")))
-        rows = [["Opportunity", "Steps", "Hours a year"]]
-        rows += [[o.title, o.steps_label, o.step_hours] for o in part.opportunities]
-        out.append(_table(rows, (0.6, 0.2, 0.2), width, brand))
-    for title, items in (("Problems", part.problems), ("How the hours were made", part.formulas),
-                         ("Assumptions", part.assumptions)):  # fmt: skip
-        if items:
-            out.append(Paragraph(title, brand.style("label")))
-            out += _bullets(items, brand)
-    out.append(_p(part.parked_line, brand, "muted"))
-    return out
-
-
-def _readiness(part: ReadinessPart, brand: Brand, width: float) -> list[Flowable]:
-    out: list[Flowable] = []
-    if part.dimensions:
-        rows = [["Dimension", "Question", "Level", "Reason", "To prepare", "Note"]]
-        rows += [[d.label, d.question, d.level_label, d.reason, d.to_prepare or "—", d.note or "—"]
-                 for d in part.dimensions]  # fmt: skip
-        out.append(_table(rows, (0.12, 0.2, 0.09, 0.25, 0.22, 0.12), width, brand))
-    out.append(_p(part.footer, brand, "muted"))
-    return out
-
-
-def _path(part: PathPart, brand: Brand, width: float) -> list[Flowable]:
-    out: list[Flowable] = []
-    for group in part.groups:
-        out.append(Paragraph(escape_for_pdf(group.title), brand.style("label")))
-        lines = list(group.prepare_lines) + [f"{i.title} ({i.steps_label}, {i.step_hours})" for i in group.items]
-        out += _bullets(lines, brand) if lines else [_p(group.empty_text or "Nothing here.", brand, "muted")]
-    return out
-
-
-def _gaps(part: GapsPart, brand: Brand, width: float) -> list[Flowable]:
-    out: list[Flowable] = []
-    if part.fields:
-        out.append(Paragraph("Open answers", brand.style("label")))
-        out += _bullets([f"{f.label}: {f.value}" for f in part.fields], brand)
-    if part.documents:
-        out.append(Paragraph("Documents used", brand.style("label")))
-        out += _bullets([f"{d.name} ({d.outcome})" for d in part.documents], brand)
-    out.append(_p(part.closing_note, brand, "muted"))
+    for q in part.questions:  # paragraphs, not a table: a long answer must be able to break across pages
+        out.append(
+            Paragraph(f"<b>{escape_for_pdf(q.question)}</b> {escape_for_pdf(q.level_label)}", brand.style("body"))
+        )
+        why = q.why + (f' ("{q.quote}")' if q.quote else "")
+        if why:
+            out.append(_p(why, brand))
+        out.append(Spacer(1, 2 * mm))
+    if part.readiness:
+        out.append(Paragraph("Readiness", brand.style("label")))
+        rows = [["Dimension", "Level", "To prepare"]]
+        rows += [[d.label, d.level_label, d.to_prepare or "—"] for d in part.readiness]
+        out.append(_table(rows, (0.2, 0.15, 0.65), width, brand))
+    if part.bullets:
+        out.append(Paragraph("Before starting and risks", brand.style("label")))
+        out += _bullets(part.bullets, brand)
+    if part.gaps:
+        out.append(_p(part.gaps, brand, "muted"))
     return out
 
 
 _PORTRAIT = {
-    AtAGlancePart: _at_a_glance,
+    SummaryPart: _summary,
     FieldsPart: _fields,
     StepsPart: _steps,
-    RoutePart: _route,
-    AssessmentPart: _assessment,
-    PotentialPart: _potential,
-    ReadinessPart: _readiness,
-    PathPart: _path,
-    GapsPart: _gaps,
+    FeasibilityPart: _feasibility,
 }
 
 

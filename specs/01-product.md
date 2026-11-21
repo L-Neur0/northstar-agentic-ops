@@ -1,6 +1,6 @@
-# 01 · Product specification: Discovery Agent
+# 01 · Product specification: AI Use Case Discovery Agent
 
-> **Status:** draft v2, 2026-11-19 · **Owner:** product + engineering
+> **Status:** draft v2, 2026-11-19 · **amendment 2026-11-21 (p05 evaluation), approved and built:** S14 decision criteria, effort asks duration only when volume is known, scope refreshed from the map (spec 14 §3.21) · **amended 2026-11-21 (owner test):** welcome, suggestions in find, offered values, progress bar, one optional question per step, no roles and systems confirmation (detail: spec 14 §3.20) · **Owner:** product + engineering
 > **Sits between** the [use case](../docs/01-use-case/use-case.md) (why: problem, users, value) and the [architecture](02-architecture.md) (how). This document says **what the product does**. Every component spec (`specs/1x–5x`) implements features defined here and cites their IDs.
 > **Rule:** a behaviour that is not here is not in the product. To add or change one, change this document first.
 > **v2:** the product helps the expert rather than judging the process: there is no go / no-go anywhere. The main output is the discovery report (map + transformation assessment). Documents can be uploaded, read by the AI and confirmed by the expert.
@@ -10,7 +10,9 @@
 
 ## 1. The product on one page
 
-**Discovery Agent** helps the people who do the work find which parts of it AI could take over, and shows them how.
+> **Renamed 2026-11-21:** from "Discovery Agent" to **AI Use Case Discovery Agent**. "Process discovery" means automated log and task mining in the industry; "AI use case discovery" is the recognised term for what this product does. Tagline: *Find a workflow worth transforming, map it step by step, and see where AI can help*. Code identifiers (`process_discovery`, `/process-discovery`) keep their names.
+
+**AI Use Case Discovery Agent** helps the people who do the work find which parts of it AI could take over, and shows them how.
 
 The user is the **process expert**: the employee who owns a process or knows it best. In a **15–20 minute guided interview** the agent helps them:
 
@@ -63,8 +65,8 @@ The result is a **discovery report**: a summary of the mapped process and an AI 
 | **Verdict** | Code's judgement on one field: **complete**, **partial** (with the missing part named in words) or **invalid** (with the reason). Only confirmed, complete values count |
 | **"None" answer** | "Nobody else", "no approvals", "nothing goes wrong" are real answers, stored as an explicit *none*, and count as complete |
 | **Completeness score** | Weighted points of complete fields ÷ total points. Total points grow with the number of declared steps |
-| **Map complete** | The condition to finish: score ≥ 80%, every declared step complete, the expert has confirmed the list of roles and the list of systems. This is about the quality of the map, never about the process's worth |
-| **Phase** | Where the interview is: *context → find → boundaries → measure → step count → steps → confirm → review*. Code moves the phase, never the model |
+| **Map complete** | The condition to finish: score ≥ 80% and every declared step complete *(amended 2026-11-21 (owner test): the roles and systems confirmation is removed; both are captured per step)*. This is about the quality of the map, never about the process's worth |
+| **Phase** | Where the interview is: *context → find → boundaries → measure → step count → steps → review* *(amended 2026-11-21 (owner test): no confirm phase)*. Code moves the phase, never the model |
 | **Process or task** | A **process** repeats, involves more than one person, and has a clear start and end. A **task** is one person's activity. Judged on five signals (F-06) |
 | **Cluster** | The company's taxonomy of process areas. At NIG: FIN, HR, LEG, IT, PRO, COM, KNW, ANL, GWT |
 | **Opportunity** | A concrete change to the process: which step, what kind of change, what it would look like, what to prepare, and the expert's words that support it |
@@ -84,12 +86,12 @@ The result is a **discovery report**: a summary of the mapped process and an AI 
 
 1. Opens the tool from a link and sees "My processes" (mapped processes, ideas, reports).
 2. Starts an interview and answers about department, role and region.
-3. The agent asks about their routine. When it hears several candidate processes, it asks two or three quick questions about them (how often, how long, how many people, digital or paper inputs), code ranks them, and the agent recommends one with a one-line why. The expert picks it or another one; all others are kept as ideas with their signals.
+3. The agent asks about their routine and, when they have nothing in mind, suggests two or three likely recurring workflows, reasoned by the model from their department, role and words (code decides when; nothing is stored until they pick or name one) *(amended 2026-11-21 (owner test))*. When it hears several candidate processes, it asks two or three quick questions about them (how often, how long, how many people, digital or paper inputs), code ranks them, and the agent recommends one with a one-line why. The expert picks it or another one; all others are kept as ideas with their signals.
 4. The agent checks whether it is a process or a task, and proposes a cluster, which the expert confirms.
 5. *Optionally* the expert uploads a document (a procedure, a process map, an example output); the agent reads it, fills the form with proposals and asks the expert to confirm or correct them.
 6. The agent asks for what is still missing: what starts the process, what it produces, who uses the result, what hurts, volume, owner, time today, target, whether teams do it the same way, sensitive data.
 7. The expert splits the process into 2–6 main steps, and the agent walks each step, one question at a time.
-8. The expert confirms the list of roles and the list of systems; *Finish* unlocks.
+8. *(Amended 2026-11-21 (owner test).)* The expert confirms what the agent filled in (goal, owner) with one yes; *Finish* unlocks.
 9. They press it and see their **discovery report**, which they can download as a PDF.
 10. Later, "My processes" shows that IT validated it, and they can map one of their ideas.
 
@@ -115,44 +117,53 @@ The result is a **discovery report**: a summary of the mapped process and an AI 
 | P04 | Process name | find | 1 | "Thinking about a normal week, what work comes round again and again, and who else gets involved?" | A name the expert agreed to, in their words |
 | P05 | Cluster | find | 1 | *Proposed by the agent, confirmed by the expert* | One of the configured clusters, set only by code (F-07) |
 | P06 | Trigger | boundaries | 1 | "What starts this process off?" | Text |
-| P07 | End result | boundaries | 1 | "What exists at the end that did not exist before?" | Text |
+| P07 | End result | boundaries | 1 | "What exists at the end that did not exist before?" *(asked together with P08: "What exists at the end, and who uses it for what?")* | Text |
 | P08 | Who uses the result | boundaries | 1 | "Who uses that result, and what for?" | Text |
 | P09 | Business pain | boundaries | 1 | "What hurts most about this process today?" | Text |
 | P10 | Volume | measure | 1 | "How often does this process run?" | Count **and** period, or a free-text range |
 | P11 | Process owner | measure | 1 | "Who owns this process end to end?" | A role, or "none identified" |
 | P12 | Time today (baseline) | measure | 2 | "How would you measure how this process performs today?" | Value **and** unit, or a qualitative description |
-| P13 | Target | measure | 2 | "Where would that number need to get to?" | Value and unit, in the **same unit** as P12 (else invalid) |
-| P14 | Same way everywhere? | measure | 1 | "Do other teams or regions do this the same way?" | Yes, no, or "differs in …" with what differs |
-| P15 | Sensitive data or regulation | measure | 1 | "Does it involve personal or sensitive data, or a regulation?" | At least one item, or "none" |
-| P16 | Number of main steps | step count | 1 | "Into how many main steps would you split this process?" | A whole number from 2 to 6 (outside the range: invalid, and the agent helps group) |
+| P13 | Target | measure | 2 | "Where would that number need to get to?" *(optional: asked at most once, never blocks)* | Value and unit, in the **same unit** as P12 (else invalid) |
+| P14 | Same way everywhere? | measure | 1 | "Do other teams or regions do this the same way? A yes or no is enough." *(asked together with P15 as two quick yes/no questions; "what differs" only after a no)* | Yes, no, or "differs in …" with what differs |
+| P15 | Sensitive data or regulation | measure | 1 | "Does it involve personal or sensitive data, or a regulation? A yes or no is enough." *("which" only after a yes)* | At least one item, or "none" |
+| P16 | Number of main steps | step count | 1 | "List the main steps in order, 2 to 6." *(one answer fills P16 and every S01)* | A whole number from 2 to 6 (outside the range: invalid, and the agent helps group) |
 
 Process points: **18**.
 
-### 5.2 Step fields (asked for each step, one at a time)
+### 5.2 Step fields (asked for each step, in groups)
 
-| ID | Field | Weight | Question (default wording) | Complete when |
-|---|---|---|---|---|
-| S01 | Step name | 1 | "What would you call this step?" | Text: a step, not a click and not a whole phase |
-| S02 | Goal | 1 | "What has to be true for this step to be done?" | Text |
-| S03 | Activities | 1 | "What do you actually do in this step?" | At least one item (2–5 expected) |
-| S04 | Roles involved | 1 | "Who else is involved, and what do they contribute?" | At least one role, or *none* |
-| S05 | Step owner | 1 | "Who is accountable for this step?" | One role |
-| S06 | Systems | 1 | "Which systems or tools do you use here?" | At least one item |
-| S07 | Data in and out | 1 | "What information goes in, and what comes out?" | Inputs **and** outputs |
-| S08 | Effort | 1 | "How long does this step take, and how often?" | Duration **and** frequency |
-| S09 | Pain points | 1 | "What is annoying or slow about this step?" | At least one item |
-| S10 | Approvals | 1 | "Does anything here need an approval or sign-off?" | At least one approval, or *none* |
-| S11 | Exceptions | 1 | "What goes wrong here, and where do you end up when it does?" | At least one exception, or *none* |
-| S12 | Hand-over | 0 | "How does the work get to whoever does the next step?" | Optional, asked at most once, never blocks |
+| ID | Field | Weight | Asked how | Question (default wording) | Complete when |
+|---|---|---|---|---|---|
+| S01 | Step name | 1 | **List**: all names in the one steps question (with P16) | "What would you call this step?" | Text: a step, not a click and not a whole phase |
+| S02 | Goal | 1 | **Tier C**: proposed by code, confirmed in bulk in the review | "What has to be true for this step to be done?" | Text |
+| S03 | Activities | 1 | **Tier A** | "What do you actually do in this step?" | At least one item (2–5 expected) |
+| S04 | Roles involved | 1 | **Tier B** | "Who else is involved, and what do they contribute?" | At least one role, or *none* |
+| S05 | Step owner | 1 | **Tier C** | "Who is accountable for this step?" | One role |
+| S06 | Systems | 1 | **Tier A** | "Which systems or tools do you use here?" | At least one item |
+| S07 | Data in and out | 1 | **Tier A** | "What information goes in, and what comes out?" | Inputs **and** outputs |
+| S08 | Effort | 1 | **Effort**: once for all steps, after the walk | "How long does this step take, and how often?" | Duration **and** frequency |
+| S09 | Pain points | 1 | **Tier A** | "What is annoying or slow about this step?" | At least one item |
+| S10 | Approvals | 1 | **Tier B** | "Does anything here need an approval or sign-off?" | At least one approval, or *none* |
+| S11 | Exceptions | 1 | **Tier A** | "What goes wrong here, and where do you end up when it does?" | At least one exception, or *none* |
+| S12 | Hand-over | 0 | **Tier C** | "How does the work get to whoever does the next step?" | Optional, never blocks |
+| S13 | Rules or judgement | 1 | **Tier A** | "Is this step mostly fixed rules, judgement, or a mix?" | One of *rules*, *judgement*, *mix*, with the expert's words |
+| S14 | Decision criteria *(2026-11-21)* | 0 | **Tier B, only for a *judgement* or *mix* step** | "What do you base that decision on, who sets those criteria, and are they written down?" *(inside the step's optional question, never on its own)* | What the decision is based on, in the expert's words; optional: who sets the criteria, written yes / partly / no, what varies. Optional, never blocks |
 
-Points per step: **11**. Total points = 18 + 11 × declared steps (for example 84 for 6 steps; finishing then needs 68).
+Points per step: **12**. Total points = 18 + 12 × declared steps (for example 90 for 6 steps; finishing then needs 72).
+
+**The short step walk (approved 2026-11-20, short step walk).** Per step the expert gets at most two questions, plus one short follow-up only when something is missing:
+
+1. **Tier A, one big open question:** activities, systems, data in and out, pain points, exceptions and rules-or-judgement together ("Walk me through *Collect the cost data*: what you do, with which systems and files, what's annoying, what often goes wrong, and is it mostly fixed rules, judgement or a mix?"). If a Tier A field is still missing, **one** follow-up asks only the missing ones together.
+2. **Tier B, one optional question** *(amended 2026-11-21 (owner test))*: "Any sign-off needed, anything that often goes wrong, or anything special about passing it on? If nothing, just say no." Approvals, exceptions and hand-over, asked once; a "no" or no answer settles it and never counts against *Finish*. Roles involved are asked in the Tier A question ("…and who else is involved").
+3. **Effort** is asked **once for all steps** after the walk ("Roughly how long does each step take, and how often? 1 …, 2 …"); the missing ones are asked once more together. *(2026-11-21: when the process volume P10 is known, only the duration is asked, and each step is assumed to happen once per run unless the expert says otherwise; spec 14 §3.21 P3.)*
+4. **Tier C is never asked:** goal and step owner are proposed by code (goal from what comes out of the step, owner = the expert's role; *amended 2026-11-21 (owner test): hand-over is no longer proposed*), shown as proposals, and confirmed in bulk with one "yes" (or corrected) in the review. They count only once confirmed; the 80 % gate is reachable without them.
 
 ### 5.3 Built by code, never asked
 
 | Field | How |
 |---|---|
-| All roles | Every role from every step, without duplicates. The expert confirms it (F-10) |
-| All systems | Every system from every step, without duplicates. The expert confirms it (F-10) |
+| All roles | Every role from every step, without duplicates *(amended 2026-11-21 (owner test): no longer confirmed separately; F-10 removed)* |
+| All systems | Every system from every step, without duplicates; shown in the report |
 | Readiness labels | Per step: the format of each input (structured, digital document, paper, verbal) and the kind of each decision (fixed rule, explainable judgement, pure judgement). Proposed by the model with the expert's words as evidence, checked by code (F-15) |
 
 ---
@@ -206,7 +217,7 @@ Points per step: **11**. Total points = 18 + 11 × declared steps (for example 8
 2. **Ideas:** candidate processes the expert mentioned but did not map (F-03), with the words they used. *Map this* starts a new session with the name filled in as a proposal.
 3. **Reports:** for each finished session, the discovery report (F-16) on screen and as PDF.
 4. **Status** of a finished session: *mapped* → *validated by IT* (with the specialist's note, if any) → *in an implementation brief*. No status ever says the process was rejected or not worth it.
-5. *Start* creates a session and shows a fixed welcome message (no model call): what will happen, how long it takes, that documents can be uploaded, that the tool maps processes, not people, and that the transformation team may read the conversation to improve the tool.
+5. *Start* creates a session and shows a fixed welcome message (no model call): what will happen (find a recurring workflow worth transforming with AI, map it step by step, then assess where and how AI can help), how long it takes (about 20 minutes), that documents can be uploaded, that the answers describe the work, not the person, and that the transformation team may read the conversation to improve the tool *(amended 2026-11-21 (owner test); wording in spec 14 §3.20 O1)*.
 6. The expert can delete a session or an idea (F-23).
 
 **Done when:** an expert can start, leave, resume and finish an interview, open its report, keep ideas for later, and see what IT did with it.
@@ -294,7 +305,7 @@ Rules for the questions:
 
 1. Five signals, each yes or no: **several roles**, **several systems**, **clear trigger and outcome**, **recurring**, **someone else depends on the output**.
 2. Code counts them: 4–5 with "someone depends on it" = *process*; 3, or 4–5 without it = *borderline*; 0–2 = *task*.
-3. If *borderline* or *task*, the agent asks one **widening question** ("who receives or depends on this?"). At most 2 widening questions per session, even if the name changes.
+3. If *borderline* or *task*, the agent asks one **widening question** ("who receives or depends on this?"). At most 2 widening questions per session, even if the name changes. *Amended 2026-11-21 (owner test):* only when the work is not recurring; recurring work done mostly by one person (reviewing CVs) is a valid candidate and is accepted without asking about hand-offs.
 4. If it is still a task after widening, the expert may continue. The report carries a note that it looks like a single task. The tool explains, never refuses.
 5. If the work is a process but not recurring (a one-off project), the agent says so once.
 
@@ -316,13 +327,13 @@ Rules for the questions:
 
 **Purpose.** Map the process step by step, at the right level of detail.
 
-1. The expert gives a number of main steps from 2 to 6. Outside the range, the agent says so and helps group the steps. The out-of-range number is kept so the agent can refer to it.
-2. If the expert narrates the steps instead of giving a number, or a document proposed them, the names become the steps and the count follows (after confirmation).
-3. The agent walks one step at a time, one field at a time, in a fixed order (S01→S12). The next question always targets the first missing or proposed field of the current step.
+1. *(Amended 2026-11-20, short step walk.)* One question asks for the main steps in order, 2 to 6: the answer fills the count (P16) and the step names (S01) together. More than 6: the agent says so and helps group the steps (the out-of-range number is kept so the agent can refer to it); fewer than 2: asked again. A number without names is followed by one question for all the names.
+2. If a document proposed the steps, the names become the steps and the count follows (after confirmation).
+3. *(Amended 2026-11-20, short step walk.)* The agent walks one step at a time with at most two questions per step, grouped by code (§5.2): the Tier A question, one follow-up for the missing Tier A fields only if needed, then the Tier B question. Effort is asked once for all steps after the walk. Tier C (goal, owner, hand-over) is never asked: code proposes it and the expert confirms it in bulk in the review. Code decides which fields are in each question; the model only words it.
 4. When every declared step is complete, the walk closes. Editing a step later reopens it, and resets the confirmation of roles or systems if they changed.
 5. Exceptions can point back to an earlier step ("then we go back to step 2"). Pointers to non-existing steps are dropped.
 
-**Done when:** a 5-step process is walked in order, each cell asked until complete or settled by its limit.
+**Done when:** a 5-step process is walked in order, each question group asked until complete or settled by its limit, and a cooperative expert needs at most 3 messages per step.
 
 ### F-09 · Limits on every loop
 
@@ -333,7 +344,9 @@ Rules for the questions:
 | A process field asked without becoming complete | 3 asks | The field is **deferred**: the interview moves on and asks it again in the review phase (next row) |
 | A deferred field in the review phase | 2 more asks | The field is **given up**: it stays missing (and lowers completeness) but is never asked again |
 | A field with an **invalid** answer (for example 13 steps) | Blocks its phase until fixed or given up | — |
-| A step cell asked without becoming complete | 3 asks | Fields that allow *none* (roles, approvals, exceptions) get *none*; other cells are **skipped** (settled for the walk, missing for the score) |
+| A step cell asked without becoming complete *(amended 2026-11-20, short step walk)* | Tier A: 2 asks (the big question and one follow-up) · Tier B: 1 ask · Effort: 2 asks · Tier C proposals: 2 bulk confirmations · step names: 3 asks. A group question counts once for every field in it | Fields that allow *none* (roles, approvals, exceptions) get *none*; other cells are **skipped** (settled for the walk, missing for the score) |
+| An optional process field (P13 target) *(amended 2026-11-20)* | 1 ask | Given up at once: never asked again, never blocks |
+| Process fields asked together (P07 + P08; P14 + P15) | The same limits | Each field in the question is charged once per ask |
 | Proposed values waiting for confirmation | Count as asks on their fields | Same limits as above; unconfirmed proposals stay visible as proposals in the report |
 | Widening question (F-06) | 2 per session | The check stops; a "looks like a task" note if still a task |
 | Confirmation of roles and systems | 6 turns | The agent lists both and asks for one yes; the buttons stay available |
@@ -344,6 +357,8 @@ The specialist sees every deferred, given-up, skipped and unconfirmed field (F-1
 **Done when:** no scripted conversation, however unhelpful, asks the same field more than 5 times or fails to reach the review phase.
 
 ### F-10 · Confirming roles and systems
+
+> **Removed 2026-11-21 (owner test).** Roles and systems are captured per step; there is no separate confirmation and *Finish* does not wait for one. Kept below for history.
 
 **Purpose.** The expert checks the roll-ups before the map counts as complete.
 
@@ -358,13 +373,15 @@ The specialist sees every deferred, given-up, skipped and unconfirmed field (F-1
 **Purpose.** The expert sees what the tool has understood, while they talk.
 
 1. Beside the chat, the profile fills up live: sections for context, the process, boundaries, measures, and one tab per step. Each field shows its status (complete, partial with what is missing, skipped, proposed from a document) and its source.
-2. A phase meter shows where the interview is. A progress bar shows completeness.
-3. *Finish* is enabled only when code says the map is complete. When it is not, the panel says why: completeness below 80%, steps incomplete, roles not confirmed, systems not confirmed.
+2. A phase meter shows where the interview is. A progress bar shows how far along the interview path the expert is, computed by code with the steps carrying their real share (*amended 2026-11-21 (owner test)*; the 80 % gate keeps using completeness).
+3. *Finish* is enabled only when code says the map is complete. When it is not, the panel says why: completeness below 80% or steps incomplete.
 4. *Finish* closes the interview, runs the assessment (F-12–F-15, F-26) and opens the discovery report (F-16). The expert can no longer change the session; corrections go through the specialist.
 
 **Done when:** the button state comes only from code, and the reason is always shown.
 
 ### F-12 · Opportunities and how to realise them
+
+> **Report v2 (2026-11-21, spec 27):** the separate opportunities list is folded into the step assessment and the **AI readiness and feasibility** part: three guiding questions (good AI use case? a dedicated solution or a general assistant? worth it?), each a level with reasons and the expert's words, never a yes / no. The report (F-16) has six parts: summary, the process, volume and measures, map and steps, step-by-step AI assessment, AI readiness and feasibility.
 
 **Purpose.** Say where automation or AI fits, what each change would look like, and what to do first, grounded in what the expert said.
 

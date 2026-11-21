@@ -22,12 +22,13 @@ thresholds:
   known_system_share_high: 0.8
   known_system_share_medium: 0.5
 # Sample IT application list (fictional). export_or_api = IT knows an export or API.
+# general_tool = an office tool any assistant can work with, no connector needed (spec 27 §3.3 Q2).
 applications:
   - {name: SAP S/4HANA, aliases: [sap, s4, s/4hana], export_or_api: true}
-  - {name: Microsoft Excel, aliases: [excel, spreadsheet], export_or_api: false}
-  - {name: Outlook, aliases: [e-mail, email, outlook], export_or_api: true}
+  - {name: Microsoft Excel, aliases: [excel, spreadsheet], export_or_api: false, general_tool: true}
+  - {name: Outlook, aliases: [e-mail, email, outlook], export_or_api: true, general_tool: true}
   - {name: SharePoint, aliases: [sharepoint], export_or_api: true}
-  - {name: Microsoft Teams, aliases: [teams], export_or_api: true}
+  - {name: Microsoft Teams, aliases: [teams], export_or_api: true, general_tool: true}
   - {name: Workday, aliases: [workday], export_or_api: true}
   - {name: ServiceNow, aliases: [servicenow, snow], export_or_api: true}
   - {name: Coupa, aliases: [coupa], export_or_api: true}

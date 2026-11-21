@@ -90,3 +90,11 @@ def test_ac_26_20_tool_names_come_only_from_configuration() -> None:
     for entry in nig_config().solutions.solutions:
         assert entry.name not in code
     assert "Copilot" not in code
+
+
+def test_ac_26_21_rule_3c_decision_criteria() -> None:
+    """AC-26.21 (spec 26 §3.9): the system prompt reads the step's decision criteria (S14)."""
+    text = " ".join(ASSESS_STEPS_SYSTEM.split())
+    assert "`Decision criteria`" in text
+    assert "not written down, or that change from person to person" in text
+    assert "writing the criteria down as the first thing to prepare" in text

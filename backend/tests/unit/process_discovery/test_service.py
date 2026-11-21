@@ -248,10 +248,11 @@ async def test_a_turn_adds_the_tokens_it_spent_to_the_session_cost(company: Comp
 
 
 async def test_ac_15_39_confirm_roles_then_tools_carries_the_session_to_review(h: Harness, llm: FakeLLM):
+    """Amended 2026-11-21 (AC-14.127): an old session in `confirm` moves to `review` on any action."""
     profile = cost_review_profile(h.ctx.vocab, steps=2)
     seeded = await h.seed(phase="confirm", profile=profile)
     after_roles = await h.service.confirm(OWNER, seeded.id, "roles")
-    assert after_roles.profile.process.roles_confirmed is True and after_roles.phase.value == "confirm"
+    assert after_roles.profile.process.roles_confirmed is True and after_roles.phase.value == "review"
     after_tools = await h.service.confirm(OWNER, seeded.id, "tools")
     assert after_tools.profile.process.tools_confirmed is True and after_tools.phase.value == "review"
     assert llm.calls == []
@@ -295,9 +296,7 @@ async def test_ac_15_41_close_ends_without_a_candidate_and_adds_no_message(h: Ha
 @pytest.mark.parametrize(
     ("flag", "reason"),
     [
-        ("substeps_complete", "substeps_incomplete"),
-        ("roles_confirmed", "roles_not_confirmed"),
-        ("tools_confirmed", "tools_not_confirmed"),
+        ("substeps_complete", "substeps_incomplete"),  # the list confirmations no longer block (AC-13.63)
     ],
 )
 async def test_ac_15_42_finish_names_the_first_blocker_and_stores_nothing(h: Harness, flag: str, reason: str):

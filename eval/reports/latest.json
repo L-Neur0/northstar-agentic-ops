@@ -1,0 +1,4453 @@
+{
+  "run_id": "20261121-094609",
+  "commit": "",
+  "mode": "in-process",
+  "cache": "off (app, expert)",
+  "deployments": {
+    "app": "app-chat",
+    "expert": "eval-expert",
+    "judge": "app-chat"
+  },
+  "judge_prompt_version": "judge-v3",
+  "calibration": {
+    "pairs": 38,
+    "agreed": 37,
+    "agreement": 0.9736842105263158,
+    "passed": true,
+    "results": [
+      {
+        "field": "Trigger",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "Both state that the process starts when the month-end close is completed in the ledger system."
+      },
+      {
+        "field": "End result",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "Both describe a monthly cost report in which variances are explained for each cost centre."
+      },
+      {
+        "field": "Who uses the result",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "The same users and purpose are stated; “adjust” and “correct” are equivalent here."
+      },
+      {
+        "field": "Business pain",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "Both state that tickets remain unassigned, causing urgent incidents to be noticed late."
+      },
+      {
+        "field": "Department",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "“Finance department” names the same unit as “Finance”; the added qualifier does not change the meaning."
+      },
+      {
+        "field": "Role",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "Both describe the role as the team lead for the service desk."
+      },
+      {
+        "field": "Process name",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "Both name the same user access review process and specify that it occurs quarterly."
+      },
+      {
+        "field": "Goal",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "Both state the result that every/all flagged variances have been explained."
+      },
+      {
+        "field": "Activities",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "All three activities match: emailing questions to site managers, following up for answers, and recording the explanations."
+      },
+      {
+        "field": "Pain points",
+        "label": true,
+        "judged": false,
+        "agree": false,
+        "reason": "CAPTURED changes the precise threshold from some managers answering only after three reminders to managers often needing an unspecified several reminders."
+      },
+      {
+        "field": "Data in and out",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "Both identify cost data as the input and a consolidated cost workbook as the output; “exported” and “one” do not materially change the meaning."
+      },
+      {
+        "field": "Exceptions",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "Both state that the site's cost report is missing because it was not sent by the deadline."
+      },
+      {
+        "field": "Time today",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "A working week conventionally means 5 working days; “about” only makes the phrasing approximate."
+      },
+      {
+        "field": "Step owner",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "“The owner of the application” is a wording variant of “Application owner” and identifies the same single role."
+      },
+      {
+        "field": "Same way everywhere",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "Both state that the Manila night shift uses a simpler list for routing."
+      },
+      {
+        "field": "Exceptions",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "Dropping “cost” is a minor qualifier omission; both describe a site report still missing at the deadline."
+      },
+      {
+        "field": "Activities",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "Captured includes all three activities and adds one minor conditional follow-up activity."
+      },
+      {
+        "field": "Pain points",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "“The description can be thin” conveys the same pain point: descriptions often lack sufficient detail; the example wording is omitted."
+      },
+      {
+        "field": "Goal",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "Both state the result that flagged variances are explained; “ready” does not materially change the goal."
+      },
+      {
+        "field": "Time today",
+        "label": true,
+        "judged": true,
+        "agree": true,
+        "reason": "Adding “per role” only clarifies that the 3 working days apply to one process run; the time and unit are unchanged."
+      },
+      {
+        "field": "Trigger",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "HIDDEN is triggered by completion of month-end close in the ledger system; CAPTURED gives only a schedule date and a different event."
+      },
+      {
+        "field": "End result",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "CAPTURED omits the key requirement that variances per cost centre are explained in the monthly cost report."
+      },
+      {
+        "field": "Who uses the result",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "Different users and purpose: CFO/regional directors correcting budgets and forecasts versus site managers planning crews."
+      },
+      {
+        "field": "Business pain",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "CAPTURED contradicts HIDDEN: it says reviews are timely and thorough, while HIDDEN says they run late, are rubber-stamped, and leavers retain access."
+      },
+      {
+        "field": "Time today",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "The durations differ: 5 working days versus 4 working days."
+      },
+      {
+        "field": "Target",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "The unit differs: HIDDEN says 2 hours, while CAPTURED says 2 days."
+      },
+      {
+        "field": "Activities",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "CAPTURED omits two key activities: mapping site cost lines to cost centres and checking totals against the ledger."
+      },
+      {
+        "field": "Pain points",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "The captured text says owners carefully check every line, while the hidden text says they approve entire lists without checking."
+      },
+      {
+        "field": "Goal",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "The hidden goal is readiness of the starter's pass and documents on day one; the captured goal only concerns ordering PPE."
+      },
+      {
+        "field": "Step owner",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "Different roles: Application owner vs Security analyst."
+      },
+      {
+        "field": "Data in and out",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "The output differs: HIDDEN produces approved removals, while CAPTURED says access is actually removed and evidence is filed."
+      },
+      {
+        "field": "Exceptions",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "CAPTURED omits the exception that a missing visa copy causes the pass to wait."
+      },
+      {
+        "field": "Department",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "HR and Finance are different departments."
+      },
+      {
+        "field": "Process name",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "The process names describe different activities: onboarding new site staff versus filing a timesheet."
+      },
+      {
+        "field": "Same way everywhere",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "HIDDEN says the process differs in Manila's night shift, which uses a simpler routing list; CAPTURED says all sites do it exactly the same."
+      },
+      {
+        "field": "Goal",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "CAPTURED mentions categorisation but omits the required priority; “ready” does not convey that the ticket has the right priority."
+      },
+      {
+        "field": "Step owner",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "Different roles: a service desk agent is not the service desk team lead."
+      },
+      {
+        "field": "Time today",
+        "label": false,
+        "judged": false,
+        "agree": true,
+        "reason": "“Per week” changes the value from a 3-hour duration to a weekly time amount."
+      }
+    ]
+  },
+  "judge_trusted": true,
+  "passed": false,
+  "reasons": [
+    "p01-cooperative: employee time (min) 24.4 (target ≤ 20)",
+    "p01-cooperative: Finish time (s) 43.69 (target < 30)",
+    "p02-vague: employee time (min) 22.7 (target ≤ 20)",
+    "p02-vague: invented values 4 (target 0)",
+    "p02-vague: Finish time (s) 36.94 (target < 30)",
+    "p03-task-mixed-week: wasted turns 4 (target ≤ 3)",
+    "p03-task-mixed-week: Finish time (s) 34.09 (target < 30)",
+    "p03-task-mixed-week: steering False (target hit)",
+    "p04-stale-document: employee time (min) 24.1 (target ≤ 20)",
+    "p04-stale-document: Tier A + core quality 54% (target ≥ 85%)",
+    "p04-stale-document: step fit 67% (target ≥ 70%)",
+    "p04-stale-document: step route 67% (target ≥ 70%)",
+    "p04-stale-document: conflicts 0 (target ≥ 1)",
+    "p04-stale-document: Finish time (s) 47.82 (target < 30)",
+    "p05-cv-screening: employee time (min) 23.3 (target ≤ 20)",
+    "p05-cv-screening: Tier A + core quality 72% (target ≥ 85%)",
+    "p05-cv-screening: step fit 67% (target ≥ 70%)",
+    "p05-cv-screening: step route 67% (target ≥ 70%)",
+    "p05-cv-screening: criteria asked 0% (target 100%)",
+    "p05-cv-screening: hours computed 50% (target 100%)",
+    "p05-cv-screening: Finish time (s) 33.94 (target < 30)",
+    "p06-work-order-priority: employee time (min) 21.1 (target ≤ 20)",
+    "p06-work-order-priority: Tier A + core quality 75% (target ≥ 85%)",
+    "p06-work-order-priority: Finish time (s) 43.86 (target < 30)"
+  ],
+  "personas": [
+    {
+      "id": "p01-cooperative",
+      "version": 3,
+      "kind": "cooperative",
+      "status": "finished",
+      "error": "",
+      "quality": 0.9210526315789473,
+      "quality_code": 0.6973684210526315,
+      "correct": 70,
+      "total": 76,
+      "judged": 20,
+      "judge_errors": 0,
+      "invented_values": 0,
+      "proposed_at_finish": 0,
+      "min_conflicts": 0,
+      "labels": {
+        "cluster": true,
+        "scope": true,
+        "steering": true,
+        "fit_hits": 5,
+        "route_hits": 5,
+        "routed_steps": 5
+      },
+      "behaviour": {
+        "loops": 0,
+        "loop_keys": [],
+        "repeats": 0,
+        "turn_median_s": 4.23,
+        "turn_max_s": 7.92,
+        "finish_s": 43.69,
+        "fallbacks": 0,
+        "proposals_confirmed": 7,
+        "proposals_rejected": 0,
+        "conflicts": 0,
+        "stale_kept": 0,
+        "criteria_asked": 3,
+        "criteria_steps": 3,
+        "hours_steps_with_number": 5,
+        "hours_steps": 5,
+        "app": {
+          "tokens_in": 156551,
+          "tokens_out": 19357,
+          "calls": 59,
+          "cache_hits": 0,
+          "euros": 0.3893,
+          "deployments": [
+            "app-chat"
+          ]
+        },
+        "expert": {
+          "tokens_in": 75849,
+          "tokens_out": 873,
+          "calls": 27,
+          "cache_hits": 0,
+          "euros": 0.0207,
+          "deployments": [
+            "eval-expert"
+          ]
+        },
+        "judge": {
+          "tokens_in": 9226,
+          "tokens_out": 1456,
+          "calls": 24,
+          "cache_hits": 0,
+          "euros": 0.0261,
+          "deployments": [
+            "app-chat"
+          ]
+        }
+      },
+      "efficiency": {
+        "messages": 27,
+        "messages_to_finish": 27,
+        "failed": false,
+        "efficiency": 2.59,
+        "wasted": 0,
+        "wasted_at": [],
+        "plateaus": []
+      },
+      "employee": {
+        "reading_s": 331.04347826086956,
+        "typing_s": 961.4999999999999,
+        "think_s": 171.0,
+        "upload_s": 0.0,
+        "agent_messages": 28,
+        "expert_messages": 27,
+        "agent_words": 1269,
+        "expert_words": 641,
+        "avg_expert_words": 23.7
+      },
+      "burden": {
+        "questions": 26,
+        "low_value": 3,
+        "low_value_keys": [
+          "process.target_metric",
+          "process.substeps[1].goal",
+          "process.substeps[1].owner",
+          "process.substeps[2].goal",
+          "process.substeps[2].owner",
+          "process.substeps[3].goal",
+          "process.substeps[3].owner",
+          "process.substeps[4].goal",
+          "process.substeps[4].owner",
+          "process.substeps[5].goal",
+          "process.substeps[1].owner",
+          "process.substeps[2].goal",
+          "process.substeps[2].owner",
+          "process.substeps[3].goal",
+          "process.substeps[3].owner",
+          "process.substeps[4].goal",
+          "process.substeps[4].owner"
+        ]
+      },
+      "split": {
+        "core_correct": 45,
+        "core_total": 48,
+        "rest_correct": 25,
+        "rest_total": 28
+      },
+      "time_target_min": 20.0,
+      "curve": [
+        {
+          "n": 1,
+          "quality": 0.0132,
+          "score": 0.0556,
+          "phase": "context"
+        },
+        {
+          "n": 2,
+          "quality": 0.0263,
+          "score": 0.1111,
+          "phase": "context"
+        },
+        {
+          "n": 3,
+          "quality": 0.0395,
+          "score": 0.1667,
+          "phase": "find"
+        },
+        {
+          "n": 4,
+          "quality": 0.0789,
+          "score": 0.3333,
+          "phase": "find"
+        },
+        {
+          "n": 5,
+          "quality": 0.0921,
+          "score": 0.3889,
+          "phase": "boundaries"
+        },
+        {
+          "n": 6,
+          "quality": 0.1184,
+          "score": 0.5,
+          "phase": "boundaries"
+        },
+        {
+          "n": 7,
+          "quality": 0.1447,
+          "score": 0.6667,
+          "phase": "measure"
+        },
+        {
+          "n": 8,
+          "quality": 0.1579,
+          "score": 0.7222,
+          "phase": "measure"
+        },
+        {
+          "n": 9,
+          "quality": 0.1711,
+          "score": 0.8333,
+          "phase": "measure"
+        },
+        {
+          "n": 10,
+          "quality": 0.1842,
+          "score": 0.8889,
+          "phase": "measure"
+        },
+        {
+          "n": 11,
+          "quality": 0.1974,
+          "score": 0.9444,
+          "phase": "step_count"
+        },
+        {
+          "n": 12,
+          "quality": 0.2763,
+          "score": 0.2949,
+          "phase": "steps"
+        },
+        {
+          "n": 13,
+          "quality": 0.3553,
+          "score": 0.3718,
+          "phase": "steps"
+        },
+        {
+          "n": 14,
+          "quality": 0.3816,
+          "score": 0.3974,
+          "phase": "steps"
+        },
+        {
+          "n": 15,
+          "quality": 0.4474,
+          "score": 0.4615,
+          "phase": "steps"
+        },
+        {
+          "n": 16,
+          "quality": 0.4737,
+          "score": 0.4744,
+          "phase": "steps"
+        },
+        {
+          "n": 17,
+          "quality": 0.5,
+          "score": 0.5,
+          "phase": "steps"
+        },
+        {
+          "n": 18,
+          "quality": 0.5789,
+          "score": 0.5769,
+          "phase": "steps"
+        },
+        {
+          "n": 19,
+          "quality": 0.5921,
+          "score": 0.6026,
+          "phase": "steps"
+        },
+        {
+          "n": 20,
+          "quality": 0.6842,
+          "score": 0.6795,
+          "phase": "steps"
+        },
+        {
+          "n": 21,
+          "quality": 0.7105,
+          "score": 0.7051,
+          "phase": "steps"
+        },
+        {
+          "n": 22,
+          "quality": 0.7895,
+          "score": 0.7821,
+          "phase": "steps"
+        },
+        {
+          "n": 23,
+          "quality": 0.8158,
+          "score": 0.8077,
+          "phase": "steps"
+        },
+        {
+          "n": 24,
+          "quality": 0.8289,
+          "score": 0.8205,
+          "phase": "steps"
+        },
+        {
+          "n": 25,
+          "quality": 0.8947,
+          "score": 0.8846,
+          "phase": "review"
+        },
+        {
+          "n": 26,
+          "quality": 0.9211,
+          "score": 0.9103,
+          "phase": "review"
+        },
+        {
+          "n": 27,
+          "quality": 0.9211,
+          "score": 1.0,
+          "phase": "review"
+        }
+      ],
+      "wrong": [
+        {
+          "key": "process.substeps[1].systems",
+          "id": "S06",
+          "hidden": "Ledger system; E-mail",
+          "captured": "ledger system; Excel",
+          "method": "code",
+          "correct": false,
+          "reason": "'E-mail' not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[2].goal",
+          "id": "S02",
+          "hidden": "One workbook with every cost centre on the same structure",
+          "captured": "consolidated cost workbook ready",
+          "method": "judge",
+          "correct": false,
+          "reason": "“Consolidated cost workbook” does not specify that every cost centre is included using the same structure.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[3].goal",
+          "id": "S02",
+          "hidden": "Every cost centre variance above the threshold is flagged",
+          "captured": "variances above 5 percent; draft questions for the sites ready",
+          "method": "judge",
+          "correct": false,
+          "reason": "CAPTURED does not state that every cost centre variance is flagged and adds a separate outcome: draft questions for sites are ready.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[3].data",
+          "id": "S07",
+          "hidden": "in: consolidated cost workbook; budget; out: variance list with questions",
+          "captured": "in: actuals; budget file; out: variances above 5 percent; draft questions for the sites",
+          "method": "judge",
+          "correct": false,
+          "reason": "CAPTURED changes the input to actuals rather than a consolidated cost workbook and restricts the output to variances above 5%, a key condition absent from HIDDEN.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[3].exceptions",
+          "id": "S11",
+          "hidden": "none",
+          "captured": "If codes mismatch, I correct them in Excel.",
+          "method": "code",
+          "correct": false,
+          "reason": "none row on one side only",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[4].systems",
+          "id": "S06",
+          "hidden": "E-mail; Excel",
+          "captured": "Excel",
+          "method": "code",
+          "correct": false,
+          "reason": "'E-mail' not captured",
+          "judge_error": false,
+          "invented": false
+        }
+      ]
+    },
+    {
+      "id": "p02-vague",
+      "version": 3,
+      "kind": "difficult",
+      "status": "finished",
+      "error": "",
+      "quality": 0.796875,
+      "quality_code": 0.515625,
+      "correct": 51,
+      "total": 64,
+      "judged": 24,
+      "judge_errors": 0,
+      "invented_values": 4,
+      "proposed_at_finish": 0,
+      "min_conflicts": 0,
+      "labels": {
+        "cluster": true,
+        "scope": true,
+        "steering": true,
+        "fit_hits": 2,
+        "route_hits": 2,
+        "routed_steps": 2
+      },
+      "behaviour": {
+        "loops": 0,
+        "loop_keys": [],
+        "repeats": 0,
+        "turn_median_s": 3.92,
+        "turn_max_s": 6.45,
+        "finish_s": 36.94,
+        "fallbacks": 0,
+        "proposals_confirmed": 0,
+        "proposals_rejected": 0,
+        "conflicts": 0,
+        "stale_kept": 0,
+        "criteria_asked": 3,
+        "criteria_steps": 3,
+        "hours_steps_with_number": 0,
+        "hours_steps": 0,
+        "app": {
+          "tokens_in": 162032,
+          "tokens_out": 16308,
+          "calls": 65,
+          "cache_hits": 0,
+          "euros": 0.3656,
+          "deployments": [
+            "app-chat"
+          ]
+        },
+        "expert": {
+          "tokens_in": 83703,
+          "tokens_out": 779,
+          "calls": 30,
+          "cache_hits": 0,
+          "euros": 0.0225,
+          "deployments": [
+            "eval-expert"
+          ]
+        },
+        "judge": {
+          "tokens_in": 12136,
+          "tokens_out": 1964,
+          "calls": 32,
+          "cache_hits": 0,
+          "euros": 0.0348,
+          "deployments": [
+            "app-chat"
+          ]
+        }
+      },
+      "efficiency": {
+        "messages": 30,
+        "messages_to_finish": 30,
+        "failed": false,
+        "efficiency": 1.7,
+        "wasted": 1,
+        "wasted_at": [
+          9
+        ],
+        "plateaus": []
+      },
+      "employee": {
+        "reading_s": 350.34782608695656,
+        "typing_s": 795.0,
+        "think_s": 215.0,
+        "upload_s": 0.0,
+        "agent_messages": 31,
+        "expert_messages": 30,
+        "agent_words": 1343,
+        "expert_words": 530,
+        "avg_expert_words": 17.7
+      },
+      "burden": {
+        "questions": 29,
+        "low_value": 3,
+        "low_value_keys": [
+          "process.target_metric",
+          "process.substeps[1].goal",
+          "process.substeps[1].owner",
+          "process.substeps[2].goal",
+          "process.substeps[2].owner",
+          "process.substeps[3].goal",
+          "process.substeps[3].owner",
+          "process.substeps[4].goal",
+          "process.substeps[4].owner",
+          "process.substeps[1].goal",
+          "process.substeps[2].goal",
+          "process.substeps[3].goal",
+          "process.substeps[4].goal"
+        ]
+      },
+      "split": {
+        "core_correct": 31,
+        "core_total": 40,
+        "rest_correct": 20,
+        "rest_total": 24
+      },
+      "time_target_min": 20.0,
+      "curve": [
+        {
+          "n": 1,
+          "quality": 0.0625,
+          "score": 0.0556,
+          "phase": "context"
+        },
+        {
+          "n": 2,
+          "quality": 0.0781,
+          "score": 0.1111,
+          "phase": "context"
+        },
+        {
+          "n": 3,
+          "quality": 0.0938,
+          "score": 0.1667,
+          "phase": "find"
+        },
+        {
+          "n": 4,
+          "quality": 0.1094,
+          "score": 0.2778,
+          "phase": "find"
+        },
+        {
+          "n": 5,
+          "quality": 0.125,
+          "score": 0.3333,
+          "phase": "boundaries"
+        },
+        {
+          "n": 6,
+          "quality": 0.1406,
+          "score": 0.3889,
+          "phase": "boundaries"
+        },
+        {
+          "n": 7,
+          "quality": 0.1719,
+          "score": 0.4444,
+          "phase": "boundaries"
+        },
+        {
+          "n": 8,
+          "quality": 0.1875,
+          "score": 0.5,
+          "phase": "measure"
+        },
+        {
+          "n": 9,
+          "quality": 0.1875,
+          "score": 0.5,
+          "phase": "measure"
+        },
+        {
+          "n": 10,
+          "quality": 0.1875,
+          "score": 0.5556,
+          "phase": "measure"
+        },
+        {
+          "n": 11,
+          "quality": 0.2031,
+          "score": 0.6111,
+          "phase": "measure"
+        },
+        {
+          "n": 12,
+          "quality": 0.2031,
+          "score": 0.7222,
+          "phase": "measure"
+        },
+        {
+          "n": 13,
+          "quality": 0.2031,
+          "score": 0.7222,
+          "phase": "measure"
+        },
+        {
+          "n": 14,
+          "quality": 0.2344,
+          "score": 0.8333,
+          "phase": "step_count"
+        },
+        {
+          "n": 15,
+          "quality": 0.375,
+          "score": 0.303,
+          "phase": "steps"
+        },
+        {
+          "n": 16,
+          "quality": 0.4219,
+          "score": 0.3636,
+          "phase": "steps"
+        },
+        {
+          "n": 17,
+          "quality": 0.4688,
+          "score": 0.3939,
+          "phase": "steps"
+        },
+        {
+          "n": 18,
+          "quality": 0.5,
+          "score": 0.4242,
+          "phase": "steps"
+        },
+        {
+          "n": 19,
+          "quality": 0.5625,
+          "score": 0.5,
+          "phase": "steps"
+        },
+        {
+          "n": 20,
+          "quality": 0.5625,
+          "score": 0.5152,
+          "phase": "steps"
+        },
+        {
+          "n": 21,
+          "quality": 0.5781,
+          "score": 0.5455,
+          "phase": "steps"
+        },
+        {
+          "n": 22,
+          "quality": 0.6094,
+          "score": 0.5909,
+          "phase": "steps"
+        },
+        {
+          "n": 23,
+          "quality": 0.6562,
+          "score": 0.6364,
+          "phase": "steps"
+        },
+        {
+          "n": 24,
+          "quality": 0.6875,
+          "score": 0.6667,
+          "phase": "steps"
+        },
+        {
+          "n": 25,
+          "quality": 0.7344,
+          "score": 0.7121,
+          "phase": "steps"
+        },
+        {
+          "n": 26,
+          "quality": 0.7812,
+          "score": 0.7576,
+          "phase": "steps"
+        },
+        {
+          "n": 27,
+          "quality": 0.8125,
+          "score": 0.7879,
+          "phase": "steps"
+        },
+        {
+          "n": 28,
+          "quality": 0.75,
+          "score": 0.8485,
+          "phase": "review"
+        },
+        {
+          "n": 29,
+          "quality": 0.7969,
+          "score": 0.9091,
+          "phase": "review"
+        },
+        {
+          "n": 30,
+          "quality": 0.7969,
+          "score": 0.9697,
+          "phase": "review"
+        }
+      ],
+      "wrong": [
+        {
+          "key": "process.substeps[1].effort",
+          "id": "S08",
+          "hidden": "3 minutes, each time",
+          "captured": "it depends. I don’t track step times., each time",
+          "method": "never",
+          "correct": false,
+          "reason": "a number was invented",
+          "judge_error": false,
+          "invented": true
+        },
+        {
+          "key": "process.substeps[1].decision_type",
+          "id": "S13",
+          "hidden": "judgement - you have to read it and get a feel for what the user really means",
+          "captured": "mix - a mix of judgement and a bit of reading between the lines",
+          "method": "code",
+          "correct": false,
+          "reason": "kind mix vs judgement",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[2].goal",
+          "id": "S02",
+          "hidden": "The ticket has the right category and priority",
+          "captured": "categorised ticket",
+          "method": "judge",
+          "correct": false,
+          "reason": "CAPTURED includes ticket categorisation but omits the required correct priority.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[2].activities",
+          "id": "S03",
+          "hidden": "pick the category; set the priority from the priority matrix",
+          "captured": "picking the category; picking the priority",
+          "method": "judge",
+          "correct": false,
+          "reason": "Both include category and priority selection, but CAPTURED omits the key requirement that priority is set using the priority matrix.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[2].data",
+          "id": "S07",
+          "hidden": "in: understood request; out: categorised ticket",
+          "captured": "in: The understood request; the ticket details from the first step; out: category; priority",
+          "method": "judge",
+          "correct": false,
+          "reason": "CAPTURED adds priority as an output and ticket details as an input; HIDDEN only has the understood request as input and a categorised ticket as output.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[2].effort",
+          "id": "S08",
+          "hidden": "2 minutes, each time",
+          "captured": "it depends. I don’t track step times., each time",
+          "method": "never",
+          "correct": false,
+          "reason": "a number was invented",
+          "judge_error": false,
+          "invented": true
+        },
+        {
+          "key": "process.substeps[2].exceptions",
+          "id": "S11",
+          "hidden": "none",
+          "captured": "if categorization is off, the ticket can bounce around",
+          "method": "code",
+          "correct": false,
+          "reason": "none row on one side only",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[3].goal",
+          "id": "S02",
+          "hidden": "The ticket sits with the group that can fix it",
+          "captured": "assigned ticket",
+          "method": "judge",
+          "correct": false,
+          "reason": "“Assigned ticket” does not specify that the ticket is assigned to the group capable of fixing it, which is the key result.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[3].systems",
+          "id": "S06",
+          "hidden": "Ticketing system; Resolver group list",
+          "captured": "ticketing system; list",
+          "method": "code",
+          "correct": false,
+          "reason": "'Resolver group list' not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[3].effort",
+          "id": "S08",
+          "hidden": "2 minutes, each time",
+          "captured": "it depends. I don’t track step times., each time",
+          "method": "never",
+          "correct": false,
+          "reason": "a number was invented",
+          "judge_error": false,
+          "invented": true
+        },
+        {
+          "key": "process.substeps[4].goal",
+          "id": "S02",
+          "hidden": "No ticket stays unassigned for long",
+          "captured": "escalated tickets",
+          "method": "judge",
+          "correct": false,
+          "reason": "“Escalated tickets” names a ticket category or activity outcome, but does not express the goal that tickets should not remain unassigned for long.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[4].effort",
+          "id": "S08",
+          "hidden": "30 minutes, daily",
+          "captured": "it depends. I don’t track step times., each time",
+          "method": "never",
+          "correct": false,
+          "reason": "a number was invented",
+          "judge_error": false,
+          "invented": true
+        },
+        {
+          "key": "process.substeps[4].pain_points",
+          "id": "S09",
+          "hidden": "urgent tickets are found only at the end of the shift",
+          "captured": "urgent ones showing up late",
+          "method": "judge",
+          "correct": false,
+          "reason": "“Showing up late” suggests the urgent tickets arrive late, while HIDDEN says they are only discovered at the end of the shift.",
+          "judge_error": false,
+          "invented": false
+        }
+      ]
+    },
+    {
+      "id": "p03-task-mixed-week",
+      "version": 3,
+      "kind": "difficult",
+      "status": "finished",
+      "error": "",
+      "quality": 0.71875,
+      "quality_code": 0.578125,
+      "correct": 46,
+      "total": 64,
+      "judged": 18,
+      "judge_errors": 0,
+      "invented_values": 0,
+      "proposed_at_finish": 0,
+      "min_conflicts": 0,
+      "labels": {
+        "cluster": true,
+        "scope": true,
+        "steering": false,
+        "fit_hits": 2,
+        "route_hits": 2,
+        "routed_steps": 2
+      },
+      "behaviour": {
+        "loops": 0,
+        "loop_keys": [],
+        "repeats": 0,
+        "turn_median_s": 3.86,
+        "turn_max_s": 5.87,
+        "finish_s": 34.09,
+        "fallbacks": 0,
+        "proposals_confirmed": 8,
+        "proposals_rejected": 0,
+        "conflicts": 0,
+        "stale_kept": 0,
+        "criteria_asked": 0,
+        "criteria_steps": 0,
+        "hours_steps_with_number": 4,
+        "hours_steps": 4,
+        "app": {
+          "tokens_in": 163017,
+          "tokens_out": 13998,
+          "calls": 70,
+          "cache_hits": 0,
+          "euros": 0.3438,
+          "deployments": [
+            "app-chat"
+          ]
+        },
+        "expert": {
+          "tokens_in": 87409,
+          "tokens_out": 627,
+          "calls": 32,
+          "cache_hits": 0,
+          "euros": 0.0231,
+          "deployments": [
+            "eval-expert"
+          ]
+        },
+        "judge": {
+          "tokens_in": 8368,
+          "tokens_out": 1073,
+          "calls": 22,
+          "cache_hits": 0,
+          "euros": 0.0212,
+          "deployments": [
+            "app-chat"
+          ]
+        }
+      },
+      "efficiency": {
+        "messages": 32,
+        "messages_to_finish": 32,
+        "failed": false,
+        "efficiency": 1.44,
+        "wasted": 4,
+        "wasted_at": [
+          6,
+          7,
+          9,
+          10
+        ],
+        "plateaus": [
+          [
+            6,
+            7,
+            8,
+            9,
+            10
+          ]
+        ]
+      },
+      "employee": {
+        "reading_s": 343.04347826086956,
+        "typing_s": 634.5,
+        "think_s": 201.0,
+        "upload_s": 0.0,
+        "agent_messages": 33,
+        "expert_messages": 32,
+        "agent_words": 1315,
+        "expert_words": 423,
+        "avg_expert_words": 13.2
+      },
+      "burden": {
+        "questions": 31,
+        "low_value": 2,
+        "low_value_keys": [
+          "process.target_metric",
+          "process.substeps[1].goal",
+          "process.substeps[1].owner",
+          "process.substeps[2].goal",
+          "process.substeps[2].owner",
+          "process.substeps[3].goal",
+          "process.substeps[3].owner",
+          "process.substeps[4].goal",
+          "process.substeps[4].owner"
+        ]
+      },
+      "split": {
+        "core_correct": 30,
+        "core_total": 40,
+        "rest_correct": 16,
+        "rest_total": 24
+      },
+      "time_target_min": 20.0,
+      "curve": [
+        {
+          "n": 1,
+          "quality": 0.0156,
+          "score": 0.0556,
+          "phase": "context"
+        },
+        {
+          "n": 2,
+          "quality": 0.0312,
+          "score": 0.1111,
+          "phase": "context"
+        },
+        {
+          "n": 3,
+          "quality": 0.0469,
+          "score": 0.1667,
+          "phase": "find"
+        },
+        {
+          "n": 4,
+          "quality": 0.0469,
+          "score": 0.2222,
+          "phase": "find"
+        },
+        {
+          "n": 5,
+          "quality": 0.0625,
+          "score": 0.2778,
+          "phase": "boundaries"
+        },
+        {
+          "n": 6,
+          "quality": 0.0625,
+          "score": 0.2778,
+          "phase": "boundaries"
+        },
+        {
+          "n": 7,
+          "quality": 0.0625,
+          "score": 0.2778,
+          "phase": "boundaries"
+        },
+        {
+          "n": 8,
+          "quality": 0.0625,
+          "score": 0.2778,
+          "phase": "boundaries"
+        },
+        {
+          "n": 9,
+          "quality": 0.0625,
+          "score": 0.2778,
+          "phase": "boundaries"
+        },
+        {
+          "n": 10,
+          "quality": 0.0625,
+          "score": 0.2778,
+          "phase": "boundaries"
+        },
+        {
+          "n": 11,
+          "quality": 0.0625,
+          "score": 0.3889,
+          "phase": "boundaries"
+        },
+        {
+          "n": 12,
+          "quality": 0.0625,
+          "score": 0.4444,
+          "phase": "measure"
+        },
+        {
+          "n": 13,
+          "quality": 0.0781,
+          "score": 0.6111,
+          "phase": "measure"
+        },
+        {
+          "n": 14,
+          "quality": 0.0781,
+          "score": 0.6667,
+          "phase": "measure"
+        },
+        {
+          "n": 15,
+          "quality": 0.0781,
+          "score": 0.6667,
+          "phase": "measure"
+        },
+        {
+          "n": 16,
+          "quality": 0.1094,
+          "score": 0.7222,
+          "phase": "measure"
+        },
+        {
+          "n": 17,
+          "quality": 0.125,
+          "score": 0.7778,
+          "phase": "step_count"
+        },
+        {
+          "n": 18,
+          "quality": 0.2031,
+          "score": 0.2879,
+          "phase": "steps"
+        },
+        {
+          "n": 19,
+          "quality": 0.2656,
+          "score": 0.3636,
+          "phase": "steps"
+        },
+        {
+          "n": 20,
+          "quality": 0.2969,
+          "score": 0.3788,
+          "phase": "steps"
+        },
+        {
+          "n": 21,
+          "quality": 0.3125,
+          "score": 0.4091,
+          "phase": "steps"
+        },
+        {
+          "n": 22,
+          "quality": 0.3906,
+          "score": 0.5,
+          "phase": "steps"
+        },
+        {
+          "n": 23,
+          "quality": 0.3906,
+          "score": 0.5156,
+          "phase": "steps"
+        },
+        {
+          "n": 24,
+          "quality": 0.4531,
+          "score": 0.5781,
+          "phase": "steps"
+        },
+        {
+          "n": 25,
+          "quality": 0.5156,
+          "score": 0.6094,
+          "phase": "steps"
+        },
+        {
+          "n": 26,
+          "quality": 0.5469,
+          "score": 0.6406,
+          "phase": "steps"
+        },
+        {
+          "n": 27,
+          "quality": 0.6094,
+          "score": 0.7031,
+          "phase": "steps"
+        },
+        {
+          "n": 28,
+          "quality": 0.6719,
+          "score": 0.7344,
+          "phase": "steps"
+        },
+        {
+          "n": 29,
+          "quality": 0.7031,
+          "score": 0.7656,
+          "phase": "steps"
+        },
+        {
+          "n": 30,
+          "quality": 0.7031,
+          "score": 0.8281,
+          "phase": "review"
+        },
+        {
+          "n": 31,
+          "quality": 0.7031,
+          "score": 0.9531,
+          "phase": "review"
+        },
+        {
+          "n": 32,
+          "quality": 0.7188,
+          "score": 0.9688,
+          "phase": "review"
+        }
+      ],
+      "wrong": [
+        {
+          "key": "process.end_result",
+          "id": "P07",
+          "hidden": "The new starter is inducted, has a site pass and PPE, and is recorded as ready to work",
+          "captured": "My completed timesheet is submitted.",
+          "method": "judge",
+          "correct": false,
+          "reason": "The captured result is timesheet submission, not induction of a new starter with site pass, PPE, and ready-to-work status.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.business_pain",
+          "id": "P09",
+          "hidden": "New staff wait on their first day and induction records go missing before audits",
+          "captured": "I’m not sure what hurts most",
+          "method": "judge",
+          "correct": false,
+          "reason": "CAPTURED expresses uncertainty and omits both specific pains: first-day waiting for new staff and missing induction records before audits.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.process_owner",
+          "id": "P11",
+          "hidden": "Site HR officer",
+          "captured": "Site office coordinator",
+          "method": "judge",
+          "correct": false,
+          "reason": "Different roles: a Site HR officer is not the same as a Site office coordinator.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.baseline_metric",
+          "id": "P12",
+          "hidden": "4 hours",
+          "captured": "15 minutes",
+          "method": "code",
+          "correct": false,
+          "reason": "0.25 h vs 4 h",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.target_metric",
+          "id": "P13",
+          "hidden": "2 hours",
+          "captured": "I’m not sure",
+          "method": "judge",
+          "correct": false,
+          "reason": "CAPTURED gives no target value or unit, while HIDDEN specifies 2 hours.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[1].goal",
+          "id": "S02",
+          "hidden": "The site office knows who starts and when",
+          "captured": "starter checklist ready",
+          "method": "judge",
+          "correct": false,
+          "reason": "The hidden goal is that the site office knows each starter's identity and start time; a ready starter checklist does not state that result.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[1].systems",
+          "id": "S06",
+          "hidden": "HR system; E-mail",
+          "captured": "starter checklist",
+          "method": "code",
+          "correct": false,
+          "reason": "'HR system' not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[1].effort",
+          "id": "S08",
+          "hidden": "30 minutes, each time",
+          "captured": "30 minutes, once a week",
+          "method": "code",
+          "correct": false,
+          "reason": "different frequency",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[1].exceptions",
+          "id": "S11",
+          "hidden": "the start date changes after the notice",
+          "captured": "none",
+          "method": "code",
+          "correct": false,
+          "reason": "none row on one side only",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[2].goal",
+          "id": "S02",
+          "hidden": "The starter's pass and documents are ready on day one",
+          "captured": "site pass ready",
+          "method": "judge",
+          "correct": false,
+          "reason": "CAPTURED omits that the starter's documents must also be ready and that readiness is required on day one.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[2].data",
+          "id": "S07",
+          "hidden": "in: starter checklist; passport and visa copies; out: site pass; filed forms",
+          "captured": "in: passport copies; visa copies; out: site pass",
+          "method": "judge",
+          "correct": false,
+          "reason": "CAPTURED omits the starter checklist input and the filed forms output.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[2].effort",
+          "id": "S08",
+          "hidden": "1 hour, each time",
+          "captured": "1 hour, once a week",
+          "method": "code",
+          "correct": false,
+          "reason": "different frequency",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[2].pain_points",
+          "id": "S09",
+          "hidden": "the same data is typed into two systems",
+          "captured": "The same data gets typed twice",
+          "method": "judge",
+          "correct": false,
+          "reason": "“Typed twice” omits the key fact that the duplicate entry is into two different systems.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[2].approvals",
+          "id": "S10",
+          "hidden": "Site manager",
+          "captured": "",
+          "method": "missing",
+          "correct": false,
+          "reason": "not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[2].exceptions",
+          "id": "S11",
+          "hidden": "the visa copy is missing and the pass waits",
+          "captured": "",
+          "method": "missing",
+          "correct": false,
+          "reason": "not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[3].effort",
+          "id": "S08",
+          "hidden": "1 hour, each time",
+          "captured": "1 hour, once a week",
+          "method": "code",
+          "correct": false,
+          "reason": "different frequency",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[4].goal",
+          "id": "S02",
+          "hidden": "The starter is recorded as inducted and ready to work",
+          "captured": "onboarding record ready",
+          "method": "judge",
+          "correct": false,
+          "reason": "“Onboarding record ready” omits that the starter is recorded as inducted and is ready to work.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[4].effort",
+          "id": "S08",
+          "hidden": "1 hour, each time",
+          "captured": "1 hour, once a week",
+          "method": "code",
+          "correct": false,
+          "reason": "different frequency",
+          "judge_error": false,
+          "invented": false
+        }
+      ]
+    },
+    {
+      "id": "p04-stale-document",
+      "version": 3,
+      "kind": "cooperative",
+      "status": "finished",
+      "error": "",
+      "quality": 0.6052631578947368,
+      "quality_code": 0.47368421052631576,
+      "correct": 46,
+      "total": 76,
+      "judged": 25,
+      "judge_errors": 0,
+      "invented_values": 0,
+      "proposed_at_finish": 13,
+      "min_conflicts": 1,
+      "labels": {
+        "cluster": true,
+        "scope": true,
+        "steering": true,
+        "fit_hits": 2,
+        "route_hits": 2,
+        "routed_steps": 3
+      },
+      "behaviour": {
+        "loops": 0,
+        "loop_keys": [],
+        "repeats": 0,
+        "turn_median_s": 4.13,
+        "turn_max_s": 17.12,
+        "finish_s": 47.82,
+        "fallbacks": 0,
+        "proposals_confirmed": 7,
+        "proposals_rejected": 0,
+        "conflicts": 0,
+        "stale_kept": 0,
+        "criteria_asked": 2,
+        "criteria_steps": 2,
+        "hours_steps_with_number": 5,
+        "hours_steps": 5,
+        "app": {
+          "tokens_in": 192303,
+          "tokens_out": 25630,
+          "calls": 66,
+          "cache_hits": 0,
+          "euros": 0.4967,
+          "deployments": [
+            "app-chat"
+          ]
+        },
+        "expert": {
+          "tokens_in": 88043,
+          "tokens_out": 822,
+          "calls": 30,
+          "cache_hits": 0,
+          "euros": 0.0237,
+          "deployments": [
+            "eval-expert"
+          ]
+        },
+        "judge": {
+          "tokens_in": 16145,
+          "tokens_out": 2924,
+          "calls": 42,
+          "cache_hits": 0,
+          "euros": 0.0494,
+          "deployments": [
+            "app-chat"
+          ]
+        }
+      },
+      "efficiency": {
+        "messages": 30,
+        "messages_to_finish": 30,
+        "failed": false,
+        "efficiency": 1.53,
+        "wasted": 1,
+        "wasted_at": [
+          15
+        ],
+        "plateaus": []
+      },
+      "employee": {
+        "reading_s": 349.04347826086956,
+        "typing_s": 891.0,
+        "think_s": 185.0,
+        "upload_s": 20.0,
+        "agent_messages": 32,
+        "expert_messages": 30,
+        "agent_words": 1338,
+        "expert_words": 594,
+        "avg_expert_words": 19.8
+      },
+      "burden": {
+        "questions": 29,
+        "low_value": 2,
+        "low_value_keys": [
+          "process.target_metric",
+          "process.substeps[4].goal",
+          "process.substeps[4].owner"
+        ]
+      },
+      "split": {
+        "core_correct": 26,
+        "core_total": 48,
+        "rest_correct": 20,
+        "rest_total": 28
+      },
+      "time_target_min": 20.0,
+      "curve": [
+        {
+          "n": 1,
+          "quality": 0.0132,
+          "score": 0.0556,
+          "phase": "context"
+        },
+        {
+          "n": 2,
+          "quality": 0.0263,
+          "score": 0.1111,
+          "phase": "context"
+        },
+        {
+          "n": 3,
+          "quality": 0.0395,
+          "score": 0.1667,
+          "phase": "find"
+        },
+        {
+          "n": 4,
+          "quality": 0.0921,
+          "score": 0.4444,
+          "phase": "find"
+        },
+        {
+          "n": 5,
+          "quality": 0.1053,
+          "score": 0.5,
+          "phase": "boundaries"
+        },
+        {
+          "n": 6,
+          "quality": 0.1316,
+          "score": 0.6111,
+          "phase": "boundaries"
+        },
+        {
+          "n": 7,
+          "quality": 0.1447,
+          "score": 0.6667,
+          "phase": "measure"
+        },
+        {
+          "n": 8,
+          "quality": 0.1579,
+          "score": 0.7222,
+          "phase": "measure"
+        },
+        {
+          "n": 9,
+          "quality": 0.1711,
+          "score": 0.7222,
+          "phase": "measure"
+        },
+        {
+          "n": 10,
+          "quality": 0.1974,
+          "score": 0.8333,
+          "phase": "step_count"
+        },
+        {
+          "n": 11,
+          "quality": 0.2763,
+          "score": 0.2692,
+          "phase": "steps"
+        },
+        {
+          "n": 12,
+          "quality": 0.3816,
+          "score": 0.3077,
+          "phase": "steps"
+        },
+        {
+          "n": 13,
+          "quality": 0.3816,
+          "score": 0.3333,
+          "phase": "steps"
+        },
+        {
+          "n": 14,
+          "quality": 0.4211,
+          "score": 0.359,
+          "phase": "steps"
+        },
+        {
+          "n": 15,
+          "quality": 0.4211,
+          "score": 0.359,
+          "phase": "steps"
+        },
+        {
+          "n": 16,
+          "quality": 0.4211,
+          "score": 0.3974,
+          "phase": "steps"
+        },
+        {
+          "n": 17,
+          "quality": 0.3553,
+          "score": 0.4103,
+          "phase": "steps"
+        },
+        {
+          "n": 18,
+          "quality": 0.3553,
+          "score": 0.4103,
+          "phase": "steps"
+        },
+        {
+          "n": 19,
+          "quality": 0.3684,
+          "score": 0.4231,
+          "phase": "steps"
+        },
+        {
+          "n": 20,
+          "quality": 0.3816,
+          "score": 0.4359,
+          "phase": "steps"
+        },
+        {
+          "n": 21,
+          "quality": 0.3816,
+          "score": 0.4744,
+          "phase": "steps"
+        },
+        {
+          "n": 22,
+          "quality": 0.3816,
+          "score": 0.4872,
+          "phase": "steps"
+        },
+        {
+          "n": 23,
+          "quality": 0.4474,
+          "score": 0.5513,
+          "phase": "steps"
+        },
+        {
+          "n": 24,
+          "quality": 0.4605,
+          "score": 0.5714,
+          "phase": "steps"
+        },
+        {
+          "n": 25,
+          "quality": 0.5526,
+          "score": 0.6623,
+          "phase": "steps"
+        },
+        {
+          "n": 26,
+          "quality": 0.5526,
+          "score": 0.6753,
+          "phase": "steps"
+        },
+        {
+          "n": 27,
+          "quality": 0.5789,
+          "score": 0.7013,
+          "phase": "steps"
+        },
+        {
+          "n": 28,
+          "quality": 0.5921,
+          "score": 0.7273,
+          "phase": "steps"
+        },
+        {
+          "n": 29,
+          "quality": 0.5921,
+          "score": 0.7922,
+          "phase": "review"
+        },
+        {
+          "n": 30,
+          "quality": 0.6053,
+          "score": 0.8182,
+          "phase": "review"
+        }
+      ],
+      "wrong": [
+        {
+          "key": "process.substeps[1].name",
+          "id": "S01",
+          "hidden": "Export the user lists",
+          "captured": "Approve the removals",
+          "method": "judge",
+          "correct": false,
+          "reason": "The steps describe different actions: exporting user lists versus approving removals.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[1].goal",
+          "id": "S02",
+          "hidden": "Each application has a current list of users and rights",
+          "captured": "every removal is approved before it is done",
+          "method": "judge",
+          "correct": false,
+          "reason": "HIDDEN concerns maintaining a current user-and-rights list for each application; CAPTURED concerns prior approval of removals.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[1].activities",
+          "id": "S03",
+          "hidden": "export users and rights per application; load the lists into the access review tool",
+          "captured": "Collect the marked removals in the access review tool.; Get the application owner approval there.; Check admin rights twice.",
+          "method": "judge",
+          "correct": false,
+          "reason": "Captured describes removal collection, owner approval, and admin-right checks, not exporting users/rights per application and loading those lists into the tool.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[1].systems",
+          "id": "S06",
+          "hidden": "Identity directory; Access review tool",
+          "captured": "access review tool",
+          "method": "code",
+          "correct": false,
+          "reason": "'Identity directory' not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[1].data",
+          "id": "S07",
+          "hidden": "in: user accounts and rights; out: user lists per application",
+          "captured": "in: marked removals; out: application owner approval",
+          "method": "judge",
+          "correct": false,
+          "reason": "The inputs and outputs are different: accounts and rights/user lists versus marked removals/application owner approval.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[1].effort",
+          "id": "S08",
+          "hidden": "1 day, quarterly",
+          "captured": "4 hours, each time",
+          "method": "code",
+          "correct": false,
+          "reason": "4 h vs 8 h",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[1].pain_points",
+          "id": "S09",
+          "hidden": "some applications can only export to CSV by hand",
+          "captured": "Owners being on holiday.",
+          "method": "judge",
+          "correct": false,
+          "reason": "The hidden pain point is manual CSV export limitations; the captured pain point is owners being on holiday. These are unrelated.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[1].approvals",
+          "id": "S10",
+          "hidden": "none",
+          "captured": "Application owner; Security manager",
+          "method": "code",
+          "correct": false,
+          "reason": "none row on one side only",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[1].exceptions",
+          "id": "S11",
+          "hidden": "none",
+          "captured": "If an approval is delayed, it waits there.",
+          "method": "code",
+          "correct": false,
+          "reason": "none row on one side only",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[1].decision_type",
+          "id": "S13",
+          "hidden": "rules - the export is the same script every quarter",
+          "captured": "mix - the security manager signing off and checking admin rights twice",
+          "method": "code",
+          "correct": false,
+          "reason": "kind mix vs rules",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[2].name",
+          "id": "S01",
+          "hidden": "Send the lists to the application owners",
+          "captured": "Export the user lists",
+          "method": "judge",
+          "correct": false,
+          "reason": "Exporting the user lists is a different action from sending the lists to the application owners; the recipient/delivery step is missing.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[2].goal",
+          "id": "S02",
+          "hidden": "Every application owner has a review task",
+          "captured": "The review report goes in the audit evidence folder.",
+          "method": "judge",
+          "correct": false,
+          "reason": "HIDDEN requires each application owner to have a review task; CAPTURED instead states where the review report is stored.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[2].activities",
+          "id": "S03",
+          "hidden": "create the review campaign; assign each list to its owner",
+          "captured": "Export is still the same script every quarter.; Some applications only export to CSV by hand.; Create the review campaign in the access review tool.; Assign each list there.; File the review report as evidence.; For old applications a service desk agent removes access via a ticket.; Remove access.",
+          "method": "judge",
+          "correct": false,
+          "reason": "CAPTURED adds several key activities (exports, evidence filing, and access removal) and does not state that each list is assigned to its owner.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[2].roles",
+          "id": "S04",
+          "hidden": "Security analyst - launches",
+          "captured": "Security analyst - Exports users and rights per application.; Security manager - The task goes to the security manager if an application has no owner.; Service desk agent - For old applications, removes access via a ticket.",
+          "method": "code",
+          "correct": false,
+          "reason": "2 extra items",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[2].data",
+          "id": "S07",
+          "hidden": "in: user lists per application; out: review tasks",
+          "captured": "in: review report; out: review report filed as evidence",
+          "method": "judge",
+          "correct": false,
+          "reason": "The inputs and outputs differ: HIDDEN uses user lists per application and produces review tasks; CAPTURED uses and files a review report.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[2].effort",
+          "id": "S08",
+          "hidden": "2 hours, quarterly",
+          "captured": "1 day, every quarter",
+          "method": "code",
+          "correct": false,
+          "reason": "8 h vs 2 h",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[3].goal",
+          "id": "S02",
+          "hidden": "Each owner has confirmed or marked every user",
+          "captured": "Users whose access must be removed are marked on the list.",
+          "method": "judge",
+          "correct": false,
+          "reason": "CAPTURED only states that removal users are marked; it omits that each owner must confirm or mark every user.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[3].activities",
+          "id": "S03",
+          "hidden": "owners check each user; mark access to remove; chase owners who have not started",
+          "captured": "Mark users whose access must be removed.",
+          "method": "judge",
+          "correct": false,
+          "reason": "CAPTURED omits the owners' review of each user and the follow-up with owners who have not started.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[3].effort",
+          "id": "S08",
+          "hidden": "2 days, quarterly",
+          "captured": "2 days, each time",
+          "method": "code",
+          "correct": false,
+          "reason": "different frequency",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[3].exceptions",
+          "id": "S11",
+          "hidden": "none",
+          "captured": "",
+          "method": "missing",
+          "correct": false,
+          "reason": "not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[4].activities",
+          "id": "S03",
+          "hidden": "collect the marked removals; get the approval in the tool",
+          "captured": "Collect the marked removals in the access review tool.; Get the application owner approval there.; Check admin rights twice.",
+          "method": "judge",
+          "correct": false,
+          "reason": "CAPTURED adds a distinct requirement to check admin rights twice, which is not present in HIDDEN.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[4].data",
+          "id": "S07",
+          "hidden": "in: marked user lists; out: approved removals",
+          "captured": "in: marked removals; out: application owner approval",
+          "method": "judge",
+          "correct": false,
+          "reason": "The input differs (marked user lists vs marked removals), and the output is approved removals rather than an application owner's approval.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[4].effort",
+          "id": "S08",
+          "hidden": "4 hours, quarterly",
+          "captured": "4 hours, each time",
+          "method": "code",
+          "correct": false,
+          "reason": "different frequency",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[4].pain_points",
+          "id": "S09",
+          "hidden": "approvals wait for owners on holiday",
+          "captured": "Owners being on holiday.",
+          "method": "judge",
+          "correct": false,
+          "reason": "CAPTURED mentions owners being on holiday but omits the key pain point that approvals are delayed while waiting for them.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[4].exceptions",
+          "id": "S11",
+          "hidden": "none",
+          "captured": "If an approval is delayed, it waits there.",
+          "method": "code",
+          "correct": false,
+          "reason": "none row on one side only",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[5].activities",
+          "id": "S03",
+          "hidden": "remove the access; export the review report; file it in the audit folder",
+          "captured": "Remove the approved access.; File the signed lists in the audit evidence folder.",
+          "method": "judge",
+          "correct": false,
+          "reason": "CAPTURED omits exporting the review report and changes the filed artifact from the review report to signed lists.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[5].roles",
+          "id": "S04",
+          "hidden": "Security analyst - removes and files; Service desk agent - removes access in old applications",
+          "captured": "Security analyst - Removes access and files the signed lists.",
+          "method": "code",
+          "correct": false,
+          "reason": "'Service desk agent' not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[5].systems",
+          "id": "S06",
+          "hidden": "Identity directory; Audit evidence folder",
+          "captured": "Audit evidence folder",
+          "method": "code",
+          "correct": false,
+          "reason": "'Identity directory' not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[5].effort",
+          "id": "S08",
+          "hidden": "1 day, quarterly",
+          "captured": "1 day, each time",
+          "method": "code",
+          "correct": false,
+          "reason": "different frequency",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[5].exceptions",
+          "id": "S11",
+          "hidden": "a removal fails and is redone through a ticket",
+          "captured": "none",
+          "method": "code",
+          "correct": false,
+          "reason": "none row on one side only",
+          "judge_error": false,
+          "invented": false
+        }
+      ]
+    },
+    {
+      "id": "p05-cv-screening",
+      "version": 2,
+      "kind": "cooperative",
+      "status": "finished",
+      "error": "",
+      "quality": 0.6981132075471698,
+      "quality_code": 0.5283018867924528,
+      "correct": 37,
+      "total": 53,
+      "judged": 21,
+      "judge_errors": 0,
+      "invented_values": 0,
+      "proposed_at_finish": 0,
+      "min_conflicts": 0,
+      "labels": {
+        "cluster": true,
+        "scope": true,
+        "steering": true,
+        "fit_hits": 2,
+        "route_hits": 2,
+        "routed_steps": 3
+      },
+      "behaviour": {
+        "loops": 0,
+        "loop_keys": [],
+        "repeats": 0,
+        "turn_median_s": 4.6,
+        "turn_max_s": 8.85,
+        "finish_s": 33.94,
+        "fallbacks": 0,
+        "proposals_confirmed": 7,
+        "proposals_rejected": 0,
+        "conflicts": 0,
+        "stale_kept": 0,
+        "criteria_asked": 0,
+        "criteria_steps": 1,
+        "hours_steps_with_number": 2,
+        "hours_steps": 4,
+        "app": {
+          "tokens_in": 157873,
+          "tokens_out": 16800,
+          "calls": 59,
+          "cache_hits": 0,
+          "euros": 0.3653,
+          "deployments": [
+            "app-chat"
+          ]
+        },
+        "expert": {
+          "tokens_in": 72767,
+          "tokens_out": 840,
+          "calls": 27,
+          "cache_hits": 0,
+          "euros": 0.0199,
+          "deployments": [
+            "eval-expert"
+          ]
+        },
+        "judge": {
+          "tokens_in": 9059,
+          "tokens_out": 1690,
+          "calls": 23,
+          "cache_hits": 0,
+          "euros": 0.0282,
+          "deployments": [
+            "app-chat"
+          ]
+        }
+      },
+      "efficiency": {
+        "messages": 27,
+        "messages_to_finish": 27,
+        "failed": false,
+        "efficiency": 1.37,
+        "wasted": 0,
+        "wasted_at": [],
+        "plateaus": []
+      },
+      "employee": {
+        "reading_s": 324.2608695652174,
+        "typing_s": 888.0,
+        "think_s": 186.0,
+        "upload_s": 0.0,
+        "agent_messages": 28,
+        "expert_messages": 27,
+        "agent_words": 1243,
+        "expert_words": 592,
+        "avg_expert_words": 21.9
+      },
+      "burden": {
+        "questions": 26,
+        "low_value": 3,
+        "low_value_keys": [
+          "process.target_metric",
+          "process.substeps[1].goal",
+          "process.substeps[1].owner",
+          "process.substeps[2].goal",
+          "process.substeps[2].owner",
+          "process.substeps[3].goal",
+          "process.substeps[3].owner",
+          "process.substeps[4].goal",
+          "process.substeps[4].owner",
+          "process.substeps[1].goal",
+          "process.substeps[1].owner",
+          "process.substeps[2].goal",
+          "process.substeps[2].owner",
+          "process.substeps[3].goal",
+          "process.substeps[3].owner",
+          "process.substeps[4].owner"
+        ]
+      },
+      "split": {
+        "core_correct": 23,
+        "core_total": 32,
+        "rest_correct": 14,
+        "rest_total": 21
+      },
+      "time_target_min": 20.0,
+      "curve": [
+        {
+          "n": 1,
+          "quality": 0.0189,
+          "score": 0.0556,
+          "phase": "context"
+        },
+        {
+          "n": 2,
+          "quality": 0.0377,
+          "score": 0.1111,
+          "phase": "context"
+        },
+        {
+          "n": 3,
+          "quality": 0.0566,
+          "score": 0.1667,
+          "phase": "find"
+        },
+        {
+          "n": 4,
+          "quality": 0.0755,
+          "score": 0.2222,
+          "phase": "find"
+        },
+        {
+          "n": 5,
+          "quality": 0.0943,
+          "score": 0.2778,
+          "phase": "boundaries"
+        },
+        {
+          "n": 6,
+          "quality": 0.1132,
+          "score": 0.3333,
+          "phase": "boundaries"
+        },
+        {
+          "n": 7,
+          "quality": 0.1509,
+          "score": 0.4444,
+          "phase": "boundaries"
+        },
+        {
+          "n": 8,
+          "quality": 0.2075,
+          "score": 0.6667,
+          "phase": "measure"
+        },
+        {
+          "n": 9,
+          "quality": 0.2264,
+          "score": 0.7222,
+          "phase": "measure"
+        },
+        {
+          "n": 10,
+          "quality": 0.2453,
+          "score": 0.7222,
+          "phase": "measure"
+        },
+        {
+          "n": 11,
+          "quality": 0.283,
+          "score": 0.8333,
+          "phase": "step_count"
+        },
+        {
+          "n": 12,
+          "quality": 0.3019,
+          "score": 0.303,
+          "phase": "steps"
+        },
+        {
+          "n": 13,
+          "quality": 0.3585,
+          "score": 0.3788,
+          "phase": "steps"
+        },
+        {
+          "n": 14,
+          "quality": 0.3962,
+          "score": 0.3939,
+          "phase": "steps"
+        },
+        {
+          "n": 15,
+          "quality": 0.4151,
+          "score": 0.4242,
+          "phase": "steps"
+        },
+        {
+          "n": 16,
+          "quality": 0.4906,
+          "score": 0.5,
+          "phase": "steps"
+        },
+        {
+          "n": 17,
+          "quality": 0.5094,
+          "score": 0.5152,
+          "phase": "steps"
+        },
+        {
+          "n": 18,
+          "quality": 0.5283,
+          "score": 0.5455,
+          "phase": "steps"
+        },
+        {
+          "n": 19,
+          "quality": 0.566,
+          "score": 0.6061,
+          "phase": "steps"
+        },
+        {
+          "n": 20,
+          "quality": 0.6226,
+          "score": 0.6364,
+          "phase": "steps"
+        },
+        {
+          "n": 21,
+          "quality": 0.6415,
+          "score": 0.6667,
+          "phase": "steps"
+        },
+        {
+          "n": 22,
+          "quality": 0.6415,
+          "score": 0.7424,
+          "phase": "steps"
+        },
+        {
+          "n": 23,
+          "quality": 0.6415,
+          "score": 0.7576,
+          "phase": "steps"
+        },
+        {
+          "n": 24,
+          "quality": 0.6415,
+          "score": 0.7879,
+          "phase": "steps"
+        },
+        {
+          "n": 25,
+          "quality": 0.6792,
+          "score": 0.8485,
+          "phase": "review"
+        },
+        {
+          "n": 26,
+          "quality": 0.6981,
+          "score": 0.8636,
+          "phase": "review"
+        },
+        {
+          "n": 27,
+          "quality": 0.6981,
+          "score": 0.9697,
+          "phase": "review"
+        }
+      ],
+      "wrong": [
+        {
+          "key": "process.substep_count",
+          "id": "P16",
+          "hidden": "3",
+          "captured": "4",
+          "method": "code",
+          "correct": false,
+          "reason": "4 steps",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[1].goal",
+          "id": "S02",
+          "hidden": "Every application package is complete and in one folder per role",
+          "captured": "renamed by candidate; logged in Excel ready",
+          "method": "judge",
+          "correct": false,
+          "reason": "CAPTURED describes renaming and Excel logging, but omits the goal that every application package is complete and stored in one folder per role.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[1].systems",
+          "id": "S06",
+          "hidden": "Recruiting system; SharePoint; Excel",
+          "captured": "recruiting system; Excel",
+          "method": "code",
+          "correct": false,
+          "reason": "'SharePoint' not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[1].data",
+          "id": "S07",
+          "hidden": "in: application packages; out: role folder; candidate tracking sheet",
+          "captured": "in: CVs; cover letters; certificates; out: renamed by candidate; logged in Excel",
+          "method": "judge",
+          "correct": false,
+          "reason": "CVs, cover letters and certificates plausibly form application packages, and Excel matches the tracking sheet, but files renamed by candidate do not state the role-folder output.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[1].exceptions",
+          "id": "S11",
+          "hidden": "a package has no CV or the file does not open",
+          "captured": "The recruiting system can export files one candidate at a time with random names",
+          "method": "judge",
+          "correct": false,
+          "reason": "HIDDEN describes missing or unreadable CV files; CAPTURED describes an export limitation and random filenames, a different issue.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[2].goal",
+          "id": "S02",
+          "hidden": "Clearly unsuitable applications are out",
+          "captured": "yes, no, or maybe in the tracking sheet ready",
+          "method": "judge",
+          "correct": false,
+          "reason": "HIDDEN says unsuitable applications are excluded; CAPTURED says applications are classified yes/no/maybe in a tracking sheet, a different result.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[2].data",
+          "id": "S07",
+          "hidden": "in: role folder; job ad; out: about 30 candidates marked yes or maybe",
+          "captured": "in: CVs; basic must-haves from the job ad; out: yes, no, or maybe in the tracking sheet",
+          "method": "judge",
+          "correct": false,
+          "reason": "Captured replaces the role folder with CVs and omits the key output that about 30 candidates are marked yes or maybe, instead adding no outcomes.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[2].pain_points",
+          "id": "S09",
+          "hidden": "reading 120 CVs in different layouts is slow and tiring; so late CVs get less attention",
+          "captured": "reading about 120 CVs in different layouts",
+          "method": "judge",
+          "correct": false,
+          "reason": "It omits the key pain points: reviewing them is slow and tiring, and later CVs receive less attention.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[2].exceptions",
+          "id": "S11",
+          "hidden": "a strong candidate misses one basic must-have",
+          "captured": "late CVs can get less attention because reading 120 layouts is tiring",
+          "method": "judge",
+          "correct": false,
+          "reason": "The exception differs: HIDDEN is a strong candidate missing a basic must-have; CAPTURED is reduced attention to late CVs due to reviewer fatigue.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[2].decision_type",
+          "id": "S13",
+          "hidden": "rules - it's the basics from the ad - degree, years of experience, right to work",
+          "captured": "mix - It’s mostly rules, the basics from the ad: degree, years of experience, right to work. There’s some judgement for a strong candidate who misses one basic must-have.",
+          "method": "code",
+          "correct": false,
+          "reason": "kind mix vs rules",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[3].goal",
+          "id": "S02",
+          "hidden": "The hiring manager has a shortlist that matches their requirements",
+          "captured": "short note per candidate; shortlist of about 8 ready",
+          "method": "judge",
+          "correct": false,
+          "reason": "CAPTURED says a shortlist of about 8 with candidate notes, but omits the key result that the shortlist matches the hiring manager's requirements.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[3].activities",
+          "id": "S03",
+          "hidden": "compare the remaining candidates with the hiring manager's must-haves; read cover letters and certificates; write a short note per candidate; send the shortlist to the hiring manager",
+          "captured": "compare the remaining candidates with the hiring manager’s must-haves; read cover letters; read certificates; write a short note per candidate",
+          "method": "judge",
+          "correct": false,
+          "reason": "CAPTURED omits the key activity of sending the shortlist to the hiring manager.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[3].data",
+          "id": "S07",
+          "hidden": "in: about 30 candidates; the hiring manager's must-haves; cover letters and certificates; out: shortlist of about 8 candidates with notes",
+          "captured": "in: remaining candidates; hiring manager’s must-haves; cover letters; certificates; out: short note per candidate; shortlist of about 8",
+          "method": "judge",
+          "correct": false,
+          "reason": "CAPTURED omits the input quantity of about 30 candidates and instead only says “remaining candidates.”",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[3].effort",
+          "id": "S08",
+          "hidden": "1 day, each time",
+          "captured": "1 day, can loop if the hiring manager changes the must-haves",
+          "method": "judge",
+          "correct": false,
+          "reason": "The 1-day duration matches, but the frequency does not: “each time” differs from a possible conditional loop when must-haves change.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[3].exceptions",
+          "id": "S11",
+          "hidden": "the hiring manager rejects the shortlist and sends new must-haves",
+          "captured": "If the shortlist gets redone, it goes back to the hiring manager because the must-haves changed or were incomplete.",
+          "method": "judge",
+          "correct": false,
+          "reason": "HIDDEN says the hiring manager rejects the shortlist and provides new must-haves; CAPTURED says the redone shortlist returns to the manager due to changed/incomplete must-haves.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[3].decision_criteria",
+          "id": "S14",
+          "hidden": "the hiring manager's must-haves and the job ad - Hiring manager - partly - every hiring manager wants something different",
+          "captured": "experience against the manager’s must-haves - they differ for every hiring manager",
+          "method": "code",
+          "correct": false,
+          "reason": "written - vs partly",
+          "judge_error": false,
+          "invented": false
+        }
+      ]
+    },
+    {
+      "id": "p06-work-order-priority",
+      "version": 1,
+      "kind": "cooperative",
+      "status": "finished",
+      "error": "",
+      "quality": 0.7230769230769231,
+      "quality_code": 0.5384615384615384,
+      "correct": 47,
+      "total": 65,
+      "judged": 23,
+      "judge_errors": 0,
+      "invented_values": 0,
+      "proposed_at_finish": 0,
+      "min_conflicts": 0,
+      "labels": {
+        "cluster": true,
+        "scope": true,
+        "steering": true,
+        "fit_hits": 4,
+        "route_hits": 4,
+        "routed_steps": 4
+      },
+      "behaviour": {
+        "loops": 0,
+        "loop_keys": [],
+        "repeats": 0,
+        "turn_median_s": 4.19,
+        "turn_max_s": 8.63,
+        "finish_s": 43.86,
+        "fallbacks": 0,
+        "proposals_confirmed": 8,
+        "proposals_rejected": 0,
+        "conflicts": 0,
+        "stale_kept": 0,
+        "criteria_asked": 2,
+        "criteria_steps": 2,
+        "hours_steps_with_number": 4,
+        "hours_steps": 4,
+        "app": {
+          "tokens_in": 143980,
+          "tokens_out": 16613,
+          "calls": 57,
+          "cache_hits": 0,
+          "euros": 0.3461,
+          "deployments": [
+            "app-chat"
+          ]
+        },
+        "expert": {
+          "tokens_in": 70386,
+          "tokens_out": 711,
+          "calls": 26,
+          "cache_hits": 0,
+          "euros": 0.019,
+          "deployments": [
+            "eval-expert"
+          ]
+        },
+        "judge": {
+          "tokens_in": 9747,
+          "tokens_out": 1516,
+          "calls": 25,
+          "cache_hits": 0,
+          "euros": 0.0273,
+          "deployments": [
+            "app-chat"
+          ]
+        }
+      },
+      "efficiency": {
+        "messages": 26,
+        "messages_to_finish": 26,
+        "failed": false,
+        "efficiency": 1.81,
+        "wasted": 0,
+        "wasted_at": [],
+        "plateaus": []
+      },
+      "employee": {
+        "reading_s": 313.04347826086956,
+        "typing_s": 783.0,
+        "think_s": 168.0,
+        "upload_s": 0.0,
+        "agent_messages": 27,
+        "expert_messages": 26,
+        "agent_words": 1200,
+        "expert_words": 522,
+        "avg_expert_words": 20.1
+      },
+      "burden": {
+        "questions": 25,
+        "low_value": 2,
+        "low_value_keys": [
+          "process.target_metric",
+          "process.substeps[1].goal",
+          "process.substeps[1].owner",
+          "process.substeps[2].goal",
+          "process.substeps[2].owner",
+          "process.substeps[3].goal",
+          "process.substeps[3].owner",
+          "process.substeps[4].goal",
+          "process.substeps[4].owner"
+        ]
+      },
+      "split": {
+        "core_correct": 30,
+        "core_total": 40,
+        "rest_correct": 17,
+        "rest_total": 25
+      },
+      "time_target_min": 20.0,
+      "curve": [
+        {
+          "n": 1,
+          "quality": 0.0154,
+          "score": 0.0556,
+          "phase": "context"
+        },
+        {
+          "n": 2,
+          "quality": 0.0308,
+          "score": 0.1111,
+          "phase": "context"
+        },
+        {
+          "n": 3,
+          "quality": 0.0462,
+          "score": 0.1667,
+          "phase": "find"
+        },
+        {
+          "n": 4,
+          "quality": 0.0769,
+          "score": 0.3889,
+          "phase": "find"
+        },
+        {
+          "n": 5,
+          "quality": 0.0923,
+          "score": 0.4444,
+          "phase": "boundaries"
+        },
+        {
+          "n": 6,
+          "quality": 0.1077,
+          "score": 0.5,
+          "phase": "boundaries"
+        },
+        {
+          "n": 7,
+          "quality": 0.1385,
+          "score": 0.6111,
+          "phase": "boundaries"
+        },
+        {
+          "n": 8,
+          "quality": 0.1385,
+          "score": 0.6667,
+          "phase": "measure"
+        },
+        {
+          "n": 9,
+          "quality": 0.1538,
+          "score": 0.7222,
+          "phase": "measure"
+        },
+        {
+          "n": 10,
+          "quality": 0.1692,
+          "score": 0.8333,
+          "phase": "measure"
+        },
+        {
+          "n": 11,
+          "quality": 0.1846,
+          "score": 0.8889,
+          "phase": "measure"
+        },
+        {
+          "n": 12,
+          "quality": 0.2,
+          "score": 0.9444,
+          "phase": "step_count"
+        },
+        {
+          "n": 13,
+          "quality": 0.2769,
+          "score": 0.3333,
+          "phase": "steps"
+        },
+        {
+          "n": 14,
+          "quality": 0.3231,
+          "score": 0.3939,
+          "phase": "steps"
+        },
+        {
+          "n": 15,
+          "quality": 0.3846,
+          "score": 0.4242,
+          "phase": "steps"
+        },
+        {
+          "n": 16,
+          "quality": 0.4,
+          "score": 0.4545,
+          "phase": "steps"
+        },
+        {
+          "n": 17,
+          "quality": 0.4615,
+          "score": 0.5303,
+          "phase": "steps"
+        },
+        {
+          "n": 18,
+          "quality": 0.4923,
+          "score": 0.5455,
+          "phase": "steps"
+        },
+        {
+          "n": 19,
+          "quality": 0.5077,
+          "score": 0.5758,
+          "phase": "steps"
+        },
+        {
+          "n": 20,
+          "quality": 0.5692,
+          "score": 0.6515,
+          "phase": "steps"
+        },
+        {
+          "n": 21,
+          "quality": 0.6,
+          "score": 0.6667,
+          "phase": "steps"
+        },
+        {
+          "n": 22,
+          "quality": 0.6,
+          "score": 0.6875,
+          "phase": "steps"
+        },
+        {
+          "n": 23,
+          "quality": 0.6462,
+          "score": 0.7812,
+          "phase": "steps"
+        },
+        {
+          "n": 24,
+          "quality": 0.6615,
+          "score": 0.8095,
+          "phase": "steps"
+        },
+        {
+          "n": 25,
+          "quality": 0.7231,
+          "score": 0.873,
+          "phase": "review"
+        },
+        {
+          "n": 26,
+          "quality": 0.7231,
+          "score": 1.0,
+          "phase": "review"
+        }
+      ],
+      "wrong": [
+        {
+          "key": "process.volume",
+          "id": "P10",
+          "hidden": "1 per week",
+          "captured": "about 60 orders",
+          "method": "code",
+          "correct": false,
+          "reason": "3000 vs 50 runs a year",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.baseline_metric",
+          "id": "P12",
+          "hidden": "6 hours",
+          "captured": "takes most of Friday",
+          "method": "judge",
+          "correct": false,
+          "reason": "“Most of Friday” is qualitative and does not preserve the specific duration of 6 hours.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[1].pain_points",
+          "id": "S09",
+          "hidden": "orders phoned in are not in the system; so I type them in",
+          "captured": "sometimes I have to type them in because they are not in the system",
+          "method": "judge",
+          "correct": false,
+          "reason": "CAPTURED omits that the missing items are orders phoned in and adds 'sometimes,' changing the scope/frequency.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[1].exceptions",
+          "id": "S11",
+          "hidden": "the same fault is raised twice by two sites",
+          "captured": "phoned-in orders not being in the system, so I type those in",
+          "method": "judge",
+          "correct": false,
+          "reason": "They describe different exceptions: HIDDEN is the same fault raised twice by two sites; CAPTURED is missing phoned-in orders requiring manual entry.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[2].goal",
+          "id": "S02",
+          "hidden": "Every order has the asset, the fault and the parts needed",
+          "captured": "whether parts are available ready",
+          "method": "judge",
+          "correct": false,
+          "reason": "CAPTURED only addresses parts availability and omits the required asset and fault information for every order.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[2].data",
+          "id": "S07",
+          "hidden": "in: weekly order list; out: checked orders with parts status",
+          "captured": "in: asset history; stock status; fault description; out: whether parts are available",
+          "method": "judge",
+          "correct": false,
+          "reason": "The input differs: a weekly order list is not captured; asset history, stock status, and fault description are added. The output also omits checked orders.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[2].exceptions",
+          "id": "S11",
+          "hidden": "a part is out of stock and the order waits",
+          "captured": "none",
+          "method": "code",
+          "correct": false,
+          "reason": "none row on one side only",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[3].data",
+          "id": "S07",
+          "hidden": "in: checked orders with parts status; out: ranked order list",
+          "captured": "in: safety; water quality; cost of downtime; out: a ranked order list, with priority 1 to 4",
+          "method": "judge",
+          "correct": false,
+          "reason": "The output matches, with an added ranking scale, but the input is different: checked orders with parts status vs safety, water quality, and downtime cost.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[3].pain_points",
+          "id": "S09",
+          "hidden": "every site manager says their orders are urgent; so I spend the time arguing",
+          "captured": "every site manager says theirs is urgent",
+          "method": "judge",
+          "correct": false,
+          "reason": "CAPTURED omits the key pain point that the expert spends time arguing about the claimed urgency.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[3].exceptions",
+          "id": "S11",
+          "hidden": "a safety fault comes in on Friday afternoon and the ranking is redone",
+          "captured": "",
+          "method": "missing",
+          "correct": false,
+          "reason": "not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[3].decision_criteria",
+          "id": "S14",
+          "hidden": "safety - Maintenance planner - partly - each site manager has their own idea of what is urgent",
+          "captured": "The priority is mostly based on safety, plus water quality and downtime cost - Maintenance planner - in practice each site manager has their own idea of urgency",
+          "method": "code",
+          "correct": false,
+          "reason": "written - vs partly",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[4].goal",
+          "id": "S02",
+          "hidden": "Every priority 1 and 2 order has a crew and a day",
+          "captured": "work list ready",
+          "method": "judge",
+          "correct": false,
+          "reason": "“Work list ready” omits the key result that every priority 1 and 2 order is assigned both a crew and a day.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[4].activities",
+          "id": "S03",
+          "hidden": "check crew availability; assign orders to crews; send the work list to the crew supervisors",
+          "captured": "check crew availability; assign the priority 1 and 2 orders; send the work list to the crew supervisors",
+          "method": "judge",
+          "correct": false,
+          "reason": "CAPTURED limits assignment to priority 1 and 2 orders, while HIDDEN says all orders; this changes the scope of the activity.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[4].data",
+          "id": "S07",
+          "hidden": "in: ranked order list; crew roster; out: weekly work list",
+          "captured": "in: crew availability; priority 1 and 2 orders; out: work list",
+          "method": "judge",
+          "correct": false,
+          "reason": "Captured narrows the ranked order list to priority 1 and 2 orders and omits that the output work list is weekly.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[4].pain_points",
+          "id": "S09",
+          "hidden": "the crew roster is in a separate spreadsheet that is often out of date",
+          "captured": "the roster is often out of date",
+          "method": "judge",
+          "correct": false,
+          "reason": "It captures that the roster is often out of date but omits that it is kept in a separate spreadsheet.",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[4].approvals",
+          "id": "S10",
+          "hidden": "Maintenance manager",
+          "captured": "",
+          "method": "missing",
+          "correct": false,
+          "reason": "not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[4].exceptions",
+          "id": "S11",
+          "hidden": "none",
+          "captured": "",
+          "method": "missing",
+          "correct": false,
+          "reason": "not captured",
+          "judge_error": false,
+          "invented": false
+        },
+        {
+          "key": "process.substeps[4].decision_type",
+          "id": "S13",
+          "hidden": "mix - priority decides the order, but who goes where I judge from experience",
+          "captured": "judgement - the roster is often out of date, so I judge from experience",
+          "method": "code",
+          "correct": false,
+          "reason": "kind judgement vs mix",
+          "judge_error": false,
+          "invented": false
+        }
+      ]
+    }
+  ],
+  "pooled_quality": 0.7462311557788944,
+  "pooled_quality_code": 0.5577889447236181,
+  "pooled_messages": 172,
+  "mean_minutes": 22.5,
+  "pooled_burden": 0.09036144578313253,
+  "pooled_core_quality": 0.7459677419354839,
+  "app_euros_per_finished": 0.3845,
+  "targets": [
+    {
+      "persona": "p01-cooperative",
+      "name": "employee time (min)",
+      "value": "24.4",
+      "target": "≤ 20",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "detail burden",
+      "value": "12%",
+      "target": "≤ 15%",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "Tier A + core quality",
+      "value": "94%",
+      "target": "≥ 85%",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "step fit",
+      "value": "100%",
+      "target": "≥ 70%",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "step route",
+      "value": "100%",
+      "target": "≥ 70%",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "session finished (safety net 80)",
+      "value": "finished",
+      "target": "finished",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "wasted turns",
+      "value": "0",
+      "target": "≤ 3",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "plateaus",
+      "value": "0",
+      "target": "0 (flag)",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "loops",
+      "value": "0",
+      "target": "0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "repeated questions",
+      "value": "0",
+      "target": "≤ 2",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "invented values",
+      "value": "0",
+      "target": "0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "stale kept",
+      "value": "0",
+      "target": "0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "criteria asked",
+      "value": "100%",
+      "target": "100%",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "hours computed",
+      "value": "100%",
+      "target": "100%",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "conflicts",
+      "value": "0",
+      "target": "≥ 0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "turn time median (s)",
+      "value": "4.23",
+      "target": "< 10",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "turn time max (s)",
+      "value": "7.92",
+      "target": "< 150",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "Finish time (s)",
+      "value": "43.69",
+      "target": "< 30",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "app cost per session (€)",
+      "value": "0.3893",
+      "target": "< 0.50",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "cluster",
+      "value": "True",
+      "target": "hit",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "scope",
+      "value": "True",
+      "target": "hit",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p01-cooperative",
+      "name": "steering",
+      "value": "True",
+      "target": "hit",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "employee time (min)",
+      "value": "22.7",
+      "target": "≤ 20",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "detail burden",
+      "value": "10%",
+      "target": "≤ 15%",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "step fit",
+      "value": "100%",
+      "target": "≥ 70%",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "step route",
+      "value": "100%",
+      "target": "≥ 70%",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "session finished (safety net 80)",
+      "value": "finished",
+      "target": "finished",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "wasted turns",
+      "value": "1",
+      "target": "≤ 3",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "plateaus",
+      "value": "0",
+      "target": "0 (flag)",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "loops",
+      "value": "0",
+      "target": "0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "repeated questions",
+      "value": "0",
+      "target": "≤ 2",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "invented values",
+      "value": "4",
+      "target": "0",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "stale kept",
+      "value": "0",
+      "target": "0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "criteria asked",
+      "value": "100%",
+      "target": "100%",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "hours computed",
+      "value": "n/a",
+      "target": "100%",
+      "status": "n/a",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "conflicts",
+      "value": "0",
+      "target": "≥ 0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "turn time median (s)",
+      "value": "3.92",
+      "target": "< 10",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "turn time max (s)",
+      "value": "6.45",
+      "target": "< 150",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "Finish time (s)",
+      "value": "36.94",
+      "target": "< 30",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "app cost per session (€)",
+      "value": "0.3656",
+      "target": "< 0.50",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "cluster",
+      "value": "True",
+      "target": "hit",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "scope",
+      "value": "True",
+      "target": "hit",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p02-vague",
+      "name": "steering",
+      "value": "True",
+      "target": "hit",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p03-task-mixed-week",
+      "name": "employee time (min)",
+      "value": "19.6",
+      "target": "≤ 20",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p03-task-mixed-week",
+      "name": "detail burden",
+      "value": "6%",
+      "target": "≤ 15%",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p03-task-mixed-week",
+      "name": "step fit",
+      "value": "100%",
+      "target": "≥ 70%",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p03-task-mixed-week",
+      "name": "step route",
+      "value": "100%",
+      "target": "≥ 70%",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p03-task-mixed-week",
+      "name": "session finished (safety net 80)",
+      "value": "finished",
+      "target": "finished",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p03-task-mixed-week",
+      "name": "wasted turns",
+      "value": "4",
+      "target": "≤ 3",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p03-task-mixed-week",
+      "name": "plateaus",
+      "value": "1",
+      "target": "0 (flag)",
+      "status": "flag",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p03-task-mixed-week",
+      "name": "loops",
+      "value": "0",
+      "target": "0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p03-task-mixed-week",
+      "name": "repeated questions",
+      "value": "0",
+      "target": "≤ 2",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p03-task-mixed-week",
+      "name": "invented values",
+      "value": "0",
+      "target": "0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p03-task-mixed-week",
+      "name": "stale kept",
+      "value": "0",
+      "target": "0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p03-task-mixed-week",
+      "name": "criteria asked",
+      "value": "n/a",
+      "target": "100%",
+      "status": "n/a",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p03-task-mixed-week",
+      "name": "hours computed",
+      "value": "100%",
+      "target": "100%",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p03-task-mixed-week",
+      "name": "conflicts",
+      "value": "0",
+      "target": "≥ 0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p03-task-mixed-week",
+      "name": "turn time median (s)",
+      "value": "3.86",
+      "target": "< 10",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p03-task-mixed-week",
+      "name": "turn time max (s)",
+      "value": "5.87",
+      "target": "< 150",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p03-task-mixed-week",
+      "name": "Finish time (s)",
+      "value": "34.09",
+      "target": "< 30",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p03-task-mixed-week",
+      "name": "app cost per session (€)",
+      "value": "0.3438",
+      "target": "< 0.50",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p03-task-mixed-week",
+      "name": "cluster",
+      "value": "True",
+      "target": "hit",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p03-task-mixed-week",
+      "name": "scope",
+      "value": "True",
+      "target": "hit",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p03-task-mixed-week",
+      "name": "steering",
+      "value": "False",
+      "target": "hit",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p04-stale-document",
+      "name": "employee time (min)",
+      "value": "24.1",
+      "target": "≤ 20",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p04-stale-document",
+      "name": "detail burden",
+      "value": "7%",
+      "target": "≤ 15%",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p04-stale-document",
+      "name": "Tier A + core quality",
+      "value": "54%",
+      "target": "≥ 85%",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p04-stale-document",
+      "name": "step fit",
+      "value": "67%",
+      "target": "≥ 70%",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p04-stale-document",
+      "name": "step route",
+      "value": "67%",
+      "target": "≥ 70%",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p04-stale-document",
+      "name": "session finished (safety net 80)",
+      "value": "finished",
+      "target": "finished",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p04-stale-document",
+      "name": "wasted turns",
+      "value": "1",
+      "target": "≤ 3",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p04-stale-document",
+      "name": "plateaus",
+      "value": "0",
+      "target": "0 (flag)",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p04-stale-document",
+      "name": "loops",
+      "value": "0",
+      "target": "0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p04-stale-document",
+      "name": "repeated questions",
+      "value": "0",
+      "target": "≤ 2",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p04-stale-document",
+      "name": "invented values",
+      "value": "0",
+      "target": "0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p04-stale-document",
+      "name": "stale kept",
+      "value": "0",
+      "target": "0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p04-stale-document",
+      "name": "criteria asked",
+      "value": "100%",
+      "target": "100%",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p04-stale-document",
+      "name": "hours computed",
+      "value": "100%",
+      "target": "100%",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p04-stale-document",
+      "name": "conflicts",
+      "value": "0",
+      "target": "≥ 1",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p04-stale-document",
+      "name": "turn time median (s)",
+      "value": "4.13",
+      "target": "< 10",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p04-stale-document",
+      "name": "turn time max (s)",
+      "value": "17.12",
+      "target": "< 150",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p04-stale-document",
+      "name": "Finish time (s)",
+      "value": "47.82",
+      "target": "< 30",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p04-stale-document",
+      "name": "app cost per session (€)",
+      "value": "0.4967",
+      "target": "< 0.50",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p04-stale-document",
+      "name": "cluster",
+      "value": "True",
+      "target": "hit",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p04-stale-document",
+      "name": "scope",
+      "value": "True",
+      "target": "hit",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p04-stale-document",
+      "name": "steering",
+      "value": "True",
+      "target": "hit",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p05-cv-screening",
+      "name": "employee time (min)",
+      "value": "23.3",
+      "target": "≤ 20",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p05-cv-screening",
+      "name": "detail burden",
+      "value": "12%",
+      "target": "≤ 15%",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p05-cv-screening",
+      "name": "Tier A + core quality",
+      "value": "72%",
+      "target": "≥ 85%",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p05-cv-screening",
+      "name": "step fit",
+      "value": "67%",
+      "target": "≥ 70%",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p05-cv-screening",
+      "name": "step route",
+      "value": "67%",
+      "target": "≥ 70%",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p05-cv-screening",
+      "name": "session finished (safety net 80)",
+      "value": "finished",
+      "target": "finished",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p05-cv-screening",
+      "name": "wasted turns",
+      "value": "0",
+      "target": "≤ 3",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p05-cv-screening",
+      "name": "plateaus",
+      "value": "0",
+      "target": "0 (flag)",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p05-cv-screening",
+      "name": "loops",
+      "value": "0",
+      "target": "0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p05-cv-screening",
+      "name": "repeated questions",
+      "value": "0",
+      "target": "≤ 2",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p05-cv-screening",
+      "name": "invented values",
+      "value": "0",
+      "target": "0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p05-cv-screening",
+      "name": "stale kept",
+      "value": "0",
+      "target": "0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p05-cv-screening",
+      "name": "criteria asked",
+      "value": "0%",
+      "target": "100%",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p05-cv-screening",
+      "name": "hours computed",
+      "value": "50%",
+      "target": "100%",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p05-cv-screening",
+      "name": "conflicts",
+      "value": "0",
+      "target": "≥ 0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p05-cv-screening",
+      "name": "turn time median (s)",
+      "value": "4.6",
+      "target": "< 10",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p05-cv-screening",
+      "name": "turn time max (s)",
+      "value": "8.85",
+      "target": "< 150",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p05-cv-screening",
+      "name": "Finish time (s)",
+      "value": "33.94",
+      "target": "< 30",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p05-cv-screening",
+      "name": "app cost per session (€)",
+      "value": "0.3653",
+      "target": "< 0.50",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p05-cv-screening",
+      "name": "cluster",
+      "value": "True",
+      "target": "hit",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p05-cv-screening",
+      "name": "scope",
+      "value": "True",
+      "target": "hit",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p05-cv-screening",
+      "name": "steering",
+      "value": "True",
+      "target": "hit",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p06-work-order-priority",
+      "name": "employee time (min)",
+      "value": "21.1",
+      "target": "≤ 20",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p06-work-order-priority",
+      "name": "detail burden",
+      "value": "8%",
+      "target": "≤ 15%",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p06-work-order-priority",
+      "name": "Tier A + core quality",
+      "value": "75%",
+      "target": "≥ 85%",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p06-work-order-priority",
+      "name": "step fit",
+      "value": "100%",
+      "target": "≥ 70%",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p06-work-order-priority",
+      "name": "step route",
+      "value": "100%",
+      "target": "≥ 70%",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p06-work-order-priority",
+      "name": "session finished (safety net 80)",
+      "value": "finished",
+      "target": "finished",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p06-work-order-priority",
+      "name": "wasted turns",
+      "value": "0",
+      "target": "≤ 3",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p06-work-order-priority",
+      "name": "plateaus",
+      "value": "0",
+      "target": "0 (flag)",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p06-work-order-priority",
+      "name": "loops",
+      "value": "0",
+      "target": "0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p06-work-order-priority",
+      "name": "repeated questions",
+      "value": "0",
+      "target": "≤ 2",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p06-work-order-priority",
+      "name": "invented values",
+      "value": "0",
+      "target": "0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p06-work-order-priority",
+      "name": "stale kept",
+      "value": "0",
+      "target": "0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p06-work-order-priority",
+      "name": "criteria asked",
+      "value": "100%",
+      "target": "100%",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p06-work-order-priority",
+      "name": "hours computed",
+      "value": "100%",
+      "target": "100%",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p06-work-order-priority",
+      "name": "conflicts",
+      "value": "0",
+      "target": "≥ 0",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p06-work-order-priority",
+      "name": "turn time median (s)",
+      "value": "4.19",
+      "target": "< 10",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p06-work-order-priority",
+      "name": "turn time max (s)",
+      "value": "8.63",
+      "target": "< 150",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p06-work-order-priority",
+      "name": "Finish time (s)",
+      "value": "43.86",
+      "target": "< 30",
+      "status": "✗",
+      "fails": true,
+      "delta": ""
+    },
+    {
+      "persona": "p06-work-order-priority",
+      "name": "app cost per session (€)",
+      "value": "0.3461",
+      "target": "< 0.50",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p06-work-order-priority",
+      "name": "cluster",
+      "value": "True",
+      "target": "hit",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p06-work-order-priority",
+      "name": "scope",
+      "value": "True",
+      "target": "hit",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    },
+    {
+      "persona": "p06-work-order-priority",
+      "name": "steering",
+      "value": "True",
+      "target": "hit",
+      "status": "✓",
+      "fails": false,
+      "delta": ""
+    }
+  ],
+  "worst": [
+    {
+      "persona": "p01-cooperative",
+      "key": "process.substeps[1].systems",
+      "hidden": "Ledger system; E-mail",
+      "captured": "ledger system; Excel",
+      "method": "code",
+      "reason": "'E-mail' not captured"
+    },
+    {
+      "persona": "p01-cooperative",
+      "key": "process.substeps[2].goal",
+      "hidden": "One workbook with every cost centre on the same structure",
+      "captured": "consolidated cost workbook ready",
+      "method": "judge",
+      "reason": "“Consolidated cost workbook” does not specify that every cost centre is included using the same structure."
+    },
+    {
+      "persona": "p01-cooperative",
+      "key": "process.substeps[3].goal",
+      "hidden": "Every cost centre variance above the threshold is flagged",
+      "captured": "variances above 5 percent; draft questions for the sites ready",
+      "method": "judge",
+      "reason": "CAPTURED does not state that every cost centre variance is flagged and adds a separate outcome: draft questions for sites are ready."
+    },
+    {
+      "persona": "p01-cooperative",
+      "key": "process.substeps[3].data",
+      "hidden": "in: consolidated cost workbook; budget; out: variance list with questions",
+      "captured": "in: actuals; budget file; out: variances above 5 percent; draft questions for the sites",
+      "method": "judge",
+      "reason": "CAPTURED changes the input to actuals rather than a consolidated cost workbook and restricts the output to variances above 5%, a key condition absent from HIDDEN."
+    },
+    {
+      "persona": "p01-cooperative",
+      "key": "process.substeps[3].exceptions",
+      "hidden": "none",
+      "captured": "If codes mismatch, I correct them in Excel.",
+      "method": "code",
+      "reason": "none row on one side only"
+    },
+    {
+      "persona": "p01-cooperative",
+      "key": "process.substeps[4].systems",
+      "hidden": "E-mail; Excel",
+      "captured": "Excel",
+      "method": "code",
+      "reason": "'E-mail' not captured"
+    },
+    {
+      "persona": "p02-vague",
+      "key": "process.substeps[1].effort",
+      "hidden": "3 minutes, each time",
+      "captured": "it depends. I don’t track step times., each time",
+      "method": "never",
+      "reason": "a number was invented"
+    },
+    {
+      "persona": "p02-vague",
+      "key": "process.substeps[1].decision_type",
+      "hidden": "judgement - you have to read it and get a feel for what the user really means",
+      "captured": "mix - a mix of judgement and a bit of reading between the lines",
+      "method": "code",
+      "reason": "kind mix vs judgement"
+    },
+    {
+      "persona": "p02-vague",
+      "key": "process.substeps[2].goal",
+      "hidden": "The ticket has the right category and priority",
+      "captured": "categorised ticket",
+      "method": "judge",
+      "reason": "CAPTURED includes ticket categorisation but omits the required correct priority."
+    },
+    {
+      "persona": "p02-vague",
+      "key": "process.substeps[2].activities",
+      "hidden": "pick the category; set the priority from the priority matrix",
+      "captured": "picking the category; picking the priority",
+      "method": "judge",
+      "reason": "Both include category and priority selection, but CAPTURED omits the key requirement that priority is set using the priority matrix."
+    }
+  ],
+  "deltas": {}
+}

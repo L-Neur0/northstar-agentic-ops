@@ -15,6 +15,7 @@
 | Languages | English demo, yes/no words in EN/DE | Tested interviews in each NIG language, translated reports | M per language |
 | Operations | The author | A named product owner (AI transformation team), an engineering owner, on-call within IT's platform team | People |
 | Integrations | None | Launch from Teams/intranet; export reports to NIG's BPM tool; push briefs to the engineering backlog | S each |
+| Data sources | The interview and uploaded documents | Connect to the Microsoft 365 environment (Microsoft Graph, Work IQ) with the employee's consent: Teams meeting transcripts, process documents and files on SharePoint, to pre-fill the map and validate it | M |
 
 *S = days, M = 2–4 weeks, L = a quarter, for one engineer.* Rough total: **about one quarter with two engineers** (the €100k build in the use case, §2.1.6), with language testing and a security review; the data-protection agreements run in parallel and are the real critical path, not the code.
 
@@ -62,7 +63,15 @@
 - Cost dashboard per session and per cluster from the turn and artefact logs.
 - Re-check that the small model is still enough per language.
 
-## 7. Ownership
+## 7. Richer evidence from Microsoft 365
+
+Today the agent learns only from the interview and the documents the employee uploads. In production it can connect to the company's Microsoft 365 environment through Microsoft Graph and Work IQ, always with the employee's consent and within the company's data rules. Teams meeting transcripts, process documents and files on SharePoint then pre-fill the map before the interview starts, so the employee confirms instead of describing, and they give the specialists independent evidence to validate the use case. The same rule applies as for uploads: everything read from these sources is a proposal with a quote until the employee confirms it.
+
+## 8. Why this scales
+
+Without the agent, every use case has to be found, mapped and validated by an AI specialist in conversation with the people who do the work, so discovery is limited by the time and size of the specialist team. The agent runs these interviews for every employee at the same time and hands the specialists finished, comparable reports. The specialists' time moves from collecting to reviewing and deciding, which is what lets discovery grow from a few workshops to the whole company.
+
+## 9. Ownership
 
 | Role | Owns |
 |---|---|

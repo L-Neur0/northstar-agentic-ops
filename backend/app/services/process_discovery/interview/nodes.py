@@ -20,11 +20,16 @@ AC-14.66, AC-14.72, AC-14.74, AC-14.75, AC-14.78. Amendment §3.17: a conflict r
 (step 2), a clear choice drops EXTRACT's writes to the group's fields and is written by
 `resolve_conflicts` (step 8b), the asks are charged and a conflict at its limit is left (10, 10b),
 and a conflict turn's question is built by code without GUIDE (AC-14.92, AC-14.97 to AC-14.99).
+Amendment §3.19 (short step walk): Tier C is proposed by code after the cell limits (step 11b), a "no"
+to agent proposals clears and skips them, and a group ask gets a code-built group question as its
+fallback (AC-14.112, AC-14.113, AC-14.115).
 """
 
 from __future__ import annotations
 
 import asyncio
+import json
+import re
 import time
 import uuid
 from collections.abc import Awaitable, Callable, Mapping
@@ -34,7 +39,19 @@ from pydantic import BaseModel, ConfigDict
 
 from app.utils.prompt_safety import contains_injection_pattern
 
-from ..domain.field_spec import PHASE_FIND, PROFILE_SPECS, Vocabulary
+from ..domain.field_spec import (
+    GROUP_B,
+    GROUP_EFFORT,
+    GROUP_NAMES,
+    MAX_STEPS,
+    NONE_KEY,
+    PHASE_FIND,
+    PHASE_REVIEW,
+    PHASE_STEPS,
+    PROFILE_SPECS,
+    Vocabulary,
+    step_cell_key,
+)
 from ..domain.scope import (
     SIGNAL_QUESTIONS,
     build_placement,
@@ -48,6 +65,7 @@ from ..domain.scope import (
 from ..llm import LLM, CallType, ChatMessage, LLMBudgetExceededError, LLMError
 from ..profile.coercion import coerce_text
 from ..profile.conflicts import ConflictView, mark_conflicts_left, open_conflicts, resolve_conflicts
+from ..profile.inferred import decline_agent_proposals, is_agent_proposal, propose_tier_c
 from ..profile.mutate import (
     UnknownClusterError,
     allowed_changes,
@@ -60,11 +78,27 @@ from ..profile.mutate import (
 )
 from ..profile.proposals import confirm_proposals, proposed_keys, reject_proposals
 from ..profile.scoring import FinishCheck, finish_check, score
-from ..profile.shapes import as_list, as_mapping, normalized_profile, process_of, resolve_key, rows_of, stored_value
-from ..profile.verdicts import P16_KEY, field_counts
+from ..profile.shapes import (
+    as_list,
+    as_mapping,
+    normalized_profile,
+    parse_step_key,
+    process_of,
+    resolve_key,
+    rows_of,
+    stored_value,
+)
+from ..profile.verdicts import ASSUMED_FREQUENCY, P16_KEY, field_counts, volume_words
 from .conflict_question import both_offered, conflict_question
 from .finish_offer import with_finish_offer
-from .gates import apply_scope_verdict, classification_subject, current_name, needs_placement, needs_scope
+from .gates import (
+    apply_scope_verdict,
+    classification_subject,
+    current_name,
+    needs_placement,
+    needs_scope,
+    refresh_scope,
+)
 from .phases import (
     advance_phase,
     ask_count,
@@ -87,8 +121,10 @@ from .prompts.steering_text import pick_fallback, recommend_fallback, steer_fall
 from .replies import (
     Choice,
     last_agent_message,
+    mentions,
     read_cluster_reply,
     read_conflict_reply,
+    read_offer_reply,
     read_proposal_reply,
     read_recommendation_reply,
     read_rollup_reply,
@@ -105,6 +141,7 @@ from .steering import (
 from .types import Ask, InterviewContext, TurnState
 
 GUIDE_RESERVE_SECONDS = 30
+VARIATION_KEY = "process.variation"
 NAME_KEY = "process.name"
 MIN_SHARE_SECONDS = 1.0
 IDEAS_MAX = 5
@@ -246,6 +283,7 @@ async def extract_node(state: TurnState, llm: LLM, ctx: InterviewContext) -> dic
     conflict_keys = [k for k in as_list(question.get("conflicts")) or [] if isinstance(k, str)]
     group = [v for v in open_conflicts(profile, status="open") if v.conflict_key in conflict_keys]
     choice = _conflict_choice(state, text, profile, group) if text and group else None
+    offer_verdict, offered = read_offer_reply(state, text, lexicon=ctx.lexicon) if text else (None, {})
 
     # 3. the model call
     raw: dict[str, Any] = {}
@@ -287,12 +325,44 @@ async def extract_node(state: TurnState, llm: LLM, ctx: InterviewContext) -> dic
     side_keys = ("candidates", "candidate_signals")
     dropped = [*unknown_change_keys(raw), *(k for k in raw if k not in allowed and k not in side_keys)]
 
+    # 4b. a process name that is an offered candidate the reply did not pick is dropped (§3.20 O2)
+    if text and _unpicked_offer(screened, offered, text, ctx):
+        screened = _without_fields(screened, {NAME_KEY})
+        dropped.append(f"{NAME_KEY}(unpicked_offer)")
+
     # 5. apply (a clear conflict choice is the answer: EXTRACT's writes to those fields are dropped, §3.17)
     if choice is not None:
         screened = _without_fields(screened, {v.key for v in group})
     result = apply_changes(profile, screened, vocab=vocab, at=now)
     profile = result.profile
     dropped += [f"{k}({r})" for k, r in result.refused] + [f"{k}(injection)" for k in injected]
+
+    # 5a. durations answered on the effort question take the assumed frequency (§3.21 P3)
+    assumed = _assumed_frequencies(profile, offered, set(result.written)) if text else {}
+    if assumed:
+        quote = f"{text} (accepted the agent's assumption)"
+        profile = apply_changes(profile, assumed, vocab=vocab, at=now, quote=quote).profile
+    offered = {k: v for k, v in offered.items() if not k.endswith(".effort")}
+
+    # 5b. a yes to the values the last question offered writes them as the expert's answer (§3.20 O6)
+    accepted: list[str] = []
+    if offer_verdict == "yes":
+        taken = _accepted_offer(profile, offered, set(result.written), vocab=vocab)
+        quote = f"{text} (accepted the agent's suggestion)"
+        offer_result = apply_changes(profile, taken, vocab=vocab, at=now, quote=quote)
+        profile, accepted = offer_result.profile, offer_result.written
+    # 5b'. a plain yes to the two quick yes/no questions is a yes to "the same everywhere" (§3.20 O11);
+    # a bare yes to sensitive data names nothing, so the next question asks which (with examples, O5)
+    focus = [k for k in as_list(question.get("focus")) or [] if isinstance(k, str)]
+    # (EXTRACT may copy the whole sentence into `same`, which is then invalid: code reads the reply instead)
+    if text and VARIATION_KEY in focus and not field_counts(profile, VARIATION_KEY, vocab=vocab):
+        if ctx.lexicon.says_same(text):
+            profile = apply_changes(profile, {VARIATION_KEY: {"same": "yes"}}, vocab=vocab, at=now).profile
+    # 5c. a plain no to the optional step question settles approvals and exceptions with the none row (§3.20 O8)
+    if text and ctx.lexicon.is_no(text):
+        nones = {k: [{NONE_KEY: True}] for k in _optional_none_keys(question) if k not in result.written}
+        if nones:
+            profile = apply_changes(profile, nones, vocab=vocab, at=now).profile
 
     # 6. ideas and steering (find only): candidates and their signals; a yes to the recommendation names it
     steering = steering_in
@@ -334,8 +404,14 @@ async def extract_node(state: TurnState, llm: LLM, ctx: InterviewContext) -> dic
         done = confirm_proposals(profile, waiting, vocab=vocab, at=now)
         profile, confirmed = done.profile, done.written
     elif proposal_verdict == "no" and waiting:
-        done = reject_proposals(profile, waiting, vocab=vocab, at=now)
-        profile, rejected = done.profile, done.written
+        agent = [k for k in waiting if is_agent_proposal(profile, k)]  # §3.19 W8: cleared and skipped
+        others = [k for k in waiting if k not in agent]
+        if agent:
+            profile = decline_agent_proposals(profile, agent)
+            rejected += agent
+        if others:
+            done = reject_proposals(profile, others, vocab=vocab, at=now)
+            profile, rejected = done.profile, [*rejected, *done.written]
 
     # 8b. conflict choice (§3.17 item 5)
     if choice is not None:
@@ -363,6 +439,8 @@ async def extract_node(state: TurnState, llm: LLM, ctx: InterviewContext) -> dic
         profile = apply_changes(profile, none_rows, vocab=vocab, at=now).profile
     if skips:
         profile = mark_cells_skipped(profile, skips, vocab=vocab)
+    # 11b. Tier C is proposed by code, never asked (§3.19 W6)
+    profile = propose_tier_c(profile, vocab=vocab, at=now)
 
     # 12. a deferred step count is assumed the same turn
     assumed = False
@@ -390,6 +468,9 @@ async def extract_node(state: TurnState, llm: LLM, ctx: InterviewContext) -> dic
         )
     name = str(process_of(profile).get("name") or "") if field_counts(profile, NAME_KEY, vocab=vocab) else ""
     ideas = changed_ideas(steering_in, steering, name) if prior_phase == PHASE_FIND else []
+    # 13b. once the walk has started, the mapped steps refresh the scope verdict (§3.21 P6)
+    scope_in = as_mapping(state.get("scope")) or {}
+    scope_out = refresh_scope(scope_in, profile) if phase in (PHASE_STEPS, PHASE_REVIEW) else dict(scope_in)
 
     # 14. log fields (keys, counts and codes only)
     log.update(
@@ -400,6 +481,8 @@ async def extract_node(state: TurnState, llm: LLM, ctx: InterviewContext) -> dic
             f"{k}({'+'.join(v.missing) or v.status})" for k, v in result.verdicts.items() if not v.is_complete
         ),
         proposals_confirmed=confirmed,
+        offer=offer_verdict,
+        offer_accepted=accepted,
         proposals_rejected=rejected,
         rollups_confirmed=list(targets),
         escapes=sorted([*none_rows, *skips]),
@@ -422,8 +505,49 @@ async def extract_node(state: TurnState, llm: LLM, ctx: InterviewContext) -> dic
         "user_input": "",
         "ideas": ideas,
         "steering": steering,
+        "scope": scope_out,
         "log": log,
     }
+
+
+def _accepted_offer(
+    profile: Mapping[str, Any], offered: Mapping[str, Any], written: set[str], *, vocab: Vocabulary
+) -> dict[str, Any]:
+    """The offered values to write: those EXTRACT did not write this turn (a correction wins); offered step
+    names with no counting P16 also set the count to the number of names."""
+    taken = {k: v for k, v in offered.items() if (a := resolve_key(k)) is not None and a.key not in written}
+    name = taken.pop(NAME_KEY, None)
+    names = [n for n in (as_list(name) or [name]) if isinstance(n, str) and n.strip()]
+    if len(names) == 1:  # several suggested candidates: "the first one" is resolved by EXTRACT, never by code
+        taken[NAME_KEY] = names[0]
+    names = [parse_step_key(k) for k in taken if k.endswith(".name")]
+    indexes = [n[0] for n in names if n is not None]
+    if indexes and not field_counts(profile, P16_KEY, vocab=vocab) and P16_KEY not in written:
+        taken = {P16_KEY: max(indexes), **taken}
+    return taken
+
+
+def _unpicked_offer(changes: Mapping[str, Any], offered: Mapping[str, Any], text: str, ctx: InterviewContext) -> bool:
+    """EXTRACT named the process with an offered candidate that the expert did not pick: a yes, a pick
+    ("the second one") or the name itself in the reply. Their own words are the name, never our offer."""
+    candidates = [c for c in (as_list(offered.get(NAME_KEY)) or [offered.get(NAME_KEY)]) if isinstance(c, str)]
+    nested = as_mapping(changes.get("process")) or {}
+    name = changes.get(NAME_KEY, nested.get("name"))
+    if not isinstance(name, str) or name.strip().casefold() not in {c.strip().casefold() for c in candidates}:
+        return False
+    lexicon = ctx.lexicon
+    return not (lexicon.accepts(text) or lexicon.picks(text) or mentions(text, name.strip()))
+
+
+def _optional_none_keys(question: Mapping[str, Any]) -> list[str]:
+    """The asked approvals and exceptions cells of the optional step question (group B)."""
+    out: list[str] = []
+    for key in as_list(question.get("focus")) or []:
+        address = resolve_key(key) if isinstance(key, str) else None
+        if address is not None and address.step is not None and address.spec.group == GROUP_B:
+            if address.spec.key in ("approvals", "exceptions"):
+                out.append(address.key)
+    return out
 
 
 def _conflict_choice(
@@ -554,9 +678,12 @@ def fallback_question(
     vocab: Vocabulary,
     process_name: str,
     images: frozenset[str] = frozenset(),
+    counters: Mapping[str, Any] | None = None,
 ) -> str:
     """A plain question built by code from the ask target; never mentions a failure, never "noted"."""
     p = normalized_profile(profile)
+    if ask.kind in ("field", "cell") and len(ask.keys) > 1:
+        return group_fallback(ask, p, vocab=vocab, counters=counters)
     if ask.kind in ("field", "cell") and ask.keys:
         address = resolve_key(ask.keys[0])
         if address is not None:
@@ -566,6 +693,12 @@ def fallback_question(
                 name = str(rows[address.step - 1].get("name") or "").strip() if address.step <= len(rows) else ""
                 return f"For step {address.step}{', ' + name if name else ''}: {question}"
             return question
+    if ask.kind == "proposals" and ask.keys and all(is_agent_proposal(p, k) for k in ask.keys):
+        parts = [f"{_step_label(k, vocab)}: {text_value(stored_value(p, k))}" for k in ask.keys]
+        return (
+            f"I filled these in from your answers: {'; '.join(parts)}. Is that right? Say yes, or tell me what is "
+            "different."
+        )
     if ask.kind == "proposals" and ask.keys:
         parts = [f"{_label(k, vocab)}: {text_value(stored_value(p, k))}" for k in ask.keys]
         lead = (
@@ -593,6 +726,60 @@ def fallback_question(
     if labels:
         return f"We still need: {', '.join(labels)}. Could you tell me about {labels[0].lower()}?"
     return "Is there anything you would like to add or correct?"
+
+
+def _step_label(key: str, vocab: Vocabulary) -> str:
+    address = resolve_key(key)
+    if address is None:
+        return key
+    label = vocab.label(address.spec)
+    return f"{label} (step {address.step})" if address.step is not None else label
+
+
+def _parts(keys: tuple[str, ...]) -> str:
+    """The `ask_part` phrases of the keys, joined as one sentence: "a, b and c"."""
+    parts = [a.spec.ask_part or a.spec.label.lower() for a in (resolve_key(k) for k in keys) if a is not None]
+    parts = list(dict.fromkeys(parts))
+    if len(parts) <= 1:
+        return "".join(parts)
+    return ", ".join(parts[:-1]) + ", and " + parts[-1]
+
+
+def group_fallback(
+    ask: Ask, profile: Mapping[str, Any], *, vocab: Vocabulary, counters: Mapping[str, Any] | None = None
+) -> str:
+    """The code-built question for a group ask (§3.19 W11), from the registry's `ask_part` phrases."""
+    first = resolve_key(ask.keys[0])
+    if first is None:
+        return "Could you tell me more?"
+    if first.step is None:
+        return f"Could you tell me {_parts(ask.keys)}?"
+    rows = rows_of(profile)
+    steps = sorted({a.step for a in (resolve_key(k) for k in ask.keys) if a is not None and a.step is not None})
+    group = first.spec.group
+    if group == GROUP_NAMES:
+        return vocab.question(next(s for s in PROFILE_SPECS if s.key == P16_KEY))
+    if group == GROUP_EFFORT or len(steps) > 1:
+        listed = ", ".join(f"{i} {_row_name(rows, i)}".strip() for i in steps)
+        runs = volume_words(profile, vocab=vocab) if group == GROUP_EFFORT else None
+        if runs:
+            return (
+                "Roughly how long does each step take each time? I'll assume each step happens once per run of "
+                f"the process (about {runs}); tell me if one happens more often. {listed}"
+            )
+        return f"Roughly how long does each step take, and how often? {listed}"
+    index = first.step
+    name = _row_name(rows, index)
+    where = f'step {index}, "{name}"' if name else f"step {index}"
+    if group == GROUP_B:
+        return f"For {where}: {_parts(ask.keys)}? If nothing, just say no."
+    if ask_count(ask, counters or {}) >= 1:
+        return f"For {where}, I still need: {_parts(ask.keys)}."
+    return f"Walk me through {where}: {_parts(ask.keys)}?"
+
+
+def _row_name(rows: list[dict[str, Any]], index: int) -> str:
+    return str(rows[index - 1].get("name") or "").strip() if 1 <= index <= len(rows) else ""
 
 
 def _cluster_fallback(ask: Ask, *, vocab: Vocabulary, process_name: str, proposal: Mapping[str, Any] | None) -> str:
@@ -626,7 +813,14 @@ def _fallback(state: Mapping[str, Any], ask: Ask, vocab: Vocabulary) -> str:
         if ask.mode == "recommend" and top is not None:
             return recommend_fallback(top)
         return pick_fallback(ranked(steering) or steering["candidates"])
-    return fallback_question(ask, profile, vocab=vocab, process_name=name, images=image_documents(state))
+    return fallback_question(
+        ask,
+        profile,
+        vocab=vocab,
+        process_name=name,
+        images=image_documents(state),
+        counters=read_counters(as_mapping(state.get("counters"))),
+    )
 
 
 def _agent_reply(state: TurnState, reply: str, finish: FinishCheck, ctx: InterviewContext) -> dict[str, Any]:
@@ -673,9 +867,12 @@ async def guide_node(state: TurnState, llm: LLM, ctx: InterviewContext) -> dict[
         log["calls"]["guide"] = _call_log("timeout", started)
     except LLMError:
         log["calls"]["guide"] = _call_log("failed", started)
+    reply, offered_raw = parse_guide_reply(reply)
     fallback_used = not reply
     if fallback_used:
         reply = _fallback(state, ask, vocab)
+    offered = {} if fallback_used else kept_offers(ask, offered_raw)
+    offered |= assumed_effort(ask, normalized_profile(as_mapping(state.get("profile"))), vocab=vocab)
     counters = read_counters(state.get("counters"))
     log.update(
         ask_kind=ask.kind,
@@ -692,7 +889,76 @@ async def guide_node(state: TurnState, llm: LLM, ctx: InterviewContext) -> dict[
         steering["recommend_asks"] += 1
     return {
         **_agent_reply(state, reply, finish, ctx),
-        "last_question": last_question_for(ask),
+        "last_question": {**last_question_for(ask), "offered": offered},
         "steering": steering,
-        "log": log,
+        "log": {**log, "guide_offered": sorted(offered)},
     }
+
+
+_FENCE = re.compile(r"^```(?:json)?\s*|\s*```$")
+
+
+def parse_guide_reply(text: str) -> tuple[str, dict[str, Any]]:
+    """GUIDE's `{"question", "offered"}` (§3.20 O5): plain text is the question with nothing offered;
+    a reply that starts like JSON but is not that object gives `""`, so the code-built question is sent."""
+    body = _FENCE.sub("", text.strip()).strip()
+    if not body.startswith("{"):
+        return text.strip(), {}
+    try:
+        parsed = json.loads(body)
+    except ValueError:
+        return "", {}
+    question = parsed.get("question") if isinstance(parsed, dict) else None
+    if not isinstance(question, str) or not question.strip():
+        return "", {}
+    return question.strip(), dict(as_mapping(parsed.get("offered")) or {})
+
+
+def assumed_effort(ask: Ask, profile: Mapping[str, Any], *, vocab: Vocabulary) -> dict[str, Any]:
+    """§3.21 P3: on the effort question, with P10 counting, "each time" is offered for every listed step."""
+    keys = [k for k in ask.keys if k.endswith(".effort")]
+    if ask.kind != "cell" or not keys or len(keys) != len(ask.keys) or volume_words(profile, vocab=vocab) is None:
+        return {}
+    return {k: {"frequency": ASSUMED_FREQUENCY} for k in keys}
+
+
+def _assumed_frequencies(profile: Mapping[str, Any], offered: Mapping[str, Any], written: set[str]) -> dict[str, Any]:
+    """§3.21 P3: each offered effort cell whose duration was written this turn and whose frequency is still
+    empty takes the assumed frequency; a frequency the expert gave wins."""
+    out: dict[str, Any] = {}
+    for key, value in offered.items():
+        address = resolve_key(key)
+        if address is None or address.step is None or address.spec.key != "effort" or key not in written:
+            continue
+        rows = rows_of(profile)
+        effort = as_mapping(rows[address.step - 1].get("effort")) if address.step <= len(rows) else None
+        duration = str((effort or {}).get("duration") or "").strip()
+        if duration and not str((effort or {}).get("frequency") or "").strip():
+            out[key] = {"duration": duration, "frequency": (as_mapping(value) or {}).get("frequency")}
+    return out
+
+
+OFFER_KINDS = ("field", "cell", "wrap_up")
+#: Candidate names a find question may suggest at once (§3.20 O2).
+SUGGESTED_MAX = 3
+
+
+def kept_offers(ask: Ask, offered: Mapping[str, Any]) -> dict[str, Any]:
+    """The offered values code keeps: asks that collect answers, keys of the ask (a P16 ask also allows
+    the step names), a value that is not blank and passes the injection screen."""
+    if ask.kind not in OFFER_KINDS or not offered:
+        return {}
+    allowed = set(ask.keys)
+    if P16_KEY in allowed:
+        allowed |= {step_cell_key(i, "name") for i in range(1, MAX_STEPS + 1)}
+    kept: dict[str, Any] = {}
+    for key, value in offered.items():
+        address = resolve_key(key)
+        if address is None or address.key not in allowed or value in (None, "", [], {}):
+            continue
+        if address.key == NAME_KEY and isinstance(value, list):
+            value = [v for v in value if isinstance(v, str) and v.strip()][:SUGGESTED_MAX] or None
+            if value is None:
+                continue
+        kept[address.key] = value
+    return screen(kept)[0]

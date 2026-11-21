@@ -59,6 +59,8 @@ export function emptyStep(name = ''): Step {
     approvals: [],
     exceptions: [],
     handover: '',
+    decision_type: { kind: '', evidence: '' },
+    decision_criteria: { basis: '', set_by: '', written: '', varies: '' },
   }
 }
 
@@ -76,6 +78,8 @@ export function fullStep(name: string): Step {
     approvals: [{ none: true }],
     exceptions: [{ none: true }],
     handover: 'Sent to the head of controlling',
+    decision_type: { kind: 'rules', evidence: 'The same checks every month' },
+    decision_criteria: { basis: '', set_by: '', written: '', varies: '' },
   }
 }
 
@@ -111,12 +115,16 @@ const S_FIELDS: Array<[string, string, string]> = [
   ['approvals', 'S10', 'Approvals'],
   ['exceptions', 'S11', 'Exceptions'],
   ['handover', 'S12', 'Hand-over'],
+  ['decision_type', 'S13', 'Rules or judgement'],
 ]
+
+/** S14 is sent only for a judgement or mix step (spec 12 §3.13), so `stepViews` leaves it out. */
+const S14_FIELD: [string, string, string] = ['decision_criteria', 'S14', 'Decision criteria']
 
 export function view(key: string, status: FieldStatus = 'empty', extra: Partial<FieldView> = {}): FieldView {
   const p = P_FIELDS.find(([k]) => k === key)
   const cell = /^process\.substeps\[(\d+)\]\.(\w+)$/.exec(key)
-  const s = cell ? S_FIELDS.find(([leaf]) => leaf === cell[2]) : undefined
+  const s = cell ? [...S_FIELDS, S14_FIELD].find(([leaf]) => leaf === cell[2]) : undefined
   const label = p?.[2] ?? s?.[2] ?? key
   return {
     key,
@@ -184,7 +192,7 @@ export function stepsSession(overrides: Partial<SessionOut> = {}): SessionOut {
   return buildSession({
     phase: 'steps',
     profile,
-    fieldViews: [...processViews(ALL_P_COMPLETE), ...stepViews(1, 12), ...stepViews(2, 5)],
+    fieldViews: [...processViews(ALL_P_COMPLETE), ...stepViews(1, 13), ...stepViews(2, 5)],
     score: { value: 0.65, filledPoints: 40, totalPoints: 62 },
     finish: { ready: false, blockedBy: 'below_gate', looksLikeTask: false },
     ...overrides,
@@ -205,7 +213,7 @@ export function readySession(overrides: Partial<SessionOut> = {}): SessionOut {
   return buildSession({
     phase: 'review',
     profile,
-    fieldViews: [...processViews(ALL_P_COMPLETE), ...stepViews(1, 12), ...stepViews(2, 12)],
+    fieldViews: [...processViews(ALL_P_COMPLETE), ...stepViews(1, 13), ...stepViews(2, 13)],
     score: { value: 1, filledPoints: 40, totalPoints: 40 },
     finish: { ready: true, blockedBy: null, looksLikeTask: false },
     ...overrides,

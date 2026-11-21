@@ -45,6 +45,8 @@ Extract ONLY what the expert explicitly stated. Do NOT infer, complete or assume
 - "process.substeps[i].approvals"
 - "process.substeps[i].exceptions"
 - "process.substeps[i].handover"
+- "process.substeps[i].decision_type"
+- "process.substeps[i].decision_criteria"
 
 These keys take rows, not strings:
 - "process.sensitive_data" is a list of rows, each {"item": <text>, "detail": <text, optional>}; "there are none" is [{"none": true}]; never a list of plain strings
@@ -59,7 +61,19 @@ Emit `process.name` only when the expert names the one process to map, or agrees
 
 Fix obvious typos and misspellings in the text you extract, nothing more. Keep the expert's own words, their phrasing, their level of detail and their language. Never rephrase, translate, expand abbreviations, summarise, lengthen or make it sound more formal. Leave names of people, teams, systems, tools and products, jargon and codes exactly as typed. When in doubt, copy it verbatim.
 
-An absence is an answer. If the expert says there are none ("no approvals", "nobody else", "nothing goes wrong", "no sensitive data") that is a complete answer to the question that was asked: emit the none row [{"none": true}] for `process.sensitive_data`, `process.substeps[i].roles`, `process.substeps[i].approvals` or `process.substeps[i].exceptions`, and `{"none_identified": true}` for `process.process_owner` when nobody owns it. Use the previous question to decide which one key they are saying no to, and emit it for that key only.
+An absence is an answer. If the expert says there are none ("no approvals", "nobody else", "nothing goes wrong", "no sensitive data") that is a complete answer to the question that was asked: emit the none row [{"none": true}] for `process.sensitive_data`, `process.substeps[i].roles`, `process.substeps[i].approvals` or `process.substeps[i].exceptions`, and `{"none_identified": true}` for `process.process_owner` when nobody owns it. Use the previous question to decide which one key they are saying no to, and emit it for that key only; a plain no to the optional step question (sign-off, what goes wrong, passing it on) is a no to both approvals and exceptions of that step.
+
+Facts for other keys: if the message also states, explicitly, a value for another key in the list (a duration, a count, a role, a system), emit it under that key as well, copied. Never move a value the expert gave for one step to another step.
+
+One item per thing: in lists, one row or item per system, role, input or output. Names joined by "/", "and" or "+" are separate items ("Excel/SharePoint" is "Excel" and "SharePoint"), unless the slash is part of a product name, such as "SAP S/4HANA".
+
+Pronouns: when the expert says "they", "he" or "she" for a role that the previous question or the same message names, write the role, not the pronoun.
+
+Decision criteria: `process.substeps[i].decision_criteria` is `{"basis": "<what the decision is based on>", "set_by": "<role>", "written": "yes" | "partly" | "no", "varies": "<what changes from case to case or person to person>"}`, each in the expert's words; emit only the parts they said.
+
+Rules or judgement: `process.substeps[i].decision_type` is `{"kind": "rules" | "judgement" | "mix", "evidence": "<the expert's words, copied>"}`: rules when the step follows fixed rules, judgement when the expert decides case by case, mix for both. Emit it only when the expert said so.
+
+Sensitive data: a bare yes to the sensitive data question, without saying which data or regulation, is not an item: emit nothing for `process.sensitive_data` (the next question asks which).
 
 Not yours to write: never write the cluster, a confirmation or a flag. A yes or no to a proposal or to a list is read by code, so emit nothing for it.
 

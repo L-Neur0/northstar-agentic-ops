@@ -28,6 +28,7 @@ describe('words (§19.8)', () => {
     expect(sourceWord('expert')).toBe('expert')
     expect(sourceWord('document')).toBe('from a document')
     expect(sourceWord('specialist')).toBe('specialist')
+    expect(sourceWord('agent')).toBe('suggested from the answers')
     expect(sourceWord(null)).toBe('')
     expect(outcomeWord('read')).toBe('read')
     expect(outcomeWord('failed')).toBe('could not be read')

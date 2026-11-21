@@ -1,4 +1,4 @@
-"""Environment settings for the Discovery Agent (spec 10 §3.5; LLM keys from spec 11 §4).
+"""Environment settings for the AI Use Case Discovery Agent (spec 10 §3.5; LLM keys from spec 11 §4).
 
 Why: the stage, the store, the model deployments and the secrets decide how the app behaves. They
 must be typed, checked once at start-up, and never guessed from the environment: a stage inferred

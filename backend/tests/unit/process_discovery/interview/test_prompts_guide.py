@@ -20,7 +20,7 @@ from app.services.process_discovery.profile.proposals import FieldProposal, Prop
 from app.services.process_discovery.profile.scoring import FINISH_BLOCKS, FinishCheck, score
 from app.services.process_discovery.profile.shapes import empty_profile
 
-from ..profile.builders import AT, cost_review_profile
+from ..profile.builders import AT, cost_review_profile, step_changes
 from .sessions import BOUNDARIES, MEASURE, profile_with
 
 LOCKED = FinishCheck(False, "below_gate", False)
@@ -49,7 +49,7 @@ def test_sections_in_order_and_the_profile_fenced(ctx):
     text = render(ctx, profile_with(ctx, "process.trigger"), "boundaries")
     positions = [text.index(s) for s in SECTIONS]
     assert positions == sorted(positions)
-    assert text.index("You are a process discovery assistant") < positions[0]
+    assert text.index("You are an AI use case discovery assistant") < positions[0]
     assert "<<<PROFILE" in text and "__meta" not in text and "__skipped" not in text
 
 
@@ -94,17 +94,17 @@ def test_asked_already(ctx):
     walk = profile_with(ctx, *BOUNDARIES, *MEASURE, steps=2)
     roles = apply_changes(
         walk,
-        {step_cell_key(1, k): v for k, v in (("name", "A"), ("goal", "G"), ("activities", ["a"]))},
+        {  # §3.19: Tier A of step 1 answered and every name given, so the walk asks Tier B (roles first)
+            **{k: v for k, v in step_changes(1).items() if not k.endswith((".roles", ".approvals"))},
+            step_cell_key(2, "name"): "B",
+        },
         vocab=ctx.vocab,
         at=AT,
     ).profile
     cell = render(ctx, roles, "steps", counters={"cell_asks": {step_cell_key(1, "roles"): 2}})
     assert '"there are none"' in cell.split("ASKED ALREADY", 1)[1]
     closed = cost_review_profile(ctx.vocab, steps=2)
-    assert "ASKED ALREADY" not in render(ctx, closed, "confirm", counters={"confirm_turns": 5})
-    lists = render(ctx, closed, "confirm", counters={"confirm_turns": 6})
-    assert "ASKED ALREADY: the roles and systems review has taken 6 turns" in lists
-    assert "Confirm buttons" in lists
+    assert "the roles and systems review" not in render(ctx, closed, "review", counters={"confirm_turns": 6})
 
 
 @pytest.mark.parametrize("code", FINISH_BLOCKS)

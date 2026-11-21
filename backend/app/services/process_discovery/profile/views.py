@@ -23,6 +23,7 @@ from ..domain.field_spec import (
     STEP_SPECS,
     FieldSpec,
     Vocabulary,
+    field_applies,
     field_status,
     has_any_answer,
     step_cell_key,
@@ -55,7 +56,7 @@ def _view(
     status = field_status(verdict, meta, answered=answered, skipped=skipped)
     if is_process and status in ("empty", "invalid", "partial"):
         limit = spec.max_asks or FIELD_ASK_LIMIT
-        if asks >= limit + REVIEW_ASK_LIMIT:
+        if asks >= limit + REVIEW_ASK_LIMIT or (spec.optional and asks >= limit):  # optional: spec 14 §3.19 W2
             status = "given_up"
         elif asks >= limit:
             status = "deferred"
@@ -117,6 +118,8 @@ def field_views(
     ]
     for index, row in enumerate(rows_of(p), start=1):
         for spec in STEP_SPECS:
+            if not field_applies(spec, row):
+                continue  # spec 12 §3.13: S14 is shown only for a judgement or mix step
             key = step_cell_key(index, spec.key)
             views.append(
                 _view(

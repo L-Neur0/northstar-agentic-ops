@@ -11,7 +11,9 @@ most `--parallel` at once, scores them, writes `run.json`, `calibration.json`, t
 in-process run. With `--seed-cosmos` it seeds finished sessions (§3.12).
 Must not: seed without the flag, replace `latest.*` after a quick, URL or filtered run, or call a
 model before the checks pass.
-Spec 24 §3.5, §3.11, §4; AC-24.15, AC-24.16, AC-24.24, AC-24.25.
+Since the 2026-11-20 amendment it also scores employee time, detail burden and the quality split
+(§3.9b) from `eval/employee_time.yaml` and `eval/tiers.yaml`, both checked before any model call.
+Spec 24 §3.5, §3.9b, §3.11, §4; AC-24.15, AC-24.16, AC-24.24, AC-24.25.
 """
 
 from __future__ import annotations
@@ -26,6 +28,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 from app.core.settings import BACKEND_DIR, Settings
 from app.services.process_discovery.llm import LLM, LLMConfigError, create_llm
 
@@ -36,6 +40,15 @@ from .evalkit.persona import EVAL_DIR, Persona, PersonaError, load_company, load
 from .evalkit.play import PersonaRun, play
 from .evalkit.score_behaviour import load_prices, score_behaviour
 from .evalkit.score_efficiency import progress_curve, score_efficiency, word_set
+from .evalkit.score_employee import (
+    Tiers,
+    TimeModel,
+    detail_burden,
+    employee_time,
+    load_tiers,
+    load_time_model,
+    quality_split,
+)
 from .evalkit.score_fields import score_fields
 from .evalkit.score_labels import score_labels
 from .evalkit.scorecard import PersonaScore, Scorecard, build_scorecard, render_markdown, should_replace_latest
@@ -44,7 +57,9 @@ TOKENS_PER_PERSONA_ESTIMATE = 1_000_000  # §3.13: app + expert + judge, for the
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(prog="python -m eval.run", description="Run the Discovery Agent evaluation.")
+    parser = argparse.ArgumentParser(
+        prog="python -m eval.run", description="Run the AI Use Case Discovery Agent evaluation."
+    )
     parser.add_argument("--quick", action="store_true", help="only personas with quick: true")
     parser.add_argument("--fresh", action="store_true", help="no disk cache for app and EXPERT calls")
     parser.add_argument("--url", help="run against a running app instead of in process")
@@ -73,6 +88,8 @@ async def _score(
     words: frozenset[str],
     capture: LogCapture,
     folder: Path,
+    time_model: TimeModel,
+    tiers: Tiers,
 ) -> PersonaScore:
     token = PERSONA.set(persona.id)
     try:
@@ -110,6 +127,10 @@ async def _score(
         labels=score_labels(persona, run) if run.session else None,
         behaviour=score_behaviour(persona, run, prices),
         efficiency=efficiency,
+        employee=employee_time(run.transcript, len(run.uploads), time_model),
+        burden=detail_burden(run.turns, tiers),
+        split=quality_split(fields.results, tiers),
+        time_target_min=time_model.target_minutes,
         curve=curve,
         wrong=[r for r in fields.results if not r.correct],
     )
@@ -153,6 +174,8 @@ async def run_eval(
         personas = load_personas(personas_dir, quick=args.quick, company=company, only=tuple(args.persona))
         pairs = load_pairs(calibration_file)
         prices = load_prices(EVAL_DIR / "prices.yaml")
+        time_model = load_time_model(EVAL_DIR / "employee_time.yaml")
+        tiers = load_tiers(EVAL_DIR / "tiers.yaml")
         cache_dir = EVAL_DIR / ".cache" / "llm"
         app_settings = in_process_settings(settings, llm_cache_enabled=not args.fresh)
         if expert_llm is None:
@@ -161,7 +184,15 @@ async def run_eval(
             )
         if judge_llm is None:
             judge_llm = create_llm(in_process_settings(settings, llm_cache_enabled=True, llm_cache_dir=cache_dir))
-    except (DeploymentClash, PersonaError, CalibrationFileError, LLMConfigError, OSError, ValueError) as error:
+    except (
+        DeploymentClash,
+        PersonaError,
+        CalibrationFileError,
+        LLMConfigError,
+        OSError,
+        ValueError,
+        yaml.YAMLError,
+    ) as error:
         print(f"eval: cannot start: {error}", file=out)
         return 2
     if not personas:
@@ -229,7 +260,17 @@ async def run_eval(
         for persona in personas:
             if persona.id in runs:
                 scores.append(
-                    await _score(persona, runs[persona.id], judge, prices, words, capture, run_dir / persona.id)
+                    await _score(
+                        persona,
+                        runs[persona.id],
+                        judge,
+                        prices,
+                        words,
+                        capture,
+                        run_dir / persona.id,
+                        time_model,
+                        tiers,
+                    )
                 )
 
         previous = None

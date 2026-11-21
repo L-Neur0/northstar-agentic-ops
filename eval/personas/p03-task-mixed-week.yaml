@@ -1,6 +1,6 @@
 # Persona p03 (spec 24 §3.3): opens with a task, then names a mixed week; steering must find onboarding. Synthetic.
 id: p03-task-mixed-week
-version: 1
+version: 3
 quick: false
 seed: false
 kind: difficult
@@ -45,6 +45,7 @@ truth:
       pain_points: [notices come one day before the start]
       approvals: [{none: true}]
       exceptions: [{description: the start date changes after the notice}]
+      decision_type: {kind: rules, evidence: "it's always the same checklist"}
     - name: Prepare the site pass and documents
       goal: The starter's pass and documents are ready on day one
       activities: [request the site pass, collect passport and visa copies, file the forms]
@@ -56,6 +57,7 @@ truth:
       pain_points: [the same data is typed into two systems]
       approvals: [{approver_role: Site manager}]
       exceptions: [{description: the visa copy is missing and the pass waits}]
+      decision_type: {kind: rules, evidence: "the pass needs the same documents every time"}
     - name: Arrange PPE and the induction
       goal: The starter has PPE and a slot in the safety induction
       activities: [order the PPE from the store, book the induction slot]
@@ -67,6 +69,7 @@ truth:
       pain_points: [sizes are not known in advance]
       approvals: [{none: true}]
       exceptions: [{none: true}]
+      decision_type: {kind: rules, evidence: "the PPE list depends on the role, it's all set"}
     - name: Record the induction and close onboarding
       goal: The starter is recorded as inducted and ready to work
       activities: [collect the signed induction sheet, update the HR system, close the checklist]
@@ -78,6 +81,7 @@ truth:
       pain_points: [paper sheets get lost before they are typed in]
       approvals: [{none: true}]
       exceptions: [{none: true}]
+      decision_type: {kind: rules, evidence: "once the sheet is signed I just tick everything off"}
   aliases:
     HR system: [the HR tool, hr system, HRIS]
     E-mail: [email, mail]

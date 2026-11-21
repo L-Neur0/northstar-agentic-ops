@@ -1,6 +1,7 @@
 # Organisation settings for NorthStar Infrastructure Group (NIG), a fictional company.
 # Loaded and validated at start-up by app.core.config (spec 10 §3.6).
-product_name: Discovery Agent
+# The user-facing product name (renamed 2026-11-21): welcome, report cover, PDF, API title.
+product_name: AI Use Case Discovery Agent
 company_name: NorthStar Infrastructure Group
 regions: [North America, Europe, Middle East, Asia-Pacific]
 languages: [en, de]

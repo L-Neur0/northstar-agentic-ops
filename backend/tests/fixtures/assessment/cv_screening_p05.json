@@ -1,0 +1,885 @@
+{
+ "department": "HR",
+ "user_function": "Talent acquisition specialist",
+ "region": "Europe",
+ "process": {
+  "name": "Screening applications for an open role",
+  "cluster": {
+   "code": "HR",
+   "name": "People & HR",
+   "decided_by": "proposal"
+  },
+  "trigger": "The job ad closes and the applications are in the recruiting system.",
+  "end_result": "A shortlist of about 8 candidates with a short note on each, sent to the hiring manager.",
+  "value_at_end": "the hiring manager uses it to choose interview invites",
+  "business_pain": "Screening about 120 applications by hand takes three working days per role, so good candidates sometimes accept other offers before I call them.",
+  "volume": {
+   "count": 6,
+   "period": "month",
+   "raw": "It runs about 6 times a month."
+  },
+  "process_owner": {
+   "role": "Head of Talent Acquisition",
+   "none_identified": false
+  },
+  "baseline_metric": {
+   "value": "three",
+   "unit": "working days per role",
+   "qualitative": "",
+   "estimated": false
+  },
+  "target_metric": {
+   "value": "1",
+   "unit": "working day per role"
+  },
+  "variation": {
+   "same": "partly",
+   "differences": "each hiring manager sets different must-haves"
+  },
+  "sensitive_data": [
+   {
+    "item": "candidates’ personal data",
+    "detail": "mainly CVs"
+   }
+  ],
+  "substep_count": 4,
+  "substep_count_rejected": null,
+  "substeps": [
+   {
+    "name": "Download and organise the applications",
+    "goal": "renamed by candidate; logged in Excel ready",
+    "activities": [
+     "download the CVs, cover letters and certificates",
+     "rename them by candidate",
+     "log each one in Excel"
+    ],
+    "roles": [
+     {
+      "role": "talent acquisition specialist",
+      "contribution": "does the downloads and organising"
+     }
+    ],
+    "owner": "Talent acquisition specialist",
+    "systems": [
+     "recruiting system",
+     "Excel"
+    ],
+    "data": {
+     "inputs": [
+      "CVs",
+      "cover letters",
+      "certificates"
+     ],
+     "outputs": [
+      "renamed by candidate",
+      "logged in Excel"
+     ]
+    },
+    "effort": {
+     "duration": "about 3 hours",
+     "frequency": "each time"
+    },
+    "pain_points": [
+     "the system exports one candidate at a time with random file names"
+    ],
+    "approvals": [
+     {
+      "none": true
+     }
+    ],
+    "exceptions": [
+     {
+      "description": "The recruiting system can export files one candidate at a time with random names",
+      "loops_back_to": null
+     }
+    ],
+    "handover": "I rename them and keep the role folder and tracking sheet ready for the next screening step.",
+    "decision_type": {
+     "kind": "rules",
+     "evidence": "It’s pure admin, mostly rules"
+    },
+    "decision_criteria": {
+     "basis": "",
+     "set_by": "",
+     "written": "",
+     "varies": ""
+    },
+    "__meta": {
+     "name": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:50:48.075575+00:00"
+     },
+     "activities": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:50:51.501621+00:00"
+     },
+     "systems": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:50:51.501621+00:00"
+     },
+     "data": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:50:51.501621+00:00"
+     },
+     "pain_points": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:50:51.501621+00:00"
+     },
+     "decision_type": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:50:51.501621+00:00"
+     },
+     "roles": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:50:58.689351+00:00"
+     },
+     "goal": {
+      "source": "agent",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": "Comes out: renamed by candidate; logged in Excel",
+      "by": null,
+      "at": "2026-11-21T09:52:26.194658+00:00"
+     },
+     "owner": {
+      "source": "agent",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": "Your role: Talent acquisition specialist",
+      "by": null,
+      "at": "2026-11-21T09:52:26.194658+00:00"
+     },
+     "approvals": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:02.455978+00:00"
+     },
+     "exceptions": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:02.455978+00:00"
+     },
+     "handover": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:02.455978+00:00"
+     },
+     "effort": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": "Download and organise: about 3 hours; rough first screening: 1 day; detailed screening and shortlist handoff: 1 day each. The last two can loop if the hiring manager changes the must-haves. (accepted the agent's assumption)",
+      "by": null,
+      "at": "2026-11-21T09:52:07.068703+00:00"
+     }
+    },
+    "__skipped": []
+   },
+   {
+    "name": "rough first screening",
+    "goal": "yes, no, or maybe in the tracking sheet ready",
+    "activities": [
+     "skim each CV against the basic must-haves from the job ad",
+     "mark yes, no, or maybe in the tracking sheet"
+    ],
+    "roles": [
+     {
+      "role": "talent acquisition specialist",
+      "contribution": "skims each CV and marks yes, no, or maybe in the tracking sheet"
+     }
+    ],
+    "owner": "Talent acquisition specialist",
+    "systems": [
+     "Excel",
+     "SharePoint"
+    ],
+    "data": {
+     "inputs": [
+      "CVs",
+      "basic must-haves from the job ad"
+     ],
+     "outputs": [
+      "yes, no, or maybe in the tracking sheet"
+     ]
+    },
+    "effort": {
+     "duration": "1 day",
+     "frequency": "each time"
+    },
+    "pain_points": [
+     "reading about 120 CVs in different layouts"
+    ],
+    "approvals": [
+     {
+      "none": true
+     }
+    ],
+    "exceptions": [
+     {
+      "description": "late CVs can get less attention because reading 120 layouts is tiring",
+      "loops_back_to": null
+     }
+    ],
+    "handover": "I move the about 30 yes or maybe candidates into detailed screening from the tracking sheet",
+    "decision_type": {
+     "kind": "mix",
+     "evidence": "It’s mostly rules, the basics from the ad: degree, years of experience, right to work. There’s some judgement for a strong candidate who misses one basic must-have."
+    },
+    "decision_criteria": {
+     "basis": "degree, years of experience, right to work",
+     "set_by": "",
+     "written": "",
+     "varies": ""
+    },
+    "__meta": {
+     "name": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:50:48.075575+00:00"
+     },
+     "activities": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:08.764874+00:00"
+     },
+     "roles": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:08.764874+00:00"
+     },
+     "systems": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:08.764874+00:00"
+     },
+     "data": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:08.764874+00:00"
+     },
+     "pain_points": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:08.764874+00:00"
+     },
+     "decision_type": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:15.221593+00:00"
+     },
+     "decision_criteria": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:15.221593+00:00"
+     },
+     "goal": {
+      "source": "agent",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": "Comes out: yes, no, or maybe in the tracking sheet",
+      "by": null,
+      "at": "2026-11-21T09:52:26.194658+00:00"
+     },
+     "owner": {
+      "source": "agent",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": "Your role: Talent acquisition specialist",
+      "by": null,
+      "at": "2026-11-21T09:52:26.194658+00:00"
+     },
+     "approvals": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:19.039312+00:00"
+     },
+     "exceptions": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:19.039312+00:00"
+     },
+     "handover": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:19.039312+00:00"
+     },
+     "effort": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": "Download and organise: about 3 hours; rough first screening: 1 day; detailed screening and shortlist handoff: 1 day each. The last two can loop if the hiring manager changes the must-haves. (accepted the agent's assumption)",
+      "by": null,
+      "at": "2026-11-21T09:52:07.068703+00:00"
+     }
+    },
+    "__skipped": []
+   },
+   {
+    "name": "detailed screening and the shortlist handoff together",
+    "goal": "short note per candidate; shortlist of about 8 ready",
+    "activities": [
+     "compare the remaining candidates with the hiring manager’s must-haves",
+     "read cover letters",
+     "read certificates",
+     "write a short note per candidate"
+    ],
+    "roles": [
+     {
+      "role": "talent acquisition specialist",
+      "contribution": "compares the remaining candidates with the hiring manager’s must-haves, reads cover letters and certificates, and writes a short note per candidate"
+     },
+     {
+      "role": "hiring manager",
+      "contribution": "provides the must-haves and receives the shortlist of about 8"
+     }
+    ],
+    "owner": "Talent acquisition specialist",
+    "systems": [
+     "Excel",
+     "e-mail",
+     "recruiting system"
+    ],
+    "data": {
+     "inputs": [
+      "remaining candidates",
+      "hiring manager’s must-haves",
+      "cover letters",
+      "certificates"
+     ],
+     "outputs": [
+      "short note per candidate",
+      "shortlist of about 8"
+     ]
+    },
+    "effort": {
+     "duration": "1 day",
+     "frequency": "once per role"
+    },
+    "pain_points": [
+     "The must-haves often come late or incomplete",
+     "they differ for every hiring manager, so I sometimes have to guess and redo the shortlist"
+    ],
+    "approvals": [
+     {
+      "none": true
+     }
+    ],
+    "exceptions": [
+     {
+      "description": "If the shortlist gets redone, it goes back to the hiring manager because the must-haves changed or were incomplete.",
+      "loops_back_to": null
+     }
+    ],
+    "handover": "the shortlist of about 8 goes to the hiring manager",
+    "decision_type": {
+     "kind": "judgement",
+     "evidence": "It’s mostly judgement here, weighing experience against the manager’s must-haves."
+    },
+    "decision_criteria": {
+     "basis": "experience against the manager’s must-haves",
+     "set_by": "hiring manager",
+     "written": "partly",
+     "varies": "they differ for every hiring manager"
+    },
+    "__meta": {
+     "name": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:52:16.412789+00:00"
+     },
+     "activities": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:26.399529+00:00"
+     },
+     "roles": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:26.399529+00:00"
+     },
+     "systems": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:26.399529+00:00"
+     },
+     "data": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:26.399529+00:00"
+     },
+     "handover": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:26.399529+00:00"
+     },
+     "pain_points": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:36.132639+00:00"
+     },
+     "decision_type": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:36.132639+00:00"
+     },
+     "decision_criteria": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:36.132639+00:00"
+     },
+     "goal": {
+      "source": "agent",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": "Comes out: short note per candidate; shortlist of about 8",
+      "by": null,
+      "at": "2026-11-21T09:52:26.194658+00:00"
+     },
+     "owner": {
+      "source": "agent",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": "Your role: Talent acquisition specialist",
+      "by": null,
+      "at": "2026-11-21T09:52:26.194658+00:00"
+     },
+     "approvals": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:43.242486+00:00"
+     },
+     "exceptions": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:43.242486+00:00"
+     },
+     "effort": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:52:07.068703+00:00"
+     }
+    },
+    "__skipped": []
+   },
+   {
+    "name": "shortlist handoff",
+    "goal": "the shortlist sent to the hiring manager",
+    "activities": [
+     "send the shortlist to the hiring manager by e-mail, with a short note on each candidate"
+    ],
+    "roles": [
+     {
+      "role": "talent acquisition specialist",
+      "contribution": "sends the shortlist by e-mail, with a short note on each candidate"
+     },
+     {
+      "role": "hiring manager",
+      "contribution": "receives the shortlist by e-mail, with a short note on each candidate"
+     }
+    ],
+    "owner": "Talent acquisition specialist",
+    "systems": [
+     "recruiting system",
+     "Excel",
+     "e-mail"
+    ],
+    "data": {
+     "inputs": [
+      "shortlist",
+      "short note on each candidate"
+     ],
+     "outputs": [
+      "shortlist with a short note on each candidate"
+     ]
+    },
+    "effort": {
+     "duration": "1 day",
+     "frequency": "once per role"
+    },
+    "pain_points": [
+     "when the hiring manager’s must-haves come late or change, so I have to redo the shortlist and send it again"
+    ],
+    "approvals": [
+     {
+      "none": true
+     }
+    ],
+    "exceptions": [
+     {
+      "description": "if it needs rework, I go back to the hiring manager",
+      "loops_back_to": null
+     }
+    ],
+    "handover": "",
+    "decision_type": {
+     "kind": "mix",
+     "evidence": "the handoff itself is mostly rules, but the shortlist content is judgement"
+    },
+    "decision_criteria": {
+     "basis": "weighing experience against the hiring manager’s must-haves",
+     "set_by": "hiring manager",
+     "written": "partly",
+     "varies": ""
+    },
+    "__meta": {
+     "name": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:50:48.075575+00:00"
+     },
+     "activities": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:49.047742+00:00"
+     },
+     "roles": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:49.047742+00:00"
+     },
+     "systems": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:49.047742+00:00"
+     },
+     "data": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:49.047742+00:00"
+     },
+     "decision_type": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:49.047742+00:00"
+     },
+     "pain_points": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:51:55.055455+00:00"
+     },
+     "goal": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:52:16.412789+00:00"
+     },
+     "owner": {
+      "source": "agent",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": "Your role: Talent acquisition specialist",
+      "by": null,
+      "at": "2026-11-21T09:52:26.194658+00:00"
+     },
+     "decision_criteria": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:52:00.991072+00:00"
+     },
+     "approvals": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:52:00.991072+00:00"
+     },
+     "exceptions": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:52:00.991072+00:00"
+     },
+     "effort": {
+      "source": "expert",
+      "status": "confirmed",
+      "documentId": null,
+      "quote": null,
+      "by": null,
+      "at": "2026-11-21T09:52:07.068703+00:00"
+     }
+    },
+    "__skipped": [
+     "handover"
+    ]
+   }
+  ],
+  "all_roles": [
+   "talent acquisition specialist",
+   "hiring manager"
+  ],
+  "all_tools": [
+   "recruiting system",
+   "Excel",
+   "SharePoint",
+   "e-mail"
+  ],
+  "substeps_complete": true,
+  "roles_confirmed": false,
+  "tools_confirmed": false
+ },
+ "__meta": {
+  "department": {
+   "source": "expert",
+   "status": "confirmed",
+   "documentId": null,
+   "quote": null,
+   "by": null,
+   "at": "2026-11-21T09:50:03.532288+00:00"
+  },
+  "user_function": {
+   "source": "expert",
+   "status": "confirmed",
+   "documentId": null,
+   "quote": null,
+   "by": null,
+   "at": "2026-11-21T09:50:05.950572+00:00"
+  },
+  "region": {
+   "source": "expert",
+   "status": "confirmed",
+   "documentId": null,
+   "quote": null,
+   "by": null,
+   "at": "2026-11-21T09:50:08.462918+00:00"
+  },
+  "process.name": {
+   "source": "expert",
+   "status": "confirmed",
+   "documentId": null,
+   "quote": null,
+   "by": null,
+   "at": "2026-11-21T09:50:12.367362+00:00"
+  },
+  "process.cluster": {
+   "source": "expert",
+   "status": "confirmed",
+   "documentId": null,
+   "quote": null,
+   "by": null,
+   "at": "2026-11-21T09:50:18.235753+00:00"
+  },
+  "process.trigger": {
+   "source": "expert",
+   "status": "confirmed",
+   "documentId": null,
+   "quote": null,
+   "by": null,
+   "at": "2026-11-21T09:50:21.451283+00:00"
+  },
+  "process.end_result": {
+   "source": "expert",
+   "status": "confirmed",
+   "documentId": null,
+   "quote": null,
+   "by": null,
+   "at": "2026-11-21T09:50:25.036359+00:00"
+  },
+  "process.value_at_end": {
+   "source": "expert",
+   "status": "confirmed",
+   "documentId": null,
+   "quote": null,
+   "by": null,
+   "at": "2026-11-21T09:52:16.412789+00:00"
+  },
+  "process.business_pain": {
+   "source": "expert",
+   "status": "confirmed",
+   "documentId": null,
+   "quote": null,
+   "by": null,
+   "at": "2026-11-21T09:50:29.724711+00:00"
+  },
+  "process.volume": {
+   "source": "expert",
+   "status": "confirmed",
+   "documentId": null,
+   "quote": null,
+   "by": null,
+   "at": "2026-11-21T09:50:29.724711+00:00"
+  },
+  "process.baseline_metric": {
+   "source": "expert",
+   "status": "confirmed",
+   "documentId": null,
+   "quote": null,
+   "by": null,
+   "at": "2026-11-21T09:50:29.724711+00:00"
+  },
+  "process.process_owner": {
+   "source": "expert",
+   "status": "confirmed",
+   "documentId": null,
+   "quote": null,
+   "by": null,
+   "at": "2026-11-21T09:50:37.738720+00:00"
+  },
+  "process.target_metric": {
+   "source": "expert",
+   "status": "confirmed",
+   "documentId": null,
+   "quote": null,
+   "by": null,
+   "at": "2026-11-21T09:50:40.905331+00:00"
+  },
+  "process.variation": {
+   "source": "expert",
+   "status": "confirmed",
+   "documentId": null,
+   "quote": null,
+   "by": null,
+   "at": "2026-11-21T09:50:44.580784+00:00"
+  },
+  "process.sensitive_data": {
+   "source": "expert",
+   "status": "confirmed",
+   "documentId": null,
+   "quote": null,
+   "by": null,
+   "at": "2026-11-21T09:50:44.580784+00:00"
+  },
+  "process.substep_count": {
+   "source": "expert",
+   "status": "confirmed",
+   "documentId": null,
+   "quote": null,
+   "by": null,
+   "at": "2026-11-21T09:50:48.075575+00:00"
+  }
+ }
+}

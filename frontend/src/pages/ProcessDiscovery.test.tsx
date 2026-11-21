@@ -251,8 +251,8 @@ describe('automatic sections (AC-23.32) and surviving responses (AC-23.43)', () 
 
     // A response must not wipe composer text typed meanwhile.
     fireEvent.change(composer(), { target: { value: 'draft' } })
-    await user.click(screen.getByRole('button', { name: 'Confirm systems' }))
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Confirm systems' })).toBeEnabled())
+    await user.click(screen.getByRole('button', { name: 'No further steps' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'No further steps' })).toBeEnabled())
     expect(composer()).toHaveValue('draft')
 
     fireEvent.change(composer(), { target: { value: 'Done' } })
@@ -279,7 +279,7 @@ describe('finish (AC-23.40) and conflict (AC-23.41)', () => {
     await api.sendMessage(session.id, '/finish-ready')
     renderPage(api, `/process-discovery/${session.id}`)
     await user.click(await screen.findByRole('button', { name: 'Finish and build my report' }))
-    expect(await screen.findByText('About 342 hours a year.')).toBeInTheDocument()
+    expect(await screen.findByText('About 342 hours a year go into this process today: a moderate process.')).toBeInTheDocument()
     expect(screen.getByTestId('path')).toHaveTextContent(`/report/${session.id}`)
   })
 
@@ -287,10 +287,10 @@ describe('finish (AC-23.40) and conflict (AC-23.41)', () => {
     const user = userEvent.setup()
     const api = fake()
     vi.spyOn(api, 'getSession').mockResolvedValue(readySession())
-    vi.spyOn(api, 'finish').mockRejectedValue(new ApiError(409, 'map_incomplete', 'Not yet.', 'roles_not_confirmed'))
+    vi.spyOn(api, 'finish').mockRejectedValue(new ApiError(409, 'map_incomplete', 'Not yet.', 'substeps_incomplete'))
     renderPage(api, '/process-discovery/s-1')
     await user.click(await screen.findByRole('button', { name: 'Finish and build my report' }))
-    expect(await screen.findByText('Please confirm the list of roles.')).toBeInTheDocument()
+    expect(await screen.findByText('Some steps are not fully described yet.')).toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Finish and build my report' })).toBeDisabled()
   })
@@ -313,7 +313,7 @@ describe('intro and sessions dialogs (AC-23.44, AC-23.45)', () => {
     const user = userEvent.setup()
     const { api, session } = await seeded()
     renderPage(api, `/process-discovery/${session.id}`)
-    expect(await screen.findByRole('dialog', { name: 'Process Discovery' })).toBeInTheDocument()
+    expect(await screen.findByRole('dialog', { name: 'How the AI Use Case Discovery Agent works' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: "Got it, let's start" }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(localStorage.getItem(INTRO_SEEN_KEY)).toBe('true')
@@ -326,7 +326,7 @@ describe('intro and sessions dialogs (AC-23.44, AC-23.45)', () => {
     await screen.findByRole('log')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'How this works' }))
-    expect(screen.getByRole('dialog', { name: 'Process Discovery' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'How the AI Use Case Discovery Agent works' })).toBeInTheDocument()
   })
 
   it('does not open by itself when storage throws', async () => {
@@ -345,7 +345,7 @@ describe('intro and sessions dialogs (AC-23.44, AC-23.45)', () => {
     const user = userEvent.setup()
     const { api } = await seeded()
     renderPage(api, '/process-discovery')
-    await screen.findByRole('dialog', { name: 'Process Discovery' })
+    await screen.findByRole('dialog', { name: 'How the AI Use Case Discovery Agent works' })
     expect(screen.queryByRole('dialog', { name: 'Welcome back' })).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: "Got it, let's start" }))
     const welcome = await screen.findByRole('dialog', { name: 'Welcome back' })
@@ -397,7 +397,10 @@ describe('scripted interview through the page (AC-23.47)', () => {
       await within(log()).findByText(`answer ${i + 1}`)
     }
     await waitFor(() => expect(screen.getByRole('button', { name: 'Finish and build my report' })).toBeEnabled())
-    expect(screen.getByRole('progressbar', { name: 'Completeness' })).toHaveAttribute('aria-valuenow', '100')
+    expect(screen.getByRole('progressbar', { name: 'Progress' })).toHaveAttribute('aria-valuenow', '100')
+    // Amended 2026-11-21 (AC-23.148): Finish is ready without a roles / systems confirmation.
+    expect(screen.queryByText('Roles and systems')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Confirm (roles|systems)/ })).not.toBeInTheDocument()
   }, 20_000)
 })
 

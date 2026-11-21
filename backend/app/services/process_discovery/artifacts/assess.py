@@ -25,7 +25,7 @@ from dataclasses import dataclass
 from typing import Any, Literal
 
 from app.core.config import Rates, ReadinessConfig, SolutionCatalogue
-from app.models.process_discovery_schemas import Assessment, ProcessDiagram, StepAssessment
+from app.models.process_discovery_schemas import Assessment, Motivation, ProcessDiagram, StepAssessment
 
 from ..domain.field_spec import Vocabulary
 from ..llm import LLM
@@ -34,6 +34,7 @@ from .assessment_code import compute_code_parts
 from .diagram.diagram import MapCallFailedError, linear_process_diagram, run_map
 from .fingerprint import ai_input_fingerprint, map_fingerprint
 from .labels.labels import LabelsFailedError, run_labels
+from .questions import answer_questions
 from .step_assessment.route import inputs_hash
 from .step_assessment.steps import StepAssessmentFailedError, run_step_assessment
 
@@ -110,7 +111,8 @@ async def assess(
         "labels": lambda: run_labels(profile, llm, vocab=vocab, documents=documents),
         "steps": lambda: run_step_assessment(profile, llm, catalogue, vocab=vocab, documents=documents),
     }
-    wanted: list[PartName] = [p for p in PARTS if not reuse[p]]
+    # Spec 27 §2: OPPORTUNITIES is no longer called; its job is in ASSESS_STEPS and the three questions.
+    wanted: list[PartName] = [p for p in PARTS if p != "opportunities" and not reuse[p]]
     results = await asyncio.gather(*(_bounded(calls[p], timeout) for p in wanted), return_exceptions=True)
     got: dict[PartName, tuple[Any, int]] = {}
     for part, result in zip(wanted, results, strict=True):
@@ -123,11 +125,9 @@ async def assess(
         if part in was:
             outcomes[part] = was[part]
 
-    # Opportunities, stay human and the summary.
-    summary = prev.summary if prev is not None else ""
-    opportunities = list(prev.opportunities) if prev is not None else []
-    stay_human = list(prev.stay_human) if prev is not None else []
-    if "opportunities" in got:
+    # Opportunities, stay human and the summary: not generated since report v2 (spec 27); none are kept.
+    summary, opportunities, stay_human = "", [], []
+    if "opportunities" in got:  # pragma: no cover - never wanted since spec 27
         result, ms = got["opportunities"]
         if isinstance(result, OpportunitiesResult):
             summary, stay_human = result.summary, result.stay_human
@@ -185,8 +185,13 @@ async def assess(
     if "steps" in got:
         result, ms = got["steps"]
         if isinstance(result, tuple) and not isinstance(result, BaseException):
+            motivations = {
+                k: Motivation(text=v[0], evidence=v[1])
+                for k, v in dict(result[2]).items()  # pyright: ignore[reportUnknownArgumentType]
+            }
             step_assessment = StepAssessment(
                 steps=list(result[0]),  # pyright: ignore[reportUnknownArgumentType]
+                motivations=motivations,
                 inputs_hash=steps_in,
                 placeholder_catalogue=catalogue.placeholder,
             )
@@ -201,7 +206,7 @@ async def assess(
         keep("steps")
 
     for part in PARTS:
-        if reuse[part]:
+        if reuse[part] and part != "opportunities":
             logs.append(PartOutcome(part, "reused", 0, True))
 
     ratings = step_assessment.steps if step_assessment is not None else []
@@ -211,6 +216,10 @@ async def assess(
     )  # fmt: skip
     if step_assessment is not None:
         step_assessment = step_assessment.model_copy(update={"route": route})
+    questions = answer_questions(
+        profile, ratings, labels, outcomes.get("labels") == "generated", value, readiness, catalogue, readiness_cfg,
+        {k: (m.text, m.evidence) for k, m in (step_assessment.motivations if step_assessment else {}).items()},
+    ) if step_assessment is not None else None  # fmt: skip
 
     assessment = Assessment(
         summary=summary,
@@ -222,6 +231,7 @@ async def assess(
         readiness=readiness,
         path=path,
         step_assessment=step_assessment,
+        questions=questions,
         steps_hash=ai_hash,
         generated_at=now,
         outcomes=outcomes,  # pyright: ignore[reportArgumentType]

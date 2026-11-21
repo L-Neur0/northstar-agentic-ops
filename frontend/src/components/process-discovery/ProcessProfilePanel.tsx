@@ -1,13 +1,13 @@
 /**
  * The "Your process" side panel (spec 23 §3.8, §11.1, §11.7, §11.8; AC-23.38, AC-23.39, AC-23.66,
  * AC-23.74–23.79).
- * Why: the profile rail: the five process sections, the Steps section, the
- * Roles and systems section, then the *Finish* block (which takes the place of a "Generate
+ * Why: the profile rail: the five process sections, the Steps section (no Roles and systems
+ * section since 2026-11-21, spec 23 §3.6 rule 9), then the *Finish* block (which takes the place of a "Generate
  * Prompt" and analysis buttons). All state is lifted to the page.
  * Rules: the *Finish* button follows `finish.ready` and the session status only; `looksLikeTask`
  * is an advisory note that never disables it; a blocked button shows its reason sentence, linked
  * by `aria-describedby`, and an unknown code is shown as is. Part 2: the Documents section sits
- * between Roles and systems and *Finish*; proposed rows carry ✓ / ✎; two or more proposed step
+ * between Steps and *Finish*; proposed rows carry ✓ / ✎; two or more proposed step
  * names offer one batch confirm; *Finish* waits while a document write runs. Must not compute
  * completeness or count proposals.
  * Colours are theme tokens only, never raw palette classes (spec 23 §3.13.2; AC-23.57).
@@ -17,7 +17,6 @@ import { FileCheck2, Info } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { ProcessCard } from './ProcessCard'
 import { SubstepTabs } from './SubstepTabs'
-import { DerivedReviewPanel } from './DerivedReviewPanel'
 import { SectionToggle } from './SectionToggle'
 import { DocumentPanel } from './DocumentPanel'
 import type { ProposalControls } from './ProposalActions'
@@ -132,7 +131,6 @@ export function ProcessProfilePanel({
   const active = session.status === 'active' && !locked
   const rows = p.substeps.length
   const declared = p.substep_count ?? rows
-  const confirmedCount = Number(p.roles_confirmed) + Number(p.tools_confirmed)
   const writing = isWriting(pending)
   const proposedNames = p.substeps
     .map((_, i) => `process.substeps[${i + 1}].name`)
@@ -182,27 +180,6 @@ export function ProcessProfilePanel({
             writing={writing}
             onNoFurtherSteps={() => onConfirm('substeps')}
             proposals={proposals}
-          />
-        </div>
-      </section>
-
-      <section className="overflow-hidden rounded-lg border border-line bg-surface">
-        <SectionToggle
-          title="Roles and systems"
-          count={`${confirmedCount}/2`}
-          collapsed={sections.confirm.collapsed}
-          controls="section-body-confirm"
-          onToggle={() => onToggleSection('confirm')}
-        />
-        <div id="section-body-confirm" hidden={sections.confirm.collapsed}>
-          <DerivedReviewPanel
-            roles={p.all_roles}
-            tools={p.all_tools}
-            rolesConfirmed={p.roles_confirmed}
-            toolsConfirmed={p.tools_confirmed}
-            confirming={pending.confirming}
-            disabled={!active || writing}
-            onConfirm={onConfirm}
           />
         </div>
       </section>

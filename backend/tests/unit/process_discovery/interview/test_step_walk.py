@@ -2,8 +2,8 @@
 
 Why: one cell the expert cannot answer must never hold the walk; the none-able cells get the none
 row, the others are skipped (settled for the walk, missing for the score), and a proposal that is
-never confirmed stays visible. What: example 1, a skipped goal, the hand-over rule, and a step-cell
-proposal past its limit.
+never confirmed stays visible. What: example 1, a skipped Tier A cell, the hand-over rule (never
+asked since the short step walk, §3.19), and a step-cell proposal past its limit.
 """
 
 from app.services.process_discovery.domain.field_spec import step_cell_key
@@ -23,48 +23,41 @@ def walk(ctx, steps=3, leave_out=()):
     return apply_changes(profile, changes, vocab=ctx.vocab, at=AT).profile
 
 
-async def test_example_1_approvals_get_the_none_row(ctx):
-    """AC-14.24."""
+async def test_example_1_unanswered_approvals_are_skipped(ctx):
+    """AC-14.24 (amended §3.19 W5: Tier B is asked once; §3.20 O8: optional, so skipped, not the none row)."""
     key = step_cell_key(2, "approvals")
     session = session_at(ctx, "steps", walk(ctx, leave_out=("approvals",)), last_question={"focus": [key]})
-    results = await play(session, [("it depends", {})] * 3, ctx)
+    results = await play(session, [("it depends", {})], ctx)
     final = results[-1].session
-    assert final.counters.cell_asks[key] == 3
-    assert final.profile.process.substeps[1].approvals[0].model_dump() == {"none": True}
+    assert final.counters.cell_asks[key] == 1
+    assert final.profile.process.substeps[1].approvals == []
+    assert "approvals" in final.profile.process.substeps[1].skipped
     assert final.last_question.focus == [step_cell_key(3, "name")]
 
 
-async def test_a_goal_asked_three_times_is_skipped_and_unscored(ctx):
-    """AC-14.24."""
-    key = step_cell_key(2, "goal")
-    session = session_at(ctx, "steps", walk(ctx, leave_out=("goal",)), last_question={"focus": [key]})
-    results = await play(session, [("hard to say", {})] * 3, ctx)
+async def test_a_tier_a_cell_asked_twice_is_skipped_and_unscored(ctx):
+    """AC-14.24 (amended §3.19 W5: Tier A is asked twice, the big question and one follow-up)."""
+    key = step_cell_key(2, "systems")
+    session = session_at(ctx, "steps", walk(ctx, steps=2, leave_out=("systems",)), last_question={"focus": [key]})
+    results = await play(session, [("hard to say", {})] * 2, ctx)
     final = results[-1].session.profile
-    assert final.process.substeps[1].skipped == ["goal"]
-    assert final.process.substeps[1].goal == ""
+    assert final.process.substeps[1].skipped == ["systems"]
+    assert final.process.substeps[1].systems == []
     dumped = final.model_dump(by_alias=True)
-    full = apply_changes(dumped, {key: "Done"}, vocab=ctx.vocab, at=AT).profile
+    full = apply_changes(dumped, {key: ["SAP"]}, vocab=ctx.vocab, at=AT).profile
     assert score(full, vocab=ctx.vocab).filled_points == score(dumped, vocab=ctx.vocab).filled_points + 1
 
 
-async def test_the_hand_over_is_asked_once_and_never_for_the_last_step(ctx):
-    """AC-14.25."""
+async def test_the_hand_over_is_never_asked(ctx):
+    """AC-14.25 (amended §3.19 W4, W6: Tier C is proposed by code, never asked)."""
     profile = apply_changes(
         profile_with(ctx, *BOUNDARIES, *MEASURE, steps=2),
         step_changes(1, leave_out=("handover",)),
         vocab=ctx.vocab,
         at=AT,
     ).profile
-    handover = step_cell_key(1, "handover")
-    assert step_focus(profile, vocab=ctx.vocab) == handover
-    session = session_at(ctx, "steps", profile, last_question={"focus": [handover]})
-    results = await play(session, [("not sure", {})], ctx)
-    after = results[-1].session
-    assert after.profile.process.substeps[0].skipped == ["handover"]
-    assert after.last_question.focus == [step_cell_key(2, "name")]
-    last = apply_changes(
-        profile, {handover: "mail", **step_changes(2, leave_out=("handover",))}, vocab=ctx.vocab, at=AT
-    ).profile
+    assert step_focus(profile, vocab=ctx.vocab) == step_cell_key(2, "name")
+    last = apply_changes(profile, step_changes(2, leave_out=("handover",)), vocab=ctx.vocab, at=AT).profile
     assert last["process"]["substeps_complete"] is True
     assert step_focus(last, vocab=ctx.vocab) is None
 
@@ -77,7 +70,7 @@ async def test_an_unconfirmed_step_proposal_is_skipped_and_stays_a_proposal(ctx)
         profile, ProposalDiff("d1", step_cells=(FieldProposal(key, ["Excel"], "in Excel"),)), vocab=ctx.vocab, at=AT
     ).profile
     session = session_at(ctx, "steps", profile, last_question={"proposals": [key]})
-    results = await play(session, [("let me check that later", {})] * 3, ctx)
+    results = await play(session, [("let me check that later", {})] * 2, ctx)
     row = results[-1].session.profile.process.substeps[1]
     assert row.skipped == ["systems"]
     assert row.systems == ["Excel"]

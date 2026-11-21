@@ -1,6 +1,6 @@
 /**
- * The cover and the eleven parts of the discovery report on screen (spec 23 §11.11; spec 20 v3
- * §3.3; AC-23.85, AC-23.87, AC-23.92–23.96, AC-23.98).
+ * The cover and the six parts of the discovery report on screen (report v2: spec 27 §3.1; spec 23
+ * §11.11, amended 2026-11-21 (report v2); AC-23.85, AC-23.87, AC-23.92, AC-23.98, AC-23.153–23.156).
  * Why: the expert reads the same report the PDF prints, part by part, in plain words and tables
  * that work with a screen reader and on a phone.
  * Rules: every number, label and sentence is the server's string, rendered as plain text (no
@@ -8,29 +8,29 @@
  * focusable, labelled region; levels and AI fit carry an icon and a word, never colour alone;
  * hours only (no euro field exists). Must not: format, compute or reorder any value, or invent an
  * empty group the server did not send.
- * Part 3 (spec 23 §19.4 rule 3): `RecommendedRoute` and `OpportunityList` take `headingLevel`
- * (the level of the part heading around them; default 2), so the workspace popup can nest them
- * under its own `<h3>` part headings.
+ * Levels (AI fit, the three questions, readiness) are the server's words with a signal icon, never
+ * yes / no and never colour alone.
+ * Part 3 (spec 23 §19.4 rule 3): `Feasibility` takes `headingLevel` (the level of the part heading
+ * around it; default 2), so the workspace popup can nest its blocks under its own `<h3>` headings.
+ * Short step walk (approved 2026-11-20): a field whose source is `agent` (proposed by code from the
+ * expert's answers) labels its quote "suggested from the expert's answers".
  * Colours are theme tokens only, never raw palette classes (spec 23 §3.13.2; AC-23.57, AC-23.102).
  */
-import { createElement, type ReactNode } from 'react'
-import { Bot, Handshake, HelpCircle, SignalHigh, SignalLow, SignalMedium, User, type LucideIcon } from 'lucide-react'
+import { createElement, useId, type ReactNode } from 'react'
+import { HelpCircle, SignalHigh, SignalLow, SignalMedium, type LucideIcon } from 'lucide-react'
 import { Pill } from '../ui/Pill'
 import { ReportNoteBox } from './ReportNote'
 import { ProcessMap, type MapRenderer } from './ProcessMap'
 import type {
-  AssessmentPart,
-  AtAGlancePart,
+  FeasibilityPart,
   FieldsPart,
-  GapsPart,
   MapPart,
-  PathPart,
-  PotentialPart,
-  ReadinessPart,
+  QuestionRow,
+  ReadinessRow,
   ReportCover as Cover,
   ReportField,
-  RoutePart,
   StepsPart,
+  SummaryPart,
 } from '../../types/report'
 
 const TABLE = 'w-full border-collapse text-left text-sm'
@@ -39,8 +39,8 @@ const TD = 'border-b border-line px-2 py-1.5 align-top text-fg'
 const H3 = 'mt-4 mb-1 text-base font-semibold text-fg break-after-avoid'
 
 /** A heading one level below the part heading (`headingLevel` 2 → `<h3>`, 3 → `<h4>`). */
-function SubHeading({ level, className = H3, children }: { level: 2 | 3; className?: string; children: ReactNode }) {
-  return createElement(`h${level + 1}`, { className }, children)
+function SubHeading({ level, className = H3, id, children }: { level: 2 | 3; className?: string; id?: string; children: ReactNode }) {
+  return createElement(`h${level + 1}`, { className, id }, children)
 }
 
 function ScrollRegion({ label, children }: { label: string; children: ReactNode }) {
@@ -102,28 +102,13 @@ export function ReportCover({ cover }: { cover: Cover }) {
   )
 }
 
-export function AtAGlance({ part }: { part: AtAGlancePart }) {
+/** Part 1: the server's summary sentences, one paragraph each (spec 27 §3.5). */
+export function SummarySentences({ part }: { part: SummaryPart }) {
   return (
-    <div>
-      <p className="text-xl font-semibold text-fg">{part.hours}</p>
-      {part.routeHeadline && (
-        <p className="mt-2 text-sm text-fg">
-          <span className="font-semibold">Recommended route: </span>
-          {part.routeHeadline}
-        </p>
-      )}
-      {part.top.length > 0 && (
-        <>
-          <h3 className={H3}>Top opportunities</h3>
-          <List items={part.top.map((t) => `${t.title} · ${t.stepsLabel} · ${t.hours}`)} />
-        </>
-      )}
-      {part.prepare.length > 0 && (
-        <>
-          <h3 className={H3}>To prepare</h3>
-          <List items={part.prepare} />
-        </>
-      )}
+    <div className="flex flex-col gap-2 text-base text-fg">
+      {part.sentences.map((sentence, i) => (
+        <p key={i}>{sentence}</p>
+      ))}
     </div>
   )
 }
@@ -131,6 +116,7 @@ export function AtAGlance({ part }: { part: AtAGlancePart }) {
 function fieldQuoteLabel(field: ReportField): string {
   if (field.source === 'document') return 'from a document'
   if (field.source === 'expert') return "the expert's words"
+  if (field.source === 'agent') return "suggested from the expert's answers"
   return ''
 }
 
@@ -207,19 +193,38 @@ export function MapAndSteps({ part, render }: { part: MapPart; render?: MapRende
   )
 }
 
-const FIT: Record<string, LucideIcon> = { automate: Bot, assist: Handshake, human: User }
+/** A level as an icon plus the server's words; the key picks the icon only. */
+const LEVEL_ICON: Record<string, LucideIcon> = {
+  strong: SignalHigh,
+  partial: SignalMedium,
+  weak: SignalLow,
+  high: SignalHigh,
+  medium: SignalMedium,
+  low: SignalLow,
+}
 
-export function StepAssessmentTable({ part }: { part: StepsPart }) {
+function Level({ level, label }: { level: string | null; label: string }) {
+  const Icon = (level && LEVEL_ICON[level]) || HelpCircle
+  return (
+    <span className="inline-flex items-center gap-1">
+      <Icon className="h-4 w-4 shrink-0 text-link" aria-hidden="true" />
+      {label}
+    </span>
+  )
+}
+
+/** Part 5: per step, AI fit (level), the signals behind it, route, why, hours and the expert's words. */
+export function StepLevelTable({ part }: { part: StepsPart }) {
   return (
     <div>
       {part.catalogueNote && <ReportNoteBox kind="missing" text={part.catalogueNote} />}
       {part.rows.length > 0 && (
         <ScrollRegion label="Step-by-step assessment">
           <table className={TABLE}>
-            <caption className="pb-1 text-left text-xs text-muted">AI fit and route for each step</caption>
+            <caption className="pb-1 text-left text-xs text-muted">AI fit, the reasons behind it and the route for each step</caption>
             <thead>
               <tr>
-                {['Step', 'Hours a year', 'AI fit', 'Route', 'Why this route', 'Reason', 'Evidence'].map((h) => (
+                {['Step', 'Hours a year', 'AI fit', 'Because', 'Route', 'Why', "The expert's words"].map((h) => (
                   <th key={h} scope="col" className={TH}>
                     {h}
                   </th>
@@ -227,170 +232,86 @@ export function StepAssessmentTable({ part }: { part: StepsPart }) {
               </tr>
             </thead>
             <tbody>
-              {part.rows.map((row) => {
-                const Icon = (row.fit && FIT[row.fit]) || HelpCircle
-                return (
-                  <tr key={row.number}>
-                    <td className={TD}>
-                      Step {row.number} · {row.name}
-                    </td>
-                    <td className={TD}>{row.hours}</td>
-                    <td className={TD}>
-                      <span className="inline-flex items-center gap-1">
-                        <Icon className="h-4 w-4 shrink-0 text-link" aria-hidden="true" />
-                        {row.fitLabel}
-                      </span>
-                    </td>
-                    <td className={TD}>{row.routeName}</td>
-                    <td className={TD}>{row.routeReason}</td>
-                    <td className={TD}>{row.reason}</td>
-                    <td className={TD}>
-                      <Quote text={row.evidence} label={row.evidenceLabel} />
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </ScrollRegion>
-      )}
-    </div>
-  )
-}
-
-export function RecommendedRoute({ part, headingLevel = 2 }: { part: RoutePart; headingLevel?: 2 | 3 }) {
-  return (
-    <div>
-      {part.catalogueNote && <ReportNoteBox kind="missing" text={part.catalogueNote} />}
-      {part.headline && <p className="text-base font-medium text-fg">{part.headline}</p>}
-      {part.groups.map((g) => (
-        <div key={g.key}>
-          <SubHeading level={headingLevel}>{g.title}</SubHeading>
-          <List
-            items={g.items.map((item) =>
-              [`Step ${item.number} · ${item.name}`, item.hours, item.routeName || item.reason].filter(Boolean).join(' · '),
-            )}
-          />
-        </div>
-      ))}
-      {part.prepare.length > 0 && (
-        <>
-          <SubHeading level={headingLevel}>What to have in place</SubHeading>
-          <List items={part.prepare} />
-        </>
-      )}
-    </div>
-  )
-}
-
-export function OpportunityList({ part, headingLevel = 2 }: { part: AssessmentPart; headingLevel?: 2 | 3 }) {
-  return (
-    <div>
-      {part.summary && <p className="text-sm text-fg">{part.summary}</p>}
-      {part.opportunities.map((o) => (
-        <article key={o.id} className="mt-4 rounded-md border border-line p-3 break-inside-avoid">
-          <SubHeading level={headingLevel} className="text-base font-semibold text-fg">
-            {o.title}
-          </SubHeading>
-          <p className="text-xs text-muted">
-            {o.stepsLabel} · {o.typeLabel} · Impact {o.impact} · Feasibility {o.feasibility}
-          </p>
-          <dl className="mt-2 grid grid-cols-1 gap-x-3 gap-y-1 text-sm sm:grid-cols-[minmax(9rem,auto)_1fr]">
-            {(
-              [
-                ['What changes', o.whatChanges],
-                ['How', o.how],
-                ['Prepare first', o.prepareFirst],
-                ['Why this impact', o.impactReason],
-                ['Why this feasibility', o.feasibilityReason],
-              ] as const
-            )
-              .filter(([, v]) => v)
-              .map(([term, value]) => (
-                <div key={term} className="contents">
-                  <dt className="font-medium text-muted">{term}</dt>
-                  <dd className="text-fg">{value}</dd>
-                </div>
-              ))}
-            {o.evidence && (
-              <div className="contents">
-                <dt className="font-medium text-muted">Evidence</dt>
-                <dd>
-                  <Quote text={o.evidence} label={o.evidenceLabel} />
-                </dd>
-              </div>
-            )}
-            {o.review && (
-              <div className="contents">
-                <dt className="font-medium text-muted">Review</dt>
-                <dd className="text-fg">{o.review}</dd>
-              </div>
-            )}
-          </dl>
-        </article>
-      ))}
-      {part.stayHuman.length > 0 && (
-        <>
-          <SubHeading level={headingLevel}>Steps that stay with people</SubHeading>
-          <ul className="ml-5 list-disc text-sm text-fg">
-            {part.stayHuman.map((s, i) => (
-              <li key={i}>
-                {s.stepsLabel}: {s.reason} {s.evidence && <Quote text={s.evidence} label="the expert's words" />}
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-    </div>
-  )
-}
-
-export function HoursTables({ part }: { part: PotentialPart }) {
-  return (
-    <div>
-      {part.steps.length > 0 && (
-        <ScrollRegion label="Hours per step">
-          <table className={TABLE}>
-            <caption className="pb-1 text-left text-xs text-muted">Hours a year per step</caption>
-            <thead>
-              <tr>
-                {['Step', 'Hours per run', 'Runs a year', 'Hours a year'].map((h) => (
-                  <th key={h} scope="col" className={TH}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {part.steps.map((s) => (
-                <tr key={s.number}>
+              {part.rows.map((row) => (
+                <tr key={row.number}>
                   <td className={TD}>
-                    Step {s.number} · {s.name}
+                    Step {row.number} · {row.name}
                   </td>
-                  <td className={TD}>{s.hoursPerRun}</td>
-                  <td className={TD}>{s.runsPerYear}</td>
-                  <td className={TD}>{s.hoursPerYear}</td>
+                  <td className={TD}>{row.hours}</td>
+                  <td className={TD}>
+                    <Level level={row.level} label={row.levelLabel} />
+                  </td>
+                  <td className={TD}>{row.because.length > 0 && <List items={row.because} />}</td>
+                  <td className={TD}>
+                    {row.routeName}
+                    {row.routeReason && <span className="block text-xs text-muted">{row.routeReason}</span>}
+                  </td>
+                  <td className={TD}>{row.reason}</td>
+                  <td className={TD}>
+                    <Quote text={row.evidence} label={row.evidenceLabel} />
+                  </td>
                 </tr>
               ))}
             </tbody>
-            <tfoot>
-              <tr>
-                <th scope="row" colSpan={3} className={`${TD} font-semibold`}>
-                  Total
-                </th>
-                <td className={`${TD} font-semibold`}>{part.totals.hours}</td>
-              </tr>
-            </tfoot>
           </table>
         </ScrollRegion>
       )}
-      {part.opportunities.length > 0 && (
-        <ScrollRegion label="Hours per opportunity">
+    </div>
+  )
+}
+
+/** Part 6 block A: the three guiding questions, each with the server's level words and why. */
+export function QuestionsTable({ questions }: { questions: QuestionRow[] }) {
+  if (questions.length === 0) return null
+  return (
+    <ScrollRegion label="The three questions table">
+      <table className={TABLE}>
+        <caption className="pb-1 text-left text-xs text-muted">The three questions</caption>
+        <thead>
+          <tr>
+            {['Question', 'Level', 'Why'].map((h) => (
+              <th key={h} scope="col" className={TH}>
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {questions.map((q) => (
+            <tr key={q.key}>
+              <th scope="row" className={`${TD} font-medium`}>
+                {q.question}
+              </th>
+              <td className={TD}>
+                <Level level={q.level} label={q.levelLabel} />
+              </td>
+              <td className={TD}>
+                {q.why}
+                {q.quote && (
+                  <span className="block text-xs">
+                    <Quote text={q.quote} label="the expert's words" />
+                  </span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </ScrollRegion>
+  )
+}
+
+/** Part 6 block B: the readiness checklist, one line per dimension. */
+export function ReadinessTable({ rows, footer }: { rows: ReadinessRow[]; footer: string }) {
+  return (
+    <div>
+      {rows.length > 0 && (
+        <ScrollRegion label="Readiness checklist">
           <table className={TABLE}>
-            <caption className="pb-1 text-left text-xs text-muted">Hours a year of the steps each opportunity touches</caption>
+            <caption className="pb-1 text-left text-xs text-muted">Readiness by dimension</caption>
             <thead>
               <tr>
-                {['Opportunity', 'Steps', 'Hours of these steps'].map((h) => (
+                {['Dimension', 'Level', 'To prepare'].map((h) => (
                   <th key={h} scope="col" className={TH}>
                     {h}
                   </th>
@@ -398,119 +319,48 @@ export function HoursTables({ part }: { part: PotentialPart }) {
               </tr>
             </thead>
             <tbody>
-              {part.opportunities.map((o) => (
-                <tr key={o.id}>
-                  <td className={TD}>{o.title}</td>
-                  <td className={TD}>{o.stepsLabel}</td>
-                  <td className={TD}>{o.stepHours}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </ScrollRegion>
-      )}
-      {part.formulas.length > 0 && (
-        <>
-          <h3 className={H3}>How it is calculated</h3>
-          <List items={part.formulas} />
-        </>
-      )}
-      {part.assumptions.length > 0 && (
-        <>
-          <h3 className={H3}>Assumptions</h3>
-          <List items={part.assumptions} />
-        </>
-      )}
-      {part.problems.length > 0 && <List items={part.problems} />}
-      {part.parkedLine && (
-        <p data-testid="parked-line" className="mt-3 text-sm text-muted">
-          {part.parkedLine}
-        </p>
-      )}
-    </div>
-  )
-}
-
-const LEVEL_ICON: Record<string, LucideIcon> = { high: SignalHigh, medium: SignalMedium, low: SignalLow }
-
-export function ReadinessTable({ part }: { part: ReadinessPart }) {
-  return (
-    <div>
-      <ScrollRegion label="Readiness checklist">
-        <table className={TABLE}>
-          <caption className="pb-1 text-left text-xs text-muted">Readiness by dimension</caption>
-          <thead>
-            <tr>
-              {['Dimension', 'Question', 'Level', 'Why', 'To prepare', 'Specialist note'].map((h) => (
-                <th key={h} scope="col" className={TH}>
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {part.dimensions.map((d) => {
-              const Icon = LEVEL_ICON[d.level] ?? HelpCircle
-              return (
+              {rows.map((d) => (
                 <tr key={d.key}>
                   <th scope="row" className={`${TD} font-medium`}>
                     {d.label}
                   </th>
-                  <td className={TD}>{d.question}</td>
                   <td className={TD}>
-                    <span className="inline-flex items-center gap-1">
-                      <Icon className="h-4 w-4 shrink-0 text-link" aria-hidden="true" />
-                      {d.levelLabel}
-                    </span>
+                    <Level level={d.level} label={d.levelLabel} />
                   </td>
-                  <td className={TD}>{d.reason}</td>
                   <td className={TD}>{d.toPrepare}</td>
-                  <td className={TD}>{d.note}</td>
                 </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </ScrollRegion>
-      {part.footer && <p className="text-sm text-muted">{part.footer}</p>}
+              ))}
+            </tbody>
+          </table>
+        </ScrollRegion>
+      )}
+      {footer && <p className="text-sm text-muted">{footer}</p>}
     </div>
   )
 }
 
-export function SuggestedPath({ part }: { part: PathPart }) {
+/** Part 6, AI readiness and feasibility: A questions, B readiness, C bullets and the gaps line. */
+export function Feasibility({ part, headingLevel = 2 }: { part: FeasibilityPart; headingLevel?: 2 | 3 }) {
+  const bulletsId = useId()
   return (
     <div>
-      {part.groups.map((g) => (
-        <div key={g.key}>
-          <h3 className={H3}>{g.title}</h3>
-          {g.prepareLines.length > 0 && <List items={g.prepareLines} />}
-          {g.items.length > 0 ? (
-            <List items={g.items.map((i) => `${i.title} · ${i.stepsLabel} · ${i.stepHours}`)} />
-          ) : (
-            g.emptyText && <p className="text-sm text-muted">{g.emptyText}</p>
-          )}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-export function GapsAndSources({ part }: { part: GapsPart }) {
-  return (
-    <div>
-      {part.fields.length > 0 && (
-        <>
-          <h3 className={H3}>Still open</h3>
-          <List items={part.fields.map((f) => [f.label, f.value].filter(Boolean).join(': '))} />
-        </>
+      <SubHeading level={headingLevel}>The three questions</SubHeading>
+      <QuestionsTable questions={part.questions} />
+      <SubHeading level={headingLevel}>Readiness</SubHeading>
+      <ReadinessTable rows={part.readiness} footer={part.readinessFooter} />
+      {(part.bullets.length > 0 || part.gaps) && (
+        <SubHeading level={headingLevel} id={bulletsId}>
+          Before starting and risks
+        </SubHeading>
       )}
-      {part.documents.length > 0 && (
-        <>
-          <h3 className={H3}>Documents used</h3>
-          <List items={part.documents.map((d) => `${d.name} · ${d.outcome}`)} />
-        </>
+      {part.bullets.length > 0 && (
+        <ul aria-labelledby={bulletsId} className="ml-5 list-disc text-sm text-fg">
+          {part.bullets.map((item, i) => (
+            <li key={i}>{item}</li>
+          ))}
+        </ul>
       )}
-      {part.closingNote && <p className="mt-3 text-sm text-muted">{part.closingNote}</p>}
+      {part.gaps && <p className="mt-3 text-xs text-muted">{part.gaps}</p>}
     </div>
   )
 }

@@ -187,3 +187,12 @@ def test_l5_mapping_with_unknown_format_or_kind() -> None:
 def test_l6_skipped_steps_are_empty() -> None:
     labels, _ = _ground({"steps": []})
     assert [(s.step, s.inputs, s.decisions) for s in labels] == [(k, [], []) for k in range(1, 6)]
+
+
+def test_ac_19_48_label_prompt_uses_decision_criteria() -> None:
+    """AC-19.48 (spec 19 §3.8): named criteria make a decision explainable unless the words say experience."""
+    assert "Decision criteria" in LABEL_SYSTEM
+    assert (
+        "When the step's decision criteria say what a decision is based on, that decision is "
+        "`explainable_judgement` unless the expert's words say it rests on experience or feel."
+    ) in " ".join(LABEL_SYSTEM.split())

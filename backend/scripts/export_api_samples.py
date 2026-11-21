@@ -61,9 +61,11 @@ def main() -> None:
             save("turn", response, 200)
         assert response.status_code == 200, response.text
     save("set-cluster", client.put(f"/api/sessions/{sid}/cluster", json={"code": "FIN"}, headers=visitor()), 200)
-    save("finish-blocked", client.post(f"/api/sessions/{sid}/finish", headers=visitor()), 409)
+    # the roles and systems lists no longer block *Finish* (spec 14 §3.20 O10): a fresh session is the blocked one
+    fresh = client.post("/api/sessions", json={"displayName": "Anna"}, headers=visitor()).json()["id"]
+    save("finish-blocked", client.post(f"/api/sessions/{fresh}/finish", headers=visitor()), 409)
+    client.delete(f"/api/sessions/{fresh}", headers=visitor())
     save("confirm-roles", client.post(f"/api/sessions/{sid}/confirm", json={"target": "roles"}, headers=visitor()), 200)
-    client.post(f"/api/sessions/{sid}/confirm", json={"target": "tools"}, headers=visitor())
     save("finish-ok", client.post(f"/api/sessions/{sid}/finish", headers=visitor()), 200)
     save("list-sessions", client.get("/api/sessions", headers=visitor()), 200)
     save("list-ideas", client.get("/api/ideas", headers=visitor()), 200)

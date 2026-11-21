@@ -1,6 +1,6 @@
 # 12 · Field registry, Verdicts, taxonomy, rubric and models
 
-> **Status:** built · **§3.6 amendment (conflicts, a source per item): approved and built 2026-11-20** (`MetaPart`, `ConflictRecord`; `fromImage`, `parts` and an empty `__conflicts` are left out of the dump) · **Implements:** F-05 (product); the vocabulary behind F-04, F-06, F-07, F-08, F-09, F-10, F-11, F-22; architecture §3.2, §5 · **Depends on:** spec 10
+> **Status:** built · **owner test amendment (amended 2026-11-21 (owner test)): groups, `offered`, `progress`, `accept`** · **§3.4 short step walk amendment: approved 2026-11-20** · **§3.6 amendment (conflicts, a source per item): approved and built 2026-11-20** (`MetaPart`, `ConflictRecord`; `fromImage`, `parts` and an empty `__conflicts` are left out of the dump) · **Implements:** F-05 (product); the vocabulary behind F-04, F-06, F-07, F-08, F-09, F-10, F-11, F-22; architecture §3.2, §5 · **Depends on:** spec 10
 > **Contract:** C1 of the [implementation plan](03-implementation-plan.md). Every other workstream codes against this spec. A change here goes through the lead.
 > **Code:** `backend/app/services/process_discovery/domain/{field_spec,taxonomy,scope,node_order}.py`, `backend/app/models/process_discovery_schemas.py`, `config/nig/taxonomy.yaml`
 > **Tests:** `backend/tests/unit/process_discovery/domain/`, `backend/tests/unit/models/`
@@ -188,10 +188,51 @@ Unit comparison is case-insensitive after trimming. P05 `decided_by` is one of `
 | S10 | `approvals` | Approvals | object_list `{approver_role, waiting_time?}` | 1 | One row, or none row | ✓ | ✓ |
 | S11 | `exceptions` | Exceptions | object_list `{description, loops_back_to: number?}` | 1 | One row, or none row | ✓ | ✓ |
 | S12 | `handover` | Hand-over | text, `max_asks` 1 | **0** | Present (never blocks) | ✓ | ✓ |
+| S13 | `decision_type` | Rules or judgement | object `{kind: text, evidence: text}` | 1 | Validator: `kind` is `rules`, `judgement` or `mix`, and `evidence` (the expert's words) is present | ✓ | ✓ |
 
-**Points per step: 11.** S12 is unscored: a step is complete when S01–S11 are complete or skipped, whatever S12 holds. `loops_back_to` is a 1-based step number. Pointers outside `1..substep_count` or to the step itself are dropped (spec 13). Questions are the default wording of [product §5.2](01-product.md#52-step-fields-asked-for-each-step-one-at-a-time).
+**Points per step: 12** (amended 2026-11-20, short step walk: S13 added). S12 is unscored: a step is complete when S01–S11 and S13 are complete or skipped (or, for Tier C, hold an agent proposal, short step walk amendment below), whatever S12 holds. `loops_back_to` is a 1-based step number. Pointers outside `1..substep_count` or to the step itself are dropped (spec 13). Questions are the default wording of [product §5.2](01-product.md#52-step-fields-asked-for-each-step-in-groups).
 
 The required sub-field of a row (`role`, `approver_role`, `description`, `item`) identifies the row. `required_subfield(spec)` returns it.
+
+#### Short step walk amendment (approved 2026-11-20)
+
+Product §5.2 and F-08/F-09; the interview side is spec 14 §3.19. Contract changes:
+
+| Where | Change |
+|---|---|
+| `FieldSpec` | Gains `group: str \| None` (fields asked together in one question), `ask_part: str` (the short phrase a code-built group question uses, for example "what is annoying or slow") and `optional: bool = False` (asked at most `max_asks` times, then given up at once: never deferred, never in the review or wrap-up) |
+| Process groups | P07 + P08 `result`; P14 + P15 `quick` (two yes/no questions). P13 is `optional` with `max_asks` 1 |
+| Step groups | S01 `names` · S03, S06, S07, S09, S11, S13 `A` (`max_asks` 2) · S04, S10 `B` (`max_asks` 1) · S08 `effort` (`max_asks` 2) · S02, S05, S12 `C` (never asked; `max_asks` 2 bulk confirmations, S12 keeps 1). `step_specs_in_group(group)` lists them in registry order |
+| S13 `decision_type` | New step field, weight 1, Tier A; object `{kind, evidence}`; validator: `kind` empty → partial "Rules or judgement has not been answered yet."; `kind` not `rules`/`judgement`/`mix` → invalid "Rules or judgement must be rules, judgement or a mix."; no `evidence` → partial "Rules or judgement still needs: the expert's words." |
+| `Step` model | Gains `decision_type: DecisionType{kind: str = "", evidence: str = ""}`; an older session without it loads with the default |
+| Meta `source` | Gains `agent` (§3.6). `FieldMeta` accepts `agent` with `proposed` (quote required, the words it was built from) and with `confirmed` (after the expert's yes, source kept) |
+| Questions | P07, P13, P14, P15, P16 and S13 take the product §5.1/§5.2 wording |
+
+| ID | Given / when / then |
+|---|---|
+| AC-12.50 | S13 grades: `{}` partial; `{"kind": "maybe", "evidence": "x"}` invalid; `{"kind": "mix"}` partial; `{"kind": "mix", "evidence": "mostly rules"}` complete |
+| AC-12.51 | Groups: P07/P08 share a group, P14/P15 share another; S03, S06, S07, S09, S11, S13 are group `A` with `max_asks` 2; S04, S10 group `B` with 1; S08 `effort` with 2; S02, S05, S12 group `C`; P13 is optional with `max_asks` 1; every grouped spec has an `ask_part` |
+| AC-12.52 | `FieldMeta` accepts `{source: agent, status: proposed, quote}` and `{source: agent, status: confirmed}`, and rejects `agent` + `proposed` without a quote; a `Step` without `decision_type` loads with the empty default |
+
+#### Owner test amendment (amended 2026-11-21 (owner test))
+
+Spec 14 §3.20. Registry and model changes only; the points, the phases enum and the stored shapes stay readable.
+
+| Change | Detail |
+|---|---|
+| Groups | S04 roles moves to group `A` (`max_asks` 2, `ask_part` "who else is involved"). S10 approvals, S11 exceptions and S12 hand-over form group `B`, the one optional question per step: `max_asks` 1, `optional` true, `ask_part` "whether anything needs a sign-off", "anything that often goes wrong", "anything special about passing it on". Group `C` (proposed by code) is S02 goal and S05 owner only |
+| `optional` on a step field | A skipped optional cell is left out of the score's total (spec 13 §3.9); the none row is written at the limit only for S04 (`NONE_ROW_LEAVES` = roles) |
+| `progress_step_specs()` | Derived: scored step fields that are asked and not optional (not group `C`, not `optional`): S01, S03, S04, S06, S07, S08, S09, S13. `PROGRESS_DEFAULT_STEPS` = 4 |
+| `LastQuestion.offered` | `dict[str, Any]`, default `{}`: the values the last question offered, by key (spec 14 §3.20 O5). Old documents load without it |
+| `Score` on the wire | `ScoreOut.progress` (0–1), computed by code when the session is sent (spec 14 §3.20 O4); not stored |
+| Language | `LanguageWords.accept: tuple[str, ...] = ()`, phrases that accept the values the agent offered ("those are exact", "the ones you listed") |
+| Kept for old sessions | `Phase.confirm`, `roles_confirmed`, `tools_confirmed`, `LastQuestion.confirm` `roles` / `systems`, `FinishBlock` `roles_not_confirmed` / `tools_not_confirmed` stay in the models (old documents and old clients); code no longer sets or reads them for the flow |
+
+| ID | Given / when / then |
+|---|---|
+| AC-12.53 | Groups after the owner test: S03, S04, S06, S07, S09, S13 group `A`; S10, S11, S12 group `B`, optional, `max_asks` 1; S02, S05 group `C`; `progress_step_specs()` is S01, S03, S04, S06, S07, S08, S09, S13 |
+| AC-12.54 | A stored session without `last_question.offered`, with `phase: confirm` and `roles_confirmed: false` loads; `LastQuestion(offered={"process.sensitive_data": [...]})` round-trips |
+| AC-12.55 | The language config loads `accept` phrases and a language without them loads with `()` (the find suggestions are written by the model, not configured: spec 14 §3.20 O2) |
 
 #### Derived fields (built by code, never asked, never written by a model or a document)
 
@@ -211,13 +252,13 @@ All numbers below are defined once in `field_spec.py`. Totals are computed from 
 | Constant | Value | Source |
 |---|---|---|
 | `PROCESS_POINTS` | 18 | Σ weights of P01–P16 |
-| `STEP_POINTS` | 11 | Σ weights of S01–S12 |
+| `STEP_POINTS` | 12 | Σ weights of S01–S13 |
 | `MIN_STEPS`, `MAX_STEPS` | 2, 6 | Product Q1 |
-| `total_points_for(n)` | `18 + 11 × clamp(n, 0, 6)`; `None` → 18 | 0 → 18 · 2 → 40 · 4 → 62 · 5 → 73 · 6 → 84 · 9 → 84 |
-| `COMPLETENESS_GATE` | 0.80 | F-11. Needs `ceil(0.8 × total)` points: 50 of 62 for 4 steps, 68 of 84 for 6 |
+| `total_points_for(n)` | `18 + 12 × clamp(n, 0, 6)`; `None` → 18 | 0 → 18 · 2 → 42 · 4 → 66 · 5 → 78 · 6 → 90 · 9 → 90 |
+| `COMPLETENESS_GATE` | 0.80 | F-11. Needs `ceil(0.8 × total)` points: 53 of 66 for 4 steps, 72 of 90 for 6 |
 | `FIELD_ASK_LIMIT` | 3 | F-09: a process field is **deferred** after 3 asks without becoming complete |
 | `REVIEW_ASK_LIMIT` | 2 | F-09: a deferred field is **given up** after 2 more asks (5 in total) |
-| `CELL_ASK_LIMIT` | 3 | F-09: a step cell gets the none row or is skipped after 3 asks |
+| `CELL_ASK_LIMIT` | 3 | F-09: a step cell gets the none row or is skipped after 3 asks (default; the short step walk sets lower `max_asks` per group, §3.4 short step walk amendment) |
 | `WIDENING_LIMIT` | 2 | F-06: widening questions per session |
 | `CONFIRM_TURN_LIMIT` | 6 | F-09: turns in `confirm` before the agent asks for one yes for both lists |
 | `FIND_FOCUS_TURN`, `FIND_DIRECT_TURN` | 4, 6 | F-03: find-phase turns where the agent narrows, then proposes one candidate and offers the exit |
@@ -231,8 +272,8 @@ Every written field carries one meta entry. Context and process fields keep thei
 
 | Key (JSON) | Type | Rule |
 |---|---|---|
-| `source` | `expert` · `document` · `specialist` | Who wrote the value |
-| `status` | `proposed` · `confirmed` | `proposed` is allowed only for `document` and `expert` (a name carried over from an idea, F-01) |
+| `source` | `expert` · `document` · `specialist` · `agent` | Who wrote the value. `agent` (amended 2026-11-20, short step walk): a Tier C step cell proposed by code from the expert's other answers (§3.4, short step walk amendment) |
+| `status` | `proposed` · `confirmed` | `proposed` is allowed only for `document`, `agent` and `expert` (a name carried over from an idea, F-01) |
 | `documentId` | string or null | Required when `source` is `document` |
 | `quote` | string or null | Required when `status` is `proposed`, and for every `document` value: the words behind it (document text, or the idea's words) |
 | `by` | string or null | Required when `source` is `specialist`: the name typed at the workspace prompt |
@@ -612,6 +653,43 @@ Every route response that carries the profile carries it as stored (registry key
 
 `rank_nodes(node_ids, edges) -> (rank: dict[str, int], back_edges: set[tuple[str, str]])`. Longest-path rank, 0 = leftmost. A depth-first search from the nodes nobody flows into (in the given order), then from any node not yet visited, finds the back edges (loops); they are left out of the ranking, so every node gets a rank whatever the graph. Edges touching unknown nodes and self-loops are ignored; duplicate ids and edges count once. Used by the map grounding (spec 18) and the BPMN drawing (spec 22).
 
+### 3.13 Amendment (built 2026-11-21): decision criteria (S14) and scope from the map
+
+> **Status:** approved 2026-11-21 · **built 2026-11-21** (AC-12.56 to AC-12.60). As built: `check_registry` runs at import; `step_specs_shown(rows)` drops S14 from a step table (report §3.3 map, admin grid) when no step is judgement or mix, and a rules step shows "—"; the report cell reads "Based on: …; set by …; not written down; varies: …"; `ScopeVerdict.refreshed` (default false) is stored; roles for M1 are the S04 roll-up plus every S05 owner. Why and the evaluation evidence: spec 14 §3.21. Product §5.2 (S14).
+
+**S14, decision criteria (registry, `domain/field_spec.py`).**
+
+| Attribute | Value |
+|---|---|
+| `id`, `key`, `label` | `S14`, `decision_criteria`, "Decision criteria" |
+| `kind`, sub-fields | `object`: `basis` (text, required: what the decision is based on, the expert's words), `set_by` (text, optional: the role that sets the criteria, or "me"), `written` (text, optional: `yes`, `partly` or `no`), `varies` (text, optional: what changes from case to case or person to person, the expert's words) |
+| Complete when | `basis` present |
+| Validator | `written`, when present, is `yes`, `partly` or `no` (else invalid, with the reason) |
+| `weight`, `group`, `max_asks`, `optional` | `0`, `GROUP_B`, `1`, `true` |
+| `applies_when` *(new optional `FieldSpec` attribute)* | `decision_judgement`: the cell is asked, shown and counted only when the step's S13 `kind` is `judgement` or `mix`. A pure helper `field_applies(spec, row)` decides; `None` = always. Any other value is a registry error at import |
+| `ask_part` | "what the decision is based on, who sets the criteria and whether they are written down" |
+| `extract`, `propose` | `true`, `true` (a document may propose criteria, with a quote) |
+
+Points per step stay **12**; the score, the progress bar and the *Finish* gate are unchanged. The field view of a cell that does not apply is not sent (`fieldViews` has no row for it), so the panel does not show it.
+
+**Scope from the map (`domain/scope.py`).** `refresh_scope_from_map(verdict, roles, systems) -> dict` is pure:
+
+| # | Rule |
+|---|---|
+| M1 | `roles` = the distinct normalised roles of every step's S04 and S05 (the roll-up `all_roles`); `systems` = the distinct normalised systems of every step's S06 (`all_tools`). Normalised = lower case, trimmed, whitespace collapsed |
+| M2 | `multi_role` becomes `true` when there are 2 or more roles; `multi_system` when there are 2 or more systems. The map **only turns a signal on**, never off (a short map may simply be incomplete) |
+| M3 | The other three signals keep the model's first answer. Score and band are recomputed with `verdict_for` (unchanged thresholds, `external_consumer` still a cap) |
+| M4 | When a signal changed, `reasoning` gets ` Updated from the map: <n> roles, <m> systems.` appended, and the verdict gets `refreshed: true`; otherwise the verdict is returned unchanged (same object contents) |
+| M5 | A neutral verdict (failed CLASSIFY, score 0) is refreshed the same way |
+
+| ID | Given / when / then |
+|---|---|
+| AC-12.56 | The registry has S14 with the attributes above; `extract_keys()` includes `process.substeps[i].decision_criteria`; an `applies_when` value other than `decision_judgement` or `None` fails at import |
+| AC-12.57 | `field_applies(S14, row)` is true for S13 `judgement` and `mix`, false for `rules` and for a row without S13 |
+| AC-12.58 | S14 `{basis: "the hiring manager's must-haves", written: "no"}` is complete; `{written: "maybe"}` is invalid with a reason; `{}` is empty |
+| AC-12.59 | Points per step, the score and the gate of the p01 fixture are unchanged with S14 present or absent |
+| AC-12.60 | `refresh_scope_from_map` with signals (F, F, T, T, T) = `borderline`, roles {"talent acquisition specialist", "hiring manager"} and systems {"recruiting system", "excel", "e-mail"} returns `process`, score 5, `refreshed: true` and the appended sentence; with 1 role and 1 system it returns the verdict unchanged; a signal already `true` is never turned off |
+
 ## 4. Interfaces
 
 ```python
@@ -733,11 +811,11 @@ def rank_nodes(node_ids: Iterable[str], edges: Iterable[tuple[str, str]]) -> tup
 
 | ID | Given / when / then |
 |---|---|
-| AC-12.1 | The registry lists exactly P01–P16, S01–S12 and D01–D02 with unique IDs, in that declaration order, with the keys, kinds, weights and phases of §3.4 |
+| AC-12.1 | The registry lists exactly P01–P16, S01–S13 and D01–D02 with unique IDs, in that declaration order, with the keys, kinds, weights and phases of §3.4 |
 | AC-12.2 | Keys are unique per series; P01–P03 are top-level keys, P04–P16 start with `process.`; S keys are bare leaves |
 | AC-12.3 | Every `object`/`object_list` spec declares sub-fields; `object_list` sub-fields are scalar; every `complete_when` group names real sub-fields; no spec has both groups and a validator |
 | AC-12.4 | Every phase string in `field_spec` equals a `Phase` value; every collecting phase has at least one field; `finished` and `no_candidate` are not in `PHASE_ORDER` |
-| AC-12.5 | `PROCESS_POINTS == 18`, `STEP_POINTS == 11`; `total_points_for` gives 18, 18, 40, 84, 84 for `None`, 0, 2, 6, 9 |
+| AC-12.5 | `PROCESS_POINTS == 18`, `STEP_POINTS == 12`; `total_points_for` gives 18, 18, 42, 90, 90 for `None`, 0, 2, 6, 9 |
 | AC-12.6 | Every spec has a rule; every spec except P05 has a question equal to the product's default wording; S12 has weight 0 and `max_asks == 1` |
 | AC-12.7 | Volume `{"count": 400}` → `partial`, missing `("period",)`, reason exactly `Volume still needs: period.` |
 | AC-12.8 | Volume `{"raw": "a few hundred a month"}` → `complete`; an empty volume → missing `("count", "period")` |

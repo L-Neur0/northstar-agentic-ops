@@ -28,11 +28,13 @@ async def test_a_cooperative_expert_charges_each_field_once(ctx):
     """AC-14.20."""
     session = session_at(ctx, "measure", profile_with(ctx, *BOUNDARIES), last_question={"focus": ["process.volume"]})
     values = process_changes()
-    results = await play(session, [(f"answer {k}", {k: values[k]}) for k in MEASURE], ctx)
+    single, pair = MEASURE[:4], MEASURE[4:]  # §3.19 W1: variation and sensitive data are one question
+    script = [(f"answer {k}", {k: values[k]}) for k in single] + [("no and no", {k: values[k] for k in pair})]
+    results = await play(session, script, ctx)
     final = results[-1].session
     assert {k: final.counters.field_asks[k] for k in MEASURE} == dict.fromkeys(MEASURE, 1)
     assert deferred_keys(final.profile.model_dump(by_alias=True), final.counters.model_dump(), vocab=ctx.vocab) == []
-    assert [r.session.last_question.focus for r in results[:-1]] == [[k] for k in MEASURE[1:]]
+    assert [r.session.last_question.focus for r in results[:-1]] == [[k] for k in single[1:]] + [list(pair)]
 
 
 async def test_defer_after_three_then_review_then_give_up(ctx):
@@ -94,7 +96,7 @@ async def test_a_deferred_count_is_assumed_and_the_walk_starts(ctx):
     results = await play(session, [("not sure", {})] * 3, ctx)
     assert [r.session.profile.process.substep_count for r in results] == [None, None, 2]
     assert results[-1].session.phase.value == "steps"
-    assert results[-1].session.last_question.focus == ["process.substeps[1].name"]
+    assert results[-1].session.last_question.focus == ["process.substeps[1].name", "process.substeps[2].name"]
 
 
 def test_counter_hygiene():

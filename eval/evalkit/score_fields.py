@@ -1,16 +1,20 @@
 """Report quality: every field of the hidden truth checked against what the product captured (spec 24 §3.7).
 
 Why: report quality is the headline number of the evaluation, so it must be hard to flatter. The
-denominator is every field of the hidden truth (P01-P16 plus S01-S11 of every true step): a value
+denominator is every field of the hidden truth (P01-P16 plus every scored step leaf of
+every true step, read from the registry): a value
 the product never captured, or a whole step it missed, counts as wrong; nothing is left out. Code
 decides everything it can (regions, clusters, counts, numbers read with the product's own parser,
 names and aliases); the judge only reads free text, and only when code could not decide.
-What: `normalise`, `align_steps` (true step to captured step, by position or by shared name words),
+What: `normalise`, `align_steps` (true step to captured step by content: name, activities, data and
+systems; a captured step may cover several true steps, amended 2026-11-20),
 `score_fields` (one `FieldResult` per truth field, with method, result and reason) and the
 "no invention" rule for fields the persona never discloses (a number there is an `invented_value`).
 Must not: call the judge for a code row that matched, for a missing value, or for systems
 (names are names); read anything but the profile it is given.
-Spec 24 §3.7; AC-24.10 to AC-24.13.
+A merged step is scored against each true step it covers (extra list items allowed); a true step
+covered by no captured step is wrong in every cell; the expert's own role is implied in step roles.
+Spec 24 §3.7; AC-24.10 to AC-24.13, AC-24.44 to AC-24.47.
 """
 
 from __future__ import annotations
@@ -28,6 +32,7 @@ from .persona import PROCESS_KEYS, STEP_LEAVES, Persona
 
 SPECS: dict[str, FieldSpec] = {s.key: s for s in PROFILE_SPECS}
 STEP_SPEC: dict[str, FieldSpec] = {s.key: s for s in STEP_SPECS}
+CRITERIA_LEAF = "decision_criteria"  # S14, unscored in the product, scored here when the truth has it (§12 V2)
 NAME_FIELDS = ("process.process_owner", "owner")
 ROW_LISTS = {"roles": "role", "approvals": "approver_role"}
 NONE_ROW_FIELDS = ("process.sensitive_data", "roles", "approvals", "exceptions")
@@ -82,6 +87,7 @@ def normalise(text: Any) -> str:
     return s
 
 
+SELF_WORDS = frozenset({"i", "me", "myself", "you", "yourself"})
 STOP_WORDS = frozenset({"the", "and", "for", "with", "from", "into", "out", "all", "per", "our", "their"})
 
 
@@ -161,25 +167,87 @@ def _within(a: float, b: float, tolerance: float) -> bool:
     return abs(a - b) <= tolerance * abs(b) + 1e-9
 
 
-# --- alignment ----------------------------------------------------------------------------------
+# --- step matching by content (A1, amended 2026-11-20) -----------------------------------------
+
+MIN_STEP_MATCH = 0.25  # share of a true step's distinctive content a captured step must hold to cover it
+
+
+def _canonical(name: Any, groups: Sequence[set[str]]) -> str:
+    n = normalise(name)
+    return next((min(g) for g in groups if n in g), n)
+
+
+def step_tokens(step: Mapping[str, Any], groups: Sequence[set[str]] = ()) -> set[str]:
+    """Content of a step: words of its name, activities and data in / out, plus its systems (aliases folded)."""
+    raw = step.get("data")
+    data: Mapping[str, Any] = raw if isinstance(raw, Mapping) else {}  # pyright: ignore[reportUnknownVariableType]
+    texts = [
+        step.get("name"),
+        *(step.get("activities") or []),
+        *(data.get("inputs") or []),
+        *(data.get("outputs") or []),
+    ]
+    words = {w for t in texts for w in _words(t)}
+    return words | {f"sys:{_canonical(s, groups)}" for s in step.get("systems") or [] if normalise(s)}
+
+
+def _match_scores(
+    truth_steps: Sequence[Mapping[str, Any]], captured_steps: Sequence[Mapping[str, Any]], groups: Sequence[set[str]]
+) -> list[list[float]]:
+    """score[i][j]: share of true step i's distinctive tokens (not in any other true step) found in captured step j."""
+    truth = [step_tokens(s, groups) for s in truth_steps]
+    captured = [step_tokens(s, groups) for s in captured_steps]
+    scores: list[list[float]] = []
+    for i, tokens in enumerate(truth):
+        others = set().union(*(t for k, t in enumerate(truth) if k != i))
+        own = (tokens - others) or tokens
+        scores.append([len(own & c) / len(own) if own else 0.0 for c in captured])
+    return scores
 
 
 def align_steps(
-    truth_steps: Sequence[Mapping[str, Any]], captured_steps: Sequence[Mapping[str, Any]]
+    truth_steps: Sequence[Mapping[str, Any]],
+    captured_steps: Sequence[Mapping[str, Any]],
+    groups: Sequence[set[str]] = (),
 ) -> list[tuple[int, int | None]]:
-    """(true step number, captured step number or None); by position when the counts are equal (AC-24.10)."""
-    if len(truth_steps) == len(captured_steps):
-        return [(i, i) for i in range(1, len(truth_steps) + 1)]
-    pairs: list[tuple[int, int | None]] = []
-    for i, step in enumerate(truth_steps, start=1):
-        words = _words(step.get("name"))
-        best, best_shared = None, 0
-        for j, captured in enumerate(captured_steps, start=1):
-            shared = len(words & _words(captured.get("name")))
-            if shared > best_shared:
-                best, best_shared = j, shared
-        pairs.append((i, best))
-    return pairs
+    """(true step, captured step or None), matched by content (AC-24.10, AC-24.44, AC-24.45).
+
+    1. One to one: the pairing with the highest total match (each pair at least `MIN_STEP_MATCH`);
+       ties go to the pairing closest in position. 2. Equal counts: a true step left unpaired takes
+       the captured step at its own position when that one is still free. 3. Merge: a true step still
+       unpaired joins the captured step that covers it best (at least `MIN_STEP_MATCH`); several true
+       steps may then share one captured step. Anything left is missing.
+    """
+    nt, nc = len(truth_steps), len(captured_steps)
+    scores = _match_scores(truth_steps, captured_steps, groups)
+    best: dict[tuple[int, int], tuple[tuple[float, int], tuple[int | None, ...]]] = {}
+
+    def solve(i: int, used: int) -> tuple[tuple[float, int], tuple[int | None, ...]]:
+        if i == nt:
+            return (0.0, 0), ()
+        if (i, used) in best:
+            return best[(i, used)]
+        (total, dist), rest = solve(i + 1, used)
+        result = ((total, dist), (None, *rest))
+        for j in range(nc):
+            if used & (1 << j) or scores[i][j] < MIN_STEP_MATCH:
+                continue
+            (t, d), r = solve(i + 1, used | (1 << j))
+            option = ((round(t + scores[i][j], 9), d - abs(i - j)), (j, *r))
+            if option[0] > result[0]:
+                result = option
+        best[(i, used)] = result
+        return result
+
+    chosen = list(solve(0, 0)[1])
+    if nt == nc:
+        taken = {j for j in chosen if j is not None}
+        chosen = [i if j is None and i not in taken else j for i, j in enumerate(chosen)]
+    for i, j in enumerate(chosen):
+        if j is None and nc:
+            k = max(range(nc), key=lambda c: (scores[i][c], -abs(i - c)))
+            chosen[i] = k if scores[i][k] >= MIN_STEP_MATCH else None
+    return [(i + 1, None if j is None else j + 1) for i, j in enumerate(chosen)]
 
 
 # --- scoring ------------------------------------------------------------------------------------
@@ -205,9 +273,9 @@ class _Scorer:
         return ok, "judge", reason
 
     async def name_list(
-        self, spec: FieldSpec, hidden: list[str], captured: list[str], *, judge: bool
+        self, spec: FieldSpec, hidden: list[str], captured: list[str], *, judge: bool, extras: bool = False
     ) -> tuple[bool, str, str]:
-        """Every hidden item matched (alias, then judge one item at a time) and at most one extra."""
+        """Every hidden item matched (alias, then judge one item at a time) and at most one extra (any with `extras`)."""
         left = list(captured)
         method = "code"
         for item in hidden:
@@ -222,11 +290,18 @@ class _Scorer:
             if hit is None:
                 return False, method, f"{item!r} not captured"
             left.remove(hit)
-        if len(left) > 1:
+        if len(left) > 1 and not extras:
             return False, method, f"{len(left)} extra items"
         return True, method, "every item matched"
 
-    async def field(self, key: str, spec: FieldSpec, hidden: Any, captured: Any) -> FieldResult:
+    def is_own_role(self, role: Any) -> bool:
+        """The expert's own role (P02, its aliases, "I", "me"): implied in a step's roles (AC-24.47)."""
+        own = self.persona.truth.fields.get("user_function")
+        return normalise(role) in SELF_WORDS or names_match(role, own, self.groups)
+
+    async def field(
+        self, key: str, spec: FieldSpec, hidden: Any, captured: Any, *, merged: bool = False
+    ) -> FieldResult:
         h, c = as_text(hidden), as_text(captured)
         base: dict[str, Any] = {"key": key, "id": spec.id, "hidden": h, "captured": c}
         if self.persona.disclose(key) == "never":
@@ -235,13 +310,21 @@ class _Scorer:
             return FieldResult(**base, method="never", correct=not invented, invented=invented, reason=reason)
         if is_empty(captured):
             return FieldResult(**base, method="missing", correct=False, reason="not captured")
-        ok, method, reason, error = await self._compare(spec, hidden, captured, h, c)
+        ok, method, reason, error = await self._compare(spec, hidden, captured, h, c, merged)
         return FieldResult(**base, method=method, correct=ok, reason=reason[:200], judge_error=error)
 
     async def _compare(
-        self, spec: FieldSpec, hidden: Any, captured: Any, h: str, c: str
+        self, spec: FieldSpec, hidden: Any, captured: Any, h: str, c: str, merged: bool = False
     ) -> tuple[bool, str, str, bool]:
         leaf = spec.key.rsplit(".", 1)[-1] if spec.is_process else spec.key
+        if leaf == "roles" and not spec.is_process:
+            hv = [
+                str(r.get("role", "")) for r in hidden if isinstance(r, Mapping) and not self.is_own_role(r.get("role"))
+            ]
+            cv = [str(r.get("role", "")) for r in captured if isinstance(r, Mapping) and not r.get("none")]
+            cv = [r for r in cv if r.strip() and not self.is_own_role(r)]
+            ok, method, reason = await self.name_list(spec, [r for r in hv if r.strip()], cv, judge=True, extras=merged)
+            return ok, method, reason, False
         if spec.key in NONE_ROW_FIELDS and (is_none_rows(hidden) or is_none_rows(captured)):
             ok = is_none_rows(hidden) == is_none_rows(captured)
             return ok, "code", "none row" if ok else "none row on one side only", False
@@ -272,23 +355,44 @@ class _Scorer:
                 return True, "code", "same-way answer equal", False
             ok, reason, error = await self.ask(spec, str(hidden["differences"]), str(captured.get("differences") or ""))
             return ok, "judge", reason, error
+        if leaf == "decision_criteria" and not spec.is_process and isinstance(hidden, Mapping):
+            return await self._criteria(spec, hidden, captured if isinstance(captured, Mapping) else {})
+        if leaf == "decision_type" and not spec.is_process:
+            hk = hidden.get("kind") if isinstance(hidden, Mapping) else hidden
+            ck = captured.get("kind") if isinstance(captured, Mapping) else captured
+            return normalise(hk) == normalise(ck), "code", f"kind {ck} vs {hk}", False
         if spec.key in NAME_FIELDS:
             hv = hidden.get("role") if isinstance(hidden, Mapping) else hidden
             cv = captured.get("role") if isinstance(captured, Mapping) else captured
             ok, method, reason = await self.names(spec, hv, cv, judge=True)
             return ok, method, reason, False
         if leaf == "systems" and not spec.is_process:
-            ok, method, reason = await self.name_list(spec, list(hidden), list(captured), judge=False)
+            ok, method, reason = await self.name_list(spec, list(hidden), list(captured), judge=False, extras=merged)
             return ok, method, reason, False
         if leaf in ROW_LISTS and not spec.is_process:
             sub = ROW_LISTS[leaf]
             hv = [str(r.get(sub, "")) for r in hidden if isinstance(r, Mapping)]
             cv = [str(r.get(sub, "")) for r in captured if isinstance(r, Mapping) and not r.get("none")]
-            ok, method, reason = await self.name_list(spec, hv, cv, judge=True)
+            ok, method, reason = await self.name_list(spec, hv, cv, judge=True, extras=merged)
             return ok, method, reason, False
         if normalise(h) == normalise(c):
             return True, "code", "same words", False
         ok, reason, error = await self.ask(spec, h, c)
+        return ok, "judge", reason, error
+
+    async def _criteria(
+        self, spec: FieldSpec, hidden: Mapping[str, Any], captured: Mapping[str, Any]
+    ) -> tuple[bool, str, str, bool]:
+        """S14 (§12 V2): `written` exact and `set_by` by name (code, when captured), `basis` and `varies` by the judge."""
+        hw, cw = normalise(hidden.get("written")), normalise(captured.get("written"))
+        if hw and hw != cw:
+            return False, "code", f"written {cw or '-'} vs {hw}", False
+        if hidden.get("set_by") and captured.get("set_by"):
+            if not names_match(hidden["set_by"], captured["set_by"], self.groups):
+                return False, "code", "set by a different role", False
+        ok, reason, error = await self.ask(spec, str(hidden.get("basis") or ""), str(captured.get("basis") or ""))
+        if ok and hidden.get("varies") and captured.get("varies"):
+            ok, reason, error = await self.ask(spec, str(hidden["varies"]), str(captured["varies"]))
         return ok, "judge", reason, error
 
     @staticmethod
@@ -328,12 +432,27 @@ async def score_fields(
     for key in PROCESS_KEYS:
         results.append(await scorer.field(key, SPECS[key], persona.truth.fields[key], _captured(profile, key)))
     captured_steps: list[Mapping[str, Any]] = list((profile.get("process") or {}).get("substeps") or [])
-    for true_n, cap_n in align_steps(persona.truth.steps, captured_steps):
+    pairs = align_steps(persona.truth.steps, captured_steps, scorer.groups)
+    shared = [c for _, c in pairs]
+    for true_n, cap_n in pairs:
         step = persona.truth.steps[true_n - 1]
-        cap = captured_steps[cap_n - 1] if cap_n is not None else {}
         for leaf in STEP_LEAVES:
             key = f"process.substeps[{true_n}].{leaf}"
-            results.append(await scorer.field(key, STEP_SPEC[leaf], step[leaf], cap.get(leaf)))
+            if cap_n is None:  # a missing step: every cell wrong, no honesty credit (AC-24.46)
+                results.append(FieldResult(key=key, id=STEP_SPEC[leaf].id, hidden=as_text(step[leaf]), captured="",
+                                           method="missing", correct=False, reason="step not captured"))  # fmt: skip
+                continue
+            cap = captured_steps[cap_n - 1]
+            merged = shared.count(cap_n) > 1
+            results.append(await scorer.field(key, STEP_SPEC[leaf], step[leaf], cap.get(leaf), merged=merged))
+        if CRITERIA_LEAF in step:  # §12 V2: scored only when the truth has it (a judgement or mix step)
+            key, spec = f"process.substeps[{true_n}].{CRITERIA_LEAF}", STEP_SPEC[CRITERIA_LEAF]
+            if cap_n is None:
+                results.append(FieldResult(key=key, id=spec.id, hidden=as_text(step[CRITERIA_LEAF]), captured="",
+                                           method="missing", correct=False, reason="step not captured"))  # fmt: skip
+            else:
+                captured_value = captured_steps[cap_n - 1].get(CRITERIA_LEAF)
+                results.append(await scorer.field(key, spec, step[CRITERIA_LEAF], captured_value))
     correct = sum(1 for r in results if r.correct)
     return FieldScores(
         results=results,

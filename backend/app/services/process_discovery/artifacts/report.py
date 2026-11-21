@@ -24,48 +24,41 @@ from datetime import datetime
 from typing import Any
 
 from app.core.config import Organisation, SolutionCatalogue
-from app.models.process_discovery_schemas import Assessment, FieldStatus, Opportunity, ReadinessDimension, Session
+from app.models.process_discovery_schemas import Assessment, FieldStatus, ReadinessDimension, Session
 from app.models.process_discovery_wire import (
-    AssessmentPart,
-    AtAGlancePart,
     DiscoveryReport,
-    DocumentRow,
+    FeasibilityPart,
     FieldsPart,
-    GapsPart,
     MapPart,
-    OpportunityValueRow,
-    PathGroup,
-    PathItem,
-    PathPart,
-    PotentialPart,
-    ReadinessPart,
+    QuestionRow,
     ReadinessRow,
     ReportCover,
     ReportField,
     ReportNote,
-    ReportOpportunity,
     ReportPartBase,
-    ReportStayHuman,
-    RouteGroup,
-    RouteItem,
-    RoutePart,
     StepColumn,
     StepRow,
     StepsPart,
-    StepValueRow,
-    TopOpportunity,
-    TotalsRow,
+    SummaryPart,
 )
 from app.utils.prompt_safety import single_line
 
-from ..domain.field_spec import PROFILE_SPECS, STEP_SPECS, Vocabulary, is_none_row, resolve_address, step_cell_key
+from ..domain.field_spec import (
+    PROFILE_SPECS,
+    STEP_SPECS,
+    Vocabulary,
+    is_none_row,
+    resolve_address,
+    step_cell_key,
+    step_specs_shown,
+)
 from ..domain.scope import is_one_off
 from ..profile.conflicts import open_conflicts
 from ..profile.shapes import as_list, as_mapping, meta_for, normalized_profile, process_of, rows_of
 from ..profile.views import field_views
-from .path import GRADE_ORDER
+from .questions import LEVEL_WORDS, QUESTION_TEXT
 from .readiness import LABELS as DIMENSION_LABELS
-from .value import num
+from .summary import build_summary
 
 logger = logging.getLogger("app.report")
 
@@ -74,21 +67,18 @@ MAX_CELL_CHARS = 1500
 ELLIPSIS = "…"
 
 TITLES = {
-    "at_a_glance": "At a glance",
+    "summary": "Summary",
     "process": "The process",
     "measures": "Volume and measures",
     "map": "Process map and steps",
     "steps": "Step-by-step AI assessment",
-    "route": "Recommended route",
-    "assessment": "Transformation assessment",
-    "potential": "Hours a year",
-    "readiness": "Readiness checklist",
-    "path": "Suggested path",
-    "gaps": "Gaps and sources",
+    "feasibility": "AI readiness and feasibility",
 }
 NUMBERS = {key: i for i, key in enumerate(TITLES, start=1)}
 
 NOT_BUILT = "This part could not be built."
+NOT_V2 = "Not assessed with this version of the report; re-run the assessment."
+MAX_BULLETS = 5
 NOT_MEASURED = "Not measured yet"
 UNTITLED = "Untitled process"
 NO_OWNER = "No process owner identified"
@@ -207,6 +197,18 @@ def _leaf_text(leaf: str, value: Any) -> str:
         return ". ".join(p for p in (f"In: {inputs}" if inputs else "", f"Out: {outputs}" if outputs else "") if p)
     if leaf == "effort":
         return ", ".join(t for t in (_text(obj.get("duration")), _text(obj.get("frequency"))) if t)
+    if leaf == "decision_criteria":  # S14 (spec 12 §3.13): "Based on: …; set by …; not written down; varies: …"
+        written = {"yes": "written down", "partly": "partly written down", "no": "not written down"}
+        parts = [
+            f"Based on: {basis}" if (basis := _text(obj.get("basis"))) else "",
+            f"set by {set_by}" if (set_by := _text(obj.get("set_by"))) else "",
+            written.get(_text(obj.get("written")).casefold(), ""),
+            f"varies: {varies}" if (varies := _text(obj.get("varies"))) else "",
+        ]
+        return "; ".join(p for p in parts if p)
+    if leaf == "decision_type":  # S13 (spec 20 §3.3, short step walk): "Mix: <the expert's words>"
+        kind, evidence = _text(obj.get("kind")).capitalize(), _text(obj.get("evidence"))
+        return f"{kind}: {evidence}" if kind and evidence else kind or evidence
     return "; ".join(t for t in (_text(v) for v in obj.values()) if t)
 
 
@@ -281,7 +283,6 @@ class _Ctx:
         self.outcomes: dict[str, str] = {str(k): str(v) for k, v in a.outcomes.items()} if a is not None else {}
         self.value = a.value if a is not None else None
         self.hours = {s.step: s.hours_per_year for s in self.value.steps} if self.value is not None else {}
-        self.opp_hours = {o.id: o.step_hours for o in self.value.opportunities} if self.value is not None else {}
         self.views = {
             v["key"]: v
             for v in field_views(
@@ -303,9 +304,6 @@ class _Ctx:
         spec, index = resolved
         label = self.vocab.label(spec)
         return f"{label} of step {index}" if index else label
-
-    def opportunities(self) -> list[Opportunity]:
-        return [o for o in (self.assessment.opportunities if self.assessment else []) if o.review != "rejected"]
 
     def route_name(self, route_id: str | None) -> str:
         solution = self.catalogue.get(route_id) if route_id else None
@@ -352,49 +350,9 @@ def _cover(c: _Ctx) -> ReportCover:
     )
 
 
-def _ordered_opportunities(c: _Ctx) -> list[Opportunity]:
-    """The path's order key (spec 19 §3.6) across every group: step hours, impact, feasibility, model order."""
-    opps = c.opportunities()
-    use_hours = all(c.opp_hours.get(o.id) is not None for o in opps)
-
-    def key(item: tuple[int, Opportunity]) -> tuple[float, int, int, int]:
-        position, o = item
-        hours = -(c.opp_hours.get(o.id) or 0.0) if use_hours else 0.0
-        return hours, GRADE_ORDER[o.impact.value], GRADE_ORDER[o.feasibility.value], position
-
-    return [o for _, o in sorted(enumerate(opps), key=key)]
-
-
 def _dimensions(c: _Ctx) -> list[ReadinessDimension]:
     a = c.assessment
     return list(a.readiness.dimensions) if a is not None and a.readiness is not None else []
-
-
-def _at_a_glance(c: _Ctx) -> AtAGlancePart:
-    value = c.value
-    note = None
-    hours = ""
-    if value is not None and value.complete and value.hours_per_year is not None:
-        hours = f"About {round(value.hours_per_year):,} hours a year."
-    else:
-        missing = ", ".join(c.key_label(k) for k in (value.missing if value else [])) or "the step efforts"
-        note = _note("incomplete", f"Hours need: {missing}.")
-    a = c.assessment
-    route = a.step_assessment.route if a is not None and a.step_assessment is not None else None
-    top = [
-        TopOpportunity(id=o.id, title=o.title, steps_label=steps_label(o.substeps, c.names, with_names=False),
-                       hours=format_hours(c.opp_hours.get(o.id)))
-        for o in _ordered_opportunities(c) if o.type.value != "standardise"
-    ][:3]  # fmt: skip
-    dims = _dimensions(c)
-    standardise = [o.title for o in c.opportunities() if o.type.value == "standardise"]
-    lines = [d.to_prepare for d in dims if d.level == "low" and d.to_prepare] + standardise
-    lines += [d.to_prepare for d in dims if d.level == "medium" and d.to_prepare]
-    return AtAGlancePart(
-        number=NUMBERS["at_a_glance"], title=TITLES["at_a_glance"], note=note, hours=hours,
-        route_headline=route.headline if route is not None and route.headline else None,
-        top=top, prepare=list(dict.fromkeys(lines))[:3],
-    )  # fmt: skip
 
 
 def _process(c: _Ctx) -> FieldsPart:
@@ -460,10 +418,11 @@ def _map(c: _Ctx) -> MapPart:
         for system in _items(row.get("systems")):
             systems.setdefault(system.casefold(), system)
     columns = []
+    shown = step_specs_shown(c.rows)
     for index, row in enumerate(c.rows, start=1):
         skipped = set(_items(row.get("__skipped")))
         cells = []
-        for spec in STEP_SPECS:
+        for spec in shown:
             key = step_cell_key(index, spec.key)
             view = c.views.get(key, {})
             status = view.get("status")
@@ -480,7 +439,7 @@ def _map(c: _Ctx) -> MapPart:
     return MapPart(
         number=NUMBERS["map"], title=TITLES["map"], note=note, diagram=diagram, caption=caption,
         process_name=_text(c.process.get("name")) or UNTITLED, systems=list(systems.values()), columns=columns,
-        row_labels=[c.vocab.label(s) for s in STEP_SPECS],
+        row_labels=[c.vocab.label(s) for s in shown],
     )  # fmt: skip
 
 
@@ -499,6 +458,7 @@ def _steps(c: _Ctx) -> StepsPart:
     if not _steps_available(c) or a is None or a.step_assessment is None:
         return StepsPart(**head, note=_note("failed", STEPS_FAILED))
     ratings = {r.step: r for r in a.step_assessment.steps}
+    fits = {f.step: f for f in a.questions.steps} if a.questions is not None else {}
     rows = []
     for number in range(1, len(c.rows) + 1):
         r = ratings.get(number)
@@ -511,124 +471,11 @@ def _steps(c: _Ctx) -> StepsPart:
             evidence=r.evidence if r else "",
             evidence_label=_evidence_label(r.evidence_source, r.evidence_key, c.profile, c.docs)
             if r and r.evidence else "",
+            level=fits[number].level if number in fits else None,
+            level_label=LEVEL_WORDS["q1"][fits[number].level] if number in fits else "",
+            because=list(fits[number].because) if number in fits else [],
         ))  # fmt: skip
     return StepsPart(**head, rows=rows)
-
-
-def _route(c: _Ctx) -> RoutePart:
-    a = c.assessment
-    head: dict[str, Any] = {"number": NUMBERS["route"], "title": TITLES["route"], "catalogue_note": _catalogue_note(c)}
-    route = a.step_assessment.route if a is not None and a.step_assessment is not None else None
-    if not _steps_available(c) or a is None or a.step_assessment is None or route is None:
-        return RoutePart(**head, note=_note("failed", ROUTE_MISSING))
-    ratings = {r.step: r for r in a.step_assessment.steps}
-
-    def item(step: int, *, routed: bool) -> RouteItem:
-        r = ratings.get(step)
-        name = c.names.get(step) or (r.name if r else "")
-        if routed:
-            return RouteItem(number=step, name=name, hours=format_hours(c.hours.get(step)),
-                             route_name=c.route_name(r.route_id if r else None))  # fmt: skip
-        return RouteItem(number=step, name=name, reason=(r.route_reason or r.reason) if r else "")
-
-    spec = (
-        ("start_with", "Start with", route.start_with, True),
-        ("later", "Later", route.later, True),
-        ("fix_first", "Fix first", route.fix_first, False),
-        ("stay_with_people", "Stays with people", route.stay_with_people, False),
-        ("not_routed", "No route yet", route.not_routed, False),
-    )
-    groups = [RouteGroup(key=k, title=t, items=[item(s, routed=r) for s in steps]) for k, t, steps, r in spec if steps]
-    return RoutePart(**head, headline=route.headline, groups=groups, prepare=list(route.prepare))
-
-
-def _assessment(c: _Ctx) -> AssessmentPart:
-    a = c.assessment
-    head: dict[str, Any] = {"number": NUMBERS["assessment"], "title": TITLES["assessment"]}
-    if a is None or c.outcomes.get("opportunities") == "failed":
-        return AssessmentPart(**head, note=_note("failed", OPPORTUNITIES_FAILED))
-    opportunities = [
-        ReportOpportunity(
-            id=o.id, title=o.title, steps_label=steps_label(o.substeps, c.names),
-            type_label=TYPE_LABELS.get(o.type.value, o.type.value), what_changes=o.what_changes, how=o.how,
-            prepare_first=o.prepare_first, impact=o.impact.value.capitalize(), impact_reason=o.impact_reason,
-            feasibility=o.feasibility.value.capitalize(), feasibility_reason=o.feasibility_reason,
-            evidence=o.evidence,
-            evidence_label=_evidence_label(o.evidence_source, o.evidence_key, c.profile, c.docs) if o.evidence else "",
-            review=o.review.capitalize() if o.review != "pending" else None,
-        )
-        for o in c.opportunities()
-    ]  # fmt: skip
-    stay = [ReportStayHuman(steps_label=steps_label(s.substeps, c.names), reason=s.reason, evidence=s.evidence)
-            for s in a.stay_human]  # fmt: skip
-    note = None if opportunities else _note("empty", OPPORTUNITIES_EMPTY)
-    return AssessmentPart(**head, note=note, summary=a.summary, opportunities=opportunities, stay_human=stay)
-
-
-def _potential(c: _Ctx) -> PotentialPart:
-    value = c.value
-    head: dict[str, Any] = {"number": NUMBERS["potential"], "title": TITLES["potential"], "parked_line": EURO_PARKED}
-    if value is None:
-        return PotentialPart(**head, note=_note("incomplete", "Total needs: the step efforts."))
-    steps = [
-        StepValueRow(number=s.step, name=s.name or c.names.get(s.step, ""),
-                     hours_per_run=f"{num(s.duration_hours)} h" if s.duration_hours is not None else EMPTY,
-                     runs_per_year=num(s.runs_per_year) if s.runs_per_year is not None else EMPTY,
-                     hours_per_year=format_hours(s.hours_per_year))
-        for s in value.steps
-    ]  # fmt: skip
-    by_id = {o.id: o for o in c.opportunities()}
-    opps = [
-        OpportunityValueRow(id=o.id, title=by_id[o.id].title,
-                            steps_label=steps_label(by_id[o.id].substeps, c.names, with_names=False),
-                            step_hours=format_hours(o.step_hours))
-        for o in value.opportunities if o.id in by_id
-    ]  # fmt: skip
-    complete = value.complete and value.hours_per_year is not None
-    note = None
-    if not complete:
-        missing = ", ".join(c.key_label(k) for k in value.missing) or "the step efforts"
-        note = _note("incomplete", f"Total needs: {missing}.")
-    return PotentialPart(
-        **head, note=note, complete=complete, steps=steps, opportunities=opps,
-        totals=TotalsRow(hours=format_hours(value.hours_per_year) if complete else EMPTY),
-        formulas=list(value.formulas), assumptions=list(value.assumptions), problems=list(value.problems),
-    )  # fmt: skip
-
-
-def _readiness(c: _Ctx) -> ReadinessPart:
-    dims = _dimensions(c)
-    rows = [
-        ReadinessRow(key=d.key, label=d.label or DIMENSION_LABELS.get(d.key, d.key), question=QUESTIONS.get(d.key, ""),
-                     level=d.level, level_label=d.level.capitalize(), reason=d.reason, to_prepare=d.to_prepare,
-                     note=d.note)
-        for d in dims
-    ]  # fmt: skip
-    note = None if rows else _note("missing", READINESS_MISSING)
-    return ReadinessPart(number=NUMBERS["readiness"], title=TITLES["readiness"], note=note, dimensions=rows,
-                         footer=READINESS_FOOTER)  # fmt: skip
-
-
-def _path(c: _Ctx) -> PathPart:
-    a = c.assessment
-    path = a.path if a is not None else None
-    by_id = {o.id: o for o in c.opportunities()}
-
-    def items(ids: Sequence[str]) -> list[PathItem]:
-        return [PathItem(opportunity_id=i, title=by_id[i].title, steps_label=steps_label(by_id[i].substeps, c.names),
-                         step_hours=format_hours(c.opp_hours.get(i))) for i in ids if i in by_id]  # fmt: skip
-
-    lows = [d.to_prepare for d in _dimensions(c) if d.level == "low" and d.to_prepare]
-    groups = [
-        PathGroup(key="prepare_first", title="Prepare first", prepare_lines=lows,
-                  items=items(path.prepare_first if path else [])),
-        PathGroup(key="quick_wins", title="Quick wins", items=items(path.quick_wins if path else [])),
-        PathGroup(key="bigger_changes", title="Bigger changes", items=items(path.bigger_changes if path else [])),
-    ]  # fmt: skip
-    for g in groups:
-        if not g.items and not g.prepare_lines:
-            g.empty_text = NOTHING_HERE
-    return PathPart(number=NUMBERS["path"], title=TITLES["path"], groups=groups)
 
 
 def _conflict_text(value: Any) -> str:
@@ -636,43 +483,64 @@ def _conflict_text(value: Any) -> str:
     return single_line("; ".join(str(v) for v in items) if items is not None else str(value or ""), 200)
 
 
-def _gaps(c: _Ctx) -> GapsPart:
-    fields = []
-    for key, view in c.views.items():
-        status = view.get("status")
-        if status not in GAP_STATUSES:
-            continue
-        reason = _text(view.get("reason"))
-        word = GAP_WORDS[status]
-        label = c.key_label(key)
-        fields.append(ReportField(key=key, label=label, value=f"{word}: {reason}" if reason else word, status=_status(status),
-                                  source=view.get("source"), quote=view.get("quote")))  # fmt: skip
+def _summary(c: _Ctx) -> SummaryPart:
+    """Part 1 (spec 27 §3.5)."""
+    a = c.assessment
+    route = a.step_assessment.route if a is not None and a.step_assessment is not None else None
+    questions = a.questions if a is not None and a.step_assessment is not None else None
+    sentences = build_summary(c.profile, questions, route, c.value, vocab=c.vocab)
+    note = None if questions is not None else _note("missing", NOT_V2)
+    return SummaryPart(number=NUMBERS["summary"], title=TITLES["summary"], note=note, sentences=sentences)
+
+
+def _readiness_rows(c: _Ctx) -> list[ReadinessRow]:
+    return [
+        ReadinessRow(key=d.key, label=d.label or DIMENSION_LABELS.get(d.key, d.key), question=QUESTIONS.get(d.key, ""),
+                     level=d.level, level_label=d.level.capitalize(), reason=d.reason, to_prepare=d.to_prepare,
+                     note=d.note)
+        for d in _dimensions(c)
+    ]  # fmt: skip
+
+
+def _gaps_line(c: _Ctx) -> str:
+    """The last line of part 6 (spec 27 §3.1 block C): fields missing or given up, open conflicts, sources."""
+    labels = [c.key_label(k) for k, v in c.views.items() if v.get("status") in GAP_STATUSES]
     names = {d.id: d.name for d in c.session.documents}
-    for conflict in open_conflicts(c.profile):  # spec 14 §3.17 item 5: open and left conflicts are gaps
-        label = c.key_label(conflict.key) + (f", {conflict.sub.replace('_', ' ')}" if conflict.sub else "")
-        holder = f'"{names[conflict.holder_document_id]}"' if conflict.holder_document_id in names else "the expert"
-        offering = f'"{names.get(conflict.document_id, "a removed document")}"'
-        value = (
-            f'Not settled: {holder} says "{_conflict_text(conflict.current)}"; '
-            f'{offering} says "{_conflict_text(conflict.offered)}"'
-        )
-        fields.append(ReportField(key=conflict.conflict_key, label=label, value=value, source="document",
-                                  quote=conflict.quote))  # fmt: skip
-    documents = [DocumentRow(name=d.name, outcome=d.outcome) for d in c.session.documents]
-    n = len(documents)
-    with_docs = f", with {n} document{'s' if n != 1 else ''}" if n else ""
-    closing = (
-        f"This is a first assessment from one expert's account in a short interview{with_docs}. Numbers are "
-        "hours estimated from the expert's answers; the specialist review checks them."
-    )
-    return GapsPart(number=NUMBERS["gaps"], title=TITLES["gaps"], fields=fields, documents=documents,
-                    closing_note=closing)  # fmt: skip
+    for x in open_conflicts(c.profile):  # spec 14 §3.17 item 5: open and left conflicts are gaps, with both values
+        holder = f'"{names[x.holder_document_id]}"' if x.holder_document_id in names else "the expert"
+        offering = f'"{names.get(x.document_id, "a removed document")}"'
+        label = c.key_label(x.key) + (f", {x.sub.replace('_', ' ')}" if x.sub else "")
+        labels.append(f'{label} (Not settled: {holder} says "{_conflict_text(x.current)}"; '
+                      f'{offering} says "{_conflict_text(x.offered)}")')  # fmt: skip
+    docs = [d.name for d in c.session.documents]
+    gaps = ", ".join(labels) if labels else "none"
+    sources = ", ".join(docs) if docs else "the interview only"
+    return f"Gaps: {gaps}. Sources: {sources}."
+
+
+def _feasibility(c: _Ctx) -> FeasibilityPart:
+    """Part 6 (spec 27 §3.1): A the three questions, B readiness, C before starting and risks, then the gaps line."""
+    a = c.assessment
+    q = a.questions if a is not None and a.step_assessment is not None else None
+    head: dict[str, Any] = {"number": NUMBERS["feasibility"], "title": TITLES["feasibility"]}
+    rows = []
+    if q is not None:
+        for key, answer in (("q1", q.q1), ("q2", q.q2), ("q3", q.q3)):
+            why = " ".join(answer.reasons)
+            rows.append(QuestionRow(key=key, question=QUESTION_TEXT[key], level=answer.level,  # pyright: ignore[reportArgumentType]
+                                    level_label=LEVEL_WORDS[key][answer.level],
+                                    why=f"{why} {answer.motivation}".strip(), quote=answer.evidence))  # fmt: skip
+    items: list[str] = [*q.prepare, *q.risks] if q is not None else []
+    bullets = list(dict.fromkeys(items))[:MAX_BULLETS]
+    note = None if q is not None else _note("missing", NOT_V2)
+    return FeasibilityPart(**head, note=note, questions=rows, readiness=_readiness_rows(c),
+                           readiness_footer=READINESS_FOOTER, bullets=bullets, gaps=_gaps_line(c))  # fmt: skip
 
 
 def build_report(
     session: Session, org: Organisation, vocab: Vocabulary, catalogue: SolutionCatalogue
 ) -> DiscoveryReport:
-    """The cover and the eleven parts of the finished session. Pure; never raises."""
+    """The cover and the six parts of the finished session (spec 27). Pure; never raises."""
     c = _Ctx(session, org, vocab, catalogue)
     try:
         cover = _cover(c)
@@ -684,16 +552,11 @@ def build_report(
     a = c.assessment
     return DiscoveryReport(
         cover=cover,
-        at_a_glance=_build(AtAGlancePart, "at_a_glance", lambda: _at_a_glance(c)),
+        summary=_build(SummaryPart, "summary", lambda: _summary(c)),
         process=_build(FieldsPart, "process", lambda: _process(c)),
         measures=_build(FieldsPart, "measures", lambda: _measures(c)),
         map=_build(MapPart, "map", lambda: _map(c)),
         steps=_build(StepsPart, "steps", lambda: _steps(c)),
-        route=_build(RoutePart, "route", lambda: _route(c)),
-        assessment=_build(AssessmentPart, "assessment", lambda: _assessment(c)),
-        potential=_build(PotentialPart, "potential", lambda: _potential(c)),
-        readiness=_build(ReadinessPart, "readiness", lambda: _readiness(c)),
-        path=_build(PathPart, "path", lambda: _path(c)),
-        gaps=_build(GapsPart, "gaps", lambda: _gaps(c)),
+        feasibility=_build(FeasibilityPart, "feasibility", lambda: _feasibility(c)),
         generated_at=(a.generated_at if a is not None else "") or session.finished_at or "",
     )

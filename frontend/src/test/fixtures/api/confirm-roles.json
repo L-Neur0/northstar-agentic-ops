@@ -1,158 +1,158 @@
 {
-  "id": "1d0c8768-5604-4638-ae45-5be829fe29fc",
+  "id": "ff6206f1-d2d8-4096-b4b5-eb4919e147d3",
   "status": "active",
-  "phase": "confirm",
+  "phase": "review",
   "displayName": "Anna",
   "createdAt": "2026-11-19T10:00:00+00:00",
-  "updatedAt": "2026-11-19T10:00:15+00:00",
+  "updatedAt": "2026-11-19T10:00:16+00:00",
   "finishedAt": null,
   "messages": [
     {
-      "id": "59a9aed2-1ab6-43c4-9120-64879cf6f883",
+      "id": "2c5207f3-af1f-4e27-8623-3d86864d2678",
       "role": "agent",
-      "text": "Hi Anna! I'm the Discovery Agent. Together we'll find a piece of recurring work in your week that is worth mapping, and map it step by step; it takes about 15–20 minutes. You don't need a process in mind, we'll find one by talking through your week. You can add a document (a procedure, a process map, an example report) at any time; I'll read it and you confirm what I found. The tool maps processes, not people: it never reports anyone's individual time. The transformation team may read this conversation to improve the tool. To start: Which department are you in?",
+      "text": "Hi Anna! I'm the AI Use Case Discovery Agent. Together we'll find a recurring workflow in your daily work that is worth transforming with AI. We'll map it step by step (it takes about 20 minutes), then assess where and how AI can help and how much transformation potential it has. You can add a document (a procedure, a process map, an example) at any time; I'll read it and you confirm what I found. Your answers describe the work, not you, and the transformation team may read this conversation to improve the tool. To start: Which department are you in?",
       "at": "2026-11-19T10:00:00+00:00"
     },
     {
-      "id": "dd677227-7da5-4b0f-bc51-0d818c95cd80",
+      "id": "d32b011f-bfeb-4530-88c0-7574226f48a0",
       "role": "expert",
       "text": "I work in Finance.",
       "at": "2026-11-19T10:00:01+00:00"
     },
     {
-      "id": "d7261c5b-fc88-42eb-9c3a-0bd3e065a233",
+      "id": "0029d5fd-7065-40e8-bcf4-9656b5ab1ea0",
       "role": "agent",
       "text": "Could you tell me more?",
       "at": "2026-11-19T10:00:01+00:00"
     },
     {
-      "id": "dc958865-c15a-4e47-92d8-2025a4e56cda",
+      "id": "b852f763-ce9d-439b-b09e-a531e22376e0",
       "role": "expert",
       "text": "I am a cost controller.",
       "at": "2026-11-19T10:00:02+00:00"
     },
     {
-      "id": "2c6c5537-d114-4c47-8fc0-34131b9ea8e6",
+      "id": "d69f8086-6458-46eb-9e0e-88004760f7b8",
       "role": "agent",
       "text": "Could you tell me more?",
       "at": "2026-11-19T10:00:02+00:00"
     },
     {
-      "id": "758e86b9-81e7-4567-9522-ae7c397e5101",
+      "id": "d1e06be4-bdee-4d30-91f5-88bf10f33b7d",
       "role": "expert",
       "text": "Europe.",
       "at": "2026-11-19T10:00:03+00:00"
     },
     {
-      "id": "2c33f91d-42fe-4c14-935c-348cfb05a6c4",
+      "id": "915e2fd1-8c2a-4cf3-9f8a-e7ade6777544",
       "role": "agent",
       "text": "Could you tell me more?",
       "at": "2026-11-19T10:00:03+00:00"
     },
     {
-      "id": "61a7e420-9e15-42fa-8da2-21cf72f587ee",
+      "id": "ee099141-dae7-474a-83cb-b6707361e22c",
       "role": "expert",
       "text": "The monthly cost review. We also onboard suppliers, but that is another story.",
       "at": "2026-11-19T10:00:04+00:00"
     },
     {
-      "id": "0d568082-1be6-4aa6-986a-dfaed6add3b5",
+      "id": "f921d8c5-db27-4af8-b3f4-0f45fbd6ccf0",
       "role": "agent",
       "text": "Could you tell me more?",
       "at": "2026-11-19T10:00:04+00:00"
     },
     {
-      "id": "446f0a20-115b-438d-a935-b20a989b41ec",
+      "id": "f815239c-fb8f-4849-bb43-f2e1ad6b5355",
       "role": "expert",
       "text": "It starts when the month-end close is done in the ledger.",
       "at": "2026-11-19T10:00:05+00:00"
     },
     {
-      "id": "a57559ab-ca1e-4404-b3e4-3810aee141a1",
+      "id": "2b98f47c-4cd0-4eb0-ae6c-b8d705f89bd4",
       "role": "agent",
       "text": "Could you tell me more?",
       "at": "2026-11-19T10:00:05+00:00"
     },
     {
-      "id": "e056a55e-b85c-449c-b52c-aaa0b8601a93",
+      "id": "bbf5bf2a-c4cb-448b-990d-b21cd78bce1b",
       "role": "expert",
       "text": "At the end there is the monthly cost report, and the CFO uses it.",
       "at": "2026-11-19T10:00:06+00:00"
     },
     {
-      "id": "c760e25e-9425-451e-ac38-cae70d2c419d",
+      "id": "b36cab8d-cd94-4db5-b66f-f02b4f50dafc",
       "role": "agent",
       "text": "Could you tell me more?",
       "at": "2026-11-19T10:00:06+00:00"
     },
     {
-      "id": "8207cca4-bd58-4d55-a145-0efe863ff3e5",
+      "id": "ee427a6e-3d32-43ea-8ff7-ca1e55c4d8d4",
       "role": "expert",
       "text": "Once a month; the Head of Controlling owns it; it takes about 4 days.",
       "at": "2026-11-19T10:00:07+00:00"
     },
     {
-      "id": "14eb89ce-d983-4815-8b16-f4ea3a49de76",
+      "id": "b56163de-5b84-47a8-a594-636fb4ef8c13",
       "role": "agent",
       "text": "Could you tell me more?",
       "at": "2026-11-19T10:00:07+00:00"
     },
     {
-      "id": "5322381a-57b8-4e79-93dd-1dc9d3562ad6",
+      "id": "fa2b7101-882c-462b-8133-b25ceb32521b",
       "role": "expert",
       "text": "We want 2 days. It is the same every month.",
       "at": "2026-11-19T10:00:08+00:00"
     },
     {
-      "id": "c8e26249-2a13-48dd-9af8-aea324d88637",
+      "id": "94267ff1-4f5d-4213-8aa1-fab8e00ea1ae",
       "role": "agent",
       "text": "Could you tell me more?",
       "at": "2026-11-19T10:00:08+00:00"
     },
     {
-      "id": "6e808322-1f1c-4f43-8d00-1ccfce4ec7a9",
+      "id": "d38626c7-4d2a-4d47-977c-88d4b42fdb2f",
       "role": "expert",
       "text": "Same everywhere; no personal data.",
       "at": "2026-11-19T10:00:09+00:00"
     },
     {
-      "id": "f0213623-cbad-44ea-8ce5-85854b59d65e",
+      "id": "91566286-d627-4d83-827f-08ea2079ebdb",
       "role": "agent",
       "text": "Could you tell me more?",
       "at": "2026-11-19T10:00:09+00:00"
     },
     {
-      "id": "ca2405a2-258d-4cc0-af7d-66b43dcb9628",
+      "id": "74cb8673-6353-446d-a670-0f968d21fee3",
       "role": "expert",
       "text": "Two steps.",
       "at": "2026-11-19T10:00:10+00:00"
     },
     {
-      "id": "cc7cb59c-a9df-4343-aead-b2857c59049e",
+      "id": "3a769a75-3ac3-4b18-85ae-066d3004da09",
       "role": "agent",
       "text": "Could you tell me more?",
       "at": "2026-11-19T10:00:10+00:00"
     },
     {
-      "id": "9344d784-dc50-4320-b427-b293eb64fa69",
+      "id": "dfc3545a-db56-41c6-8874-b641cef759c8",
       "role": "expert",
       "text": "First we export and check the actuals.",
       "at": "2026-11-19T10:00:11+00:00"
     },
     {
-      "id": "49b4d3ff-4f3d-4e55-be4b-094c7201a1e2",
+      "id": "cd9e0b63-0e0a-45c5-94a3-cbf534d6acba",
       "role": "agent",
       "text": "Could you tell me more?",
       "at": "2026-11-19T10:00:11+00:00"
     },
     {
-      "id": "2a946077-166d-4b10-aafb-4ae6a4223985",
+      "id": "6bfef265-b97f-4c05-9832-67cabc24021f",
       "role": "expert",
       "text": "Then we write and send the report.",
       "at": "2026-11-19T10:00:12+00:00"
     },
     {
-      "id": "a2bc891b-6ef2-43cf-916d-e760095aa11a",
+      "id": "3239c049-8482-4485-8e99-8aa1033875fb",
       "role": "agent",
       "text": "Could you tell me more?",
       "at": "2026-11-19T10:00:12+00:00"
@@ -246,7 +246,17 @@
               "none": true
             }
           ],
-          "handover": "by e-mail"
+          "handover": "by e-mail",
+          "decision_type": {
+            "kind": "mix",
+            "evidence": "mostly fixed rules"
+          },
+          "decision_criteria": {
+            "basis": "the variance threshold",
+            "set_by": "",
+            "written": "yes",
+            "varies": ""
+          }
         },
         {
           "name": "Step 2",
@@ -290,7 +300,17 @@
               "none": true
             }
           ],
-          "handover": "by e-mail"
+          "handover": "by e-mail",
+          "decision_type": {
+            "kind": "mix",
+            "evidence": "mostly fixed rules"
+          },
+          "decision_criteria": {
+            "basis": "the variance threshold",
+            "set_by": "",
+            "written": "yes",
+            "varies": ""
+          }
         }
       ],
       "all_roles": [
@@ -540,7 +560,7 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 0,
+      "asks": 1,
       "fromImage": false,
       "conflict": null,
       "items": []
@@ -754,6 +774,38 @@
       "items": []
     },
     {
+      "key": "process.substeps[1].decision_type",
+      "id": "S13",
+      "label": "Rules or judgement",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
+    },
+    {
+      "key": "process.substeps[1].decision_criteria",
+      "id": "S14",
+      "label": "Decision criteria",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
+    },
+    {
       "key": "process.substeps[2].name",
       "id": "S01",
       "label": "Step name",
@@ -764,7 +816,7 @@
       "source": "expert",
       "quote": null,
       "documentName": null,
-      "asks": 1,
+      "asks": 2,
       "fromImage": false,
       "conflict": null,
       "items": []
@@ -944,16 +996,49 @@
       "fromImage": false,
       "conflict": null,
       "items": []
+    },
+    {
+      "key": "process.substeps[2].decision_type",
+      "id": "S13",
+      "label": "Rules or judgement",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
+    },
+    {
+      "key": "process.substeps[2].decision_criteria",
+      "id": "S14",
+      "label": "Decision criteria",
+      "phase": "steps",
+      "status": "complete",
+      "reason": "",
+      "missing": [],
+      "source": "expert",
+      "quote": null,
+      "documentName": null,
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     }
   ],
   "score": {
     "value": 1.0,
-    "filledPoints": 40,
-    "totalPoints": 40
+    "filledPoints": 42,
+    "totalPoints": 42,
+    "progress": 1.0
   },
   "finish": {
-    "ready": false,
-    "blockedBy": "tools_not_confirmed",
+    "ready": true,
+    "blockedBy": null,
     "looksLikeTask": true
   },
   "scope": {

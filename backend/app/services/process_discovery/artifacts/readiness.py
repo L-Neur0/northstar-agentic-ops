@@ -11,7 +11,7 @@ for medium and low, and carries a specialist's note over by key. `match_applicat
 configured application a named system belongs to.
 Must not: produce an overall level or score, call a model, read a clock, or hold company wording
 (the lines and the application list are configuration).
-Spec 19 §3.5, §4.2; AC-19.23 to AC-19.33, AC-19.38.
+Spec 19 §3.5, §3.8, §4.2; AC-19.23 to AC-19.33, AC-19.38, AC-19.49 (decision criteria in the Rules line).
 """
 
 from __future__ import annotations
@@ -186,6 +186,53 @@ def _rules(labels: Sequence[StepLabels], cfg: ReadinessConfig) -> ReadinessDimen
     return _dim("rules", level, reason, steps)
 
 
+CRITERIA_STEPS_MAX, CRITERIA_TEXT_MAX = 2, 120
+WRITTEN_WORDS = {"no": "not written down", "partly": "partly written down"}
+
+
+def _criteria(rows: Sequence[Mapping[str, Any]]) -> list[tuple[int, Mapping[str, Any]]]:
+    """Steps with decision criteria (S14) that name a basis, in step order (spec 19 §3.8)."""
+    out = []
+    for i, row in enumerate(rows, start=1):
+        crit = as_mapping(row.get("decision_criteria")) or {}
+        if _short(crit.get("basis")):
+            out.append((i, crit))
+    return out
+
+
+def _short(value: Any) -> str:
+    return " ".join(str(value or "").split())[:CRITERIA_TEXT_MAX]
+
+
+def _criteria_clause(step: int, crit: Mapping[str, Any]) -> str:
+    """` Step n today: based on "…", set by …, not written down, varies: "…".`"""
+    parts = [f'based on "{_short(crit.get("basis"))}"']
+    if set_by := _short(crit.get("set_by")):
+        parts.append(f"set by {set_by}")
+    if written := WRITTEN_WORDS.get(_short(crit.get("written")).casefold()):
+        parts.append(written)
+    if varies := _short(crit.get("varies")):
+        parts.append(f'varies: "{varies}"')
+    return f" Step {step} today: {', '.join(parts)}."
+
+
+def _with_criteria(
+    dim: ReadinessDimension, line: str, rows: Sequence[Mapping[str, Any]]
+) -> tuple[ReadinessDimension, str]:
+    """Rules: name the criteria in the to-prepare line (medium, low) or flag unwritten ones (high)."""
+    found = _criteria(rows)
+    if dim.level in ("low", "medium"):
+        return dim, line + "".join(_criteria_clause(i, c) for i, c in found[:CRITERIA_STEPS_MAX])
+    if dim.level == "high":
+        unwritten = [i for i, c in found if _short(c.get("written")).casefold() == "no"]
+        if unwritten:
+            steps = " and ".join(str(i) for i in unwritten)
+            return dim.model_copy(
+                update={"reason": f"{dim.reason} Criteria for step {steps} are not written down."}
+            ), line
+    return dim, line
+
+
 def _risk_size(
     profile: Mapping[str, Any], rows: Sequence[Mapping[str, Any]], value: ValueResult, cfg: ReadinessConfig
 ) -> ReadinessDimension:
@@ -234,5 +281,7 @@ def compute_readiness(
             line = cfg.dimensions[dim.key].to_prepare[dim.level]  # pyright: ignore[reportArgumentType]
             if dim.key == "standard" and differences:
                 line += f' What differs today: "{differences}".'
+        if dim.key == "rules":
+            dim, line = _with_criteria(dim, line, rows)
         out.append(dim.model_copy(update={"to_prepare": line, "note": notes.get(dim.key, "")}))
     return Readiness(dimensions=out)

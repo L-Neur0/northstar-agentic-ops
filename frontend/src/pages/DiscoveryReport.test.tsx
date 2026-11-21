@@ -1,8 +1,8 @@
 /**
  * Page tests for the discovery report (spec 23 §11.10–§11.14; AC-23.82–23.84, AC-23.86, AC-23.97,
- * AC-23.99, AC-23.100).
+ * AC-23.99, AC-23.100; report v2, amended 2026-11-21: AC-23.157).
  * Why: the page is the expert's result; it must load once, explain a report that is not ready,
- * show the cover and eleven parts in order with a contents nav, never show a euro figure, survive
+ * show the cover and the six v2 parts in order with a contents nav, never show a euro figure, survive
  * a missing part, download the PDF with the visitor key, and hide its chrome when printed.
  * What: the real page through the router with an injected API (the fake, or stubs) and a stub map
  * renderer.
@@ -39,18 +39,15 @@ function open(a: DiscoveryApi, strict = false) {
 }
 
 const TITLES = [
-  '1. At a glance',
+  '1. Summary',
   '2. The process',
   '3. Volume and measures',
   '4. Process map and steps',
   '5. Step-by-step AI assessment',
-  '6. Recommended route',
-  '7. Transformation assessment',
-  '8. Hours a year',
-  '9. Readiness checklist',
-  '10. Suggested path',
-  '11. Gaps and sources',
+  '6. AI readiness and feasibility',
 ]
+
+const HOURS_SENTENCE = 'About 342 hours a year go into this process today: a moderate process.'
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -60,7 +57,7 @@ it('calls GET report once under StrictMode, shows the loading status, then the r
   open(a, true)
   expect(screen.getByRole('status')).toHaveTextContent('Loading your report…')
   resolve(euReport)
-  expect(await screen.findByText('About 342 hours a year.')).toBeInTheDocument()
+  expect(await screen.findByText(HOURS_SENTENCE)).toBeInTheDocument()
   expect(a.getReport).toHaveBeenCalledTimes(1)
   expect(a.getReport).toHaveBeenCalledWith('s-1')
 })
@@ -82,60 +79,57 @@ it('any other error shows its sentence and Retry refetches (AC-23.83)', async ()
   open(a)
   expect(await screen.findByRole('alert')).toHaveTextContent('Could not reach the server. Check your connection and try again.')
   await user.click(screen.getByRole('button', { name: 'Retry' }))
-  expect(await screen.findByText('About 342 hours a year.')).toBeInTheDocument()
+  expect(await screen.findByText(HOURS_SENTENCE)).toBeInTheDocument()
   expect(get).toHaveBeenCalledTimes(2)
 })
 
-it('renders the cover, then eleven sections in order, linked from the contents nav (AC-23.84)', async () => {
+it('renders the cover, then six sections in order, linked from the contents nav (AC-23.157)', async () => {
   open(api(async () => euReport))
-  await screen.findByText('About 342 hours a year.')
+  await screen.findByText(HOURS_SENTENCE)
   const sections = document.querySelectorAll('article section[aria-labelledby]')
-  expect(sections).toHaveLength(11)
+  expect(sections).toHaveLength(6)
   expect(Array.from(sections).map((s) => s.querySelector('h2')?.textContent)).toEqual(TITLES)
   expect(screen.getByRole('heading', { level: 2, name: 'Monthly cost review' })).toBeInTheDocument()
   const nav = screen.getByRole('navigation', { name: 'Report contents' })
   const links = within(nav).getAllByRole('link')
   expect(links.map((l) => l.getAttribute('href'))).toEqual([
-    '#part-at_a_glance',
+    '#part-summary',
     '#part-process',
     '#part-measures',
     '#part-map',
     '#part-steps',
-    '#part-route',
-    '#part-assessment',
-    '#part-potential',
-    '#part-readiness',
-    '#part-path',
-    '#part-gaps',
+    '#part-feasibility',
   ])
-  expect(document.getElementById('part-at_a_glance')).toBe(sections[0])
+  expect(document.getElementById('part-summary')).toBe(sections[0])
 })
 
-it('shows the hours, the route headline and three top opportunities, and no euro, cost or saving (AC-23.86)', async () => {
+it('the summary comes first, then the three questions with level words; no euro, cost, saving, yes or no-go (AC-23.157)', async () => {
   const { container } = open(api(async () => euReport))
-  await screen.findByText('About 342 hours a year.')
-  expect(screen.getAllByText(/^Start with step 2 "Consolidate into the master file"/).length).toBeGreaterThan(0)
-  for (const hours of ['Steps 1–2 · 168 h', 'Step 5 · 72 h', 'Step 4 · 30 h']) expect(screen.getByText(new RegExp(hours))).toBeInTheDocument()
-  // The server's own "parked" sentence explains that euro values are not shown yet (R5); it is
-  // the only place money is mentioned, so the scan runs on the page without it.
-  const clone = container.cloneNode(true) as HTMLElement
-  clone.querySelector('[data-testid="parked-line"]')?.remove()
-  const text = clone.textContent ?? ''
-  for (const word of ['€', 'cost today', 'freed', 'saving']) expect(text.toLowerCase()).not.toContain(word.toLowerCase())
+  await screen.findByText(HOURS_SENTENCE)
+  const summary = document.getElementById('part-summary') as HTMLElement
+  expect(within(summary).getByText(euReport.summary.sentences[0])).toBeInTheDocument()
+  const feasibility = document.getElementById('part-feasibility') as HTMLElement
+  for (const q of euReport.feasibility.questions) expect(within(feasibility).getByText(q.levelLabel)).toBeInTheDocument()
+  const text = (container.textContent ?? '').toLowerCase()
+  for (const word of ['€', 'cost today', 'freed', 'saving', 'no-go']) expect(text).not.toContain(word)
+  // levels are words, never yes / no (the map's step cells may hold the expert's own "yes")
+  for (const id of ['part-summary', 'part-steps', 'part-feasibility']) {
+    expect(document.getElementById(id)?.textContent ?? '').not.toMatch(/\byes\b|no-go/i)
+  }
 })
 
 it('a failed part shows the warning, a missing part its fallback heading, and the rest still renders (AC-23.97)', async () => {
   const broken = structuredClone(euReportStepsFailed) as unknown as Record<string, unknown>
   delete broken.map
   open(api(async () => broken as unknown as Report))
-  await screen.findByText('About 342 hours a year.')
+  await screen.findByText(HOURS_SENTENCE)
   const steps = document.getElementById('part-steps') as HTMLElement
   expect(within(steps).getByText(STEPS_FAILED_TEXT).parentElement).toHaveTextContent(/^Warning:/)
   const map = document.getElementById('part-map') as HTMLElement
   expect(within(map).getByRole('heading', { level: 2 })).toHaveTextContent('4. Process map and steps')
   expect(within(map).getByText('This part could not be generated.')).toBeInTheDocument()
-  expect(document.querySelectorAll('article section[aria-labelledby]')).toHaveLength(11)
-  expect(screen.getByRole('heading', { level: 2, name: '11. Gaps and sources' })).toBeInTheDocument()
+  expect(document.querySelectorAll('article section[aria-labelledby]')).toHaveLength(6)
+  expect(screen.getByRole('heading', { level: 2, name: '6. AI readiness and feasibility' })).toBeInTheDocument()
 })
 
 it('Download PDF fetches once, shows "Preparing PDF…", saves under the file name and revokes the URL (AC-23.99)', async () => {
@@ -148,7 +142,7 @@ it('Download PDF fetches once, shows "Preparing PDF…", saves under the file na
   Object.assign(URL, { createObjectURL: create, revokeObjectURL: revoke })
   const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
   open(a)
-  await screen.findByText('About 342 hours a year.')
+  await screen.findByText(HOURS_SENTENCE)
   await user.click(screen.getAllByRole('button', { name: 'Download PDF' })[0])
   expect(screen.getAllByRole('button', { name: /Preparing PDF…|Download PDF/ })[0]).toBeDisabled()
   expect(screen.getByText('Preparing PDF…')).toBeInTheDocument()
@@ -163,15 +157,15 @@ it('a PDF error shows inline next to the button and leaves the report visible (A
   const a = api(async () => euReport)
   vi.spyOn(a, 'getReportPdf').mockRejectedValue(new ApiError(404, 'not_found', 'Not found.'))
   open(a)
-  await screen.findByText('About 342 hours a year.')
+  await screen.findByText(HOURS_SENTENCE)
   await user.click(screen.getAllByRole('button', { name: 'Download PDF' })[0])
   expect(await screen.findByRole('alert')).toHaveTextContent('This report is not available.')
-  expect(screen.getByText('About 342 hours a year.')).toBeInTheDocument()
+  expect(screen.getByText(HOURS_SENTENCE)).toBeInTheDocument()
 })
 
 it('print hides the header, the contents nav and the buttons (AC-23.100)', async () => {
   open(api(async () => euReport))
-  await screen.findByText('About 342 hours a year.')
+  await screen.findByText(HOURS_SENTENCE)
   expect(screen.getByTestId('report-header').className).toContain('print:hidden')
   expect(screen.getByRole('navigation', { name: 'Report contents' }).closest('aside')?.className).toContain('print:hidden')
   for (const button of screen.getAllByRole('button', { name: 'Download PDF' })) {

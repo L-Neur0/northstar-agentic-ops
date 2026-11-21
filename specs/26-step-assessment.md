@@ -1,6 +1,6 @@
 # 26 · Step-by-step AI assessment and the recommended route
 
-> **Status:** approved · **Implements:** F-26 (product); §6.2 ASSESS_STEPS, §6.4 grounding (architecture) · **Depends on:** specs 10 (config loader), 11 (LLM client, strict schema, fences), 12 (models), 18 (profile fence, evidence check, fingerprint), 19 (hours a year per step, readiness), 20 (`assess`, report)
+> **Status:** **short step walk input (S13), approved 2026-11-20** · approved · **built 2026-11-20** · **Implements:** F-26 (product); §6.2 ASSESS_STEPS, §6.4 grounding (architecture) · **Depends on:** specs 10 (config loader), 11 (LLM client, strict schema, fences), 12 (models), 18 (profile fence, evidence check, fingerprint), 19 (hours a year per step, readiness), 20 (`assess`, report)
 > **Code:** `backend/app/services/process_discovery/artifacts/steps/{schemas,prompts,steps,route}.py`, the `SolutionCatalogue` model in `backend/app/core/config.py`
 > **Tests:** `backend/tests/unit/process_discovery/artifacts/test_steps_*.py`, `backend/tests/unit/core/test_solution_catalogue.py`
 
@@ -61,7 +61,7 @@ Variants: an extra entry for step 7 is dropped (`step`); a route `acme-copilot` 
 
 ### 3.3 ASSESS_STEPS: the call (`steps/steps.py`)
 
-1. **One call**, `generate_structured(AssessStepsOut, CallType.ASSESS_STEPS, messages)`. System = `ASSESS_STEPS_SYSTEM` + the rendered catalogue (§3.4). User = "Rate each step of this process profile:" + `fence_profile(profile)`.
+1. **One call**, `generate_structured(AssessStepsOut, CallType.ASSESS_STEPS, messages)`. System = `ASSESS_STEPS_SYSTEM` + the rendered catalogue (§3.4). User = "Rate each step of this process profile:" + `fence_profile(profile)`. *(Approved 2026-11-20, short step walk: the profile now carries each step's S13 "rules or judgement" answer; the system prompt names it among the step fields, rule 3b.)*
 2. **Wire schema** (strict; all fields required):
 
    ```python
@@ -86,6 +86,7 @@ Variants: an extra entry for step 7 is dropped (`step`); a route `acme-copilot` 
 | 1 | You are a senior process and AI analyst. Rate only what the profile states; never invent a system, input, role or pain |
 | 2 | Return exactly one entry per `--- STEP n ---`, with that number |
 | 3 | `fit`: `automate` = AI or automation can do the step, a person checks samples or exceptions; `assist` = AI drafts, reads, checks or suggests, a person decides or finishes; `human` = judgement, relationships, accountability or physical work that stays with people |
+| 3b | *(Approved 2026-11-20, short step walk.)* The step's **rules or judgement** answer (S13 `decision_type`: `rules`, `judgement` or `mix`, with the expert's words) is part of the input (the fenced profile renders it as "Rules or judgement: kind: …; evidence: …"): `rules` leans to `automate`, `judgement` to `assist` or `human`, `mix` to `assist`; it never overrides what the step's other answers say |
 | 4 | `reason`: one or two sentences naming the step's inputs, systems, decisions or pain behind the fit |
 | 5 | `evidence`: the expert's words copied exactly from **that step** or from the process fields, at least three words or a whole short answer; no paraphrase, no joining of passages |
 | 6 | `route`: one `id` from the SOLUTION CATALOGUE whose `fits` include the step's fit, chosen by its "choose when" and "avoid when"; `""` if none fits. Never invent an id, never name a vendor or product |
@@ -104,12 +105,14 @@ Each entry is checked on its own; a bad entry is dropped and counted, never fata
 | A2 | `step` is an int (not a bool) in `1..N`; the first entry per step wins | Entry dropped (`step`) |
 | A3 | `fit` is one of the three values | Entry dropped (`invalid`) |
 | A4 | `reason` cleaned to one paragraph, non-empty, capped at 600 with "…" | Entry dropped (`invalid`) |
-| A5 | `evidence` passes the quote check (spec 18 §3.3) on the values of **that step, then the process fields** (`restrict_to_step_or_process`: the step's values first, so a quote that is in both hits the step); a quote found only in another step fails | Entry dropped (`quote`) |
+| A5 | `evidence` passes the quote check (spec 18 §3.3; a step's values include its S13 `decision_type.evidence`) on the values of **that step, then the process fields** (`restrict_to_step_or_process`: the step's values first, so a quote that is in both hits the step); a quote found only in another step fails | Entry dropped (`quote`) |
 | A6 | `route` (stripped) is `""` or an `id` in the catalogue (exact match) | Unknown id → route `None`, entry kept (`route`) |
 | A7 | The entry's `fits` include the step's `fit` | Route `None`, entry kept (`route`) |
 | A8 | `route_reason` cleaned, capped at 400; set to "" when the route is `None` | — |
 | A9 | Code sets `name` (the real step name), `evidence_key`, `evidence_source` from the hit | — |
 | A10 | Output: one `StepRating` per step 1..N in order; a step with no kept entry gets `fit = None` (*not assessed*) | — |
+
+*As built 2026-11-20 (short step walk fix):* rule 3b sends the S13 words into the prompt and the model often quotes them as evidence ("the 5 percent threshold is fixed but which questions to ask is my call"). The quote check did not search `decision_type.evidence`, so those entries were dropped (`quote`) and the steps fell into *not routed* (seen live: 1 of 5 steps rated). Spec 18 §3.3 now lists `decision_type.evidence` as a step value (key `process.substeps[n].decision_type`); the `kind` word is not searched.
 
 ### 3.6 The recommended route (`steps/route.py`, pure)
 
@@ -135,6 +138,21 @@ Each entry is checked on its own; a bad entry is dropped and counted, never fata
 ### 3.8 Logging (F-24)
 
 One `assessment_call` line: `call = ASSESS_STEPS`, `outcome`, `duration_ms`, `kept`, `dropped` by reason (`step`, `quote`, `invalid`, `cap`, `route`), `placeholder_catalogue: true|false`. Never any text.
+
+### 3.9 Amendment (built 2026-11-21): decision criteria as input
+
+> **Status:** approved 2026-11-21 · **built 2026-11-21** (AC-26.21, AC-26.22). The S14 line is rendered by the shared profile renderer from the registry. Why: spec 14 §3.21 row 1. S14 (spec 12 §3.13) is rendered in the fenced profile under its step as "Decision criteria: based on: …; set by: …; written: …; varies: …".
+
+| # | Rule given to the model |
+|---|---|
+| 3c | The step's **decision criteria** (S14), when present, are input: criteria that are written down and the same each time lean a `judgement` step towards `assist`; criteria that are not written down, or that change from person to person, keep it at `assist` or `human`, and the `route_reason` names writing the criteria down as the first thing to prepare. They never override what the step's other answers say |
+
+Code is unchanged: grounding (§3.5) and the route (§3.6) do not read S14; the evidence rule (rule 5) accepts the S14 words as words from that step.
+
+| ID | Given / when / then |
+|---|---|
+| AC-26.21 | The ASSESS_STEPS system prompt holds rule 3c; the fenced profile of a step with S14 renders the "Decision criteria:" line; a step without S14 renders no such line |
+| AC-26.22 | Evidence copied from a step's S14 `basis` is accepted by grounding as that step's words |
 
 ## 4. Interfaces
 
@@ -215,7 +233,7 @@ class SolutionCatalogue(BaseModel):   # extra="forbid", frozen
 | AC-26.3 | `run_step_assessment` makes one `generate_structured` call with `CallType.ASSESS_STEPS`; the system prompt holds every rule of §3.4 (by phrase), the PROFILE fence instruction and one catalogue line per entry with its id; the profile travels fenced |
 | AC-26.4 | Given the §3.2 reply on the EU fixture, `ground_step_ratings` returns 5 ratings with the fits, routes and evidence keys shown and `dropped` all zero |
 | AC-26.5 | An entry for step 0, step 7, a bool or a string step is dropped (`step`); a second entry for the same step is dropped; the first wins |
-| AC-26.6 | An entry whose evidence is not in the profile, or is found only in another step's values, is dropped (`quote`); evidence from a process field (P09) is accepted |
+| AC-26.6 | An entry whose evidence is not in the profile, or is found only in another step's values, is dropped (`quote`); evidence from a process field (P09) is accepted; evidence copied from the step's own S13 words (`decision_type.evidence`) is accepted *(as built 2026-11-20)* |
 | AC-26.7 | A route id not in the catalogue (`acme-copilot`) gives `route_id = None` with the fit and reason kept, counted `route`; `""` gives `None` and is not counted |
 | AC-26.8 | A route whose `fits` do not include the step's fit (`stays-with-people` on an `automate` step; `office-assistant` on a `human` step) gives `route_id = None`, counted `route` |
 | AC-26.9 | An unknown fit or an empty reason drops the entry (`invalid`); reason and route reason are capped at 600 / 400 with "…"; only the first 50 raw entries are read |

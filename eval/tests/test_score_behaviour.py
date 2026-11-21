@@ -10,7 +10,7 @@ from eval.evalkit.persona import EVAL_DIR, load_personas
 from eval.evalkit.play import PersonaRun, Snapshot
 from eval.evalkit.score_behaviour import count_loops, score_behaviour, tokens
 
-from .conftest import make_persona
+from .conftest import make_persona, tiny_data
 
 PRICES = {"app-chat": {"in": 1.25, "out": 10.0}}
 
@@ -101,3 +101,69 @@ def test_ac_24_22_a_stale_volume_is_counted(company):
     assert score_behaviour(p04, run, PRICES).stale_kept == 1
     run.session = {"profile": {"process": {"volume": {"count": 1, "period": "quarter", "raw": "every quarter"}}}}
     assert score_behaviour(p04, run, PRICES).stale_kept == 0
+
+
+# --- §12 V3, V4: criteria asked and hours computed (AC-24.53, AC-24.54) ----------------------------
+
+
+def _judgement_persona(disclose: dict | None = None):
+    data = tiny_data()
+    data["truth"]["steps"][1]["decision_type"] = {"kind": "mix", "evidence": "my call"}
+    if disclose is not None:
+        data["truth"]["disclose"] = disclose
+    return make_persona(**{k: data[k] for k in ("truth",)})
+
+
+def _captured_run(asks: int, hours: list[str]):
+    from eval.evalkit.persona import Persona  # noqa: F401  (type only)
+
+    persona = _judgement_persona()
+    run = PersonaRun("x")
+    steps = [dict(s) for s in persona.truth.steps]  # captured = the truth, so alignment is exact
+    run.session = {"profile": {"process": {"substeps": steps}}}
+    run.snapshots = [_snap([{"key": "process.substeps[2].decision_criteria", "asks": asks}])]
+    run.report = {"potential": {"steps": [{"hoursPerYear": h} for h in hours]}}
+    return persona, run
+
+
+def test_ac_24_53_criteria_asked():
+    """AC-24.53: the mix step's S14 asked once → 100 %; never asked → 0 %; no judgement step → n/a."""
+    persona, run = _captured_run(asks=1, hours=["72 h", "96 h"])
+    scores = score_behaviour(persona, run, PRICES)
+    assert (scores.criteria_asked, scores.criteria_steps) == (1, 1)
+    persona, run = _captured_run(asks=0, hours=["72 h", "96 h"])
+    scores = score_behaviour(persona, run, PRICES)
+    assert (scores.criteria_asked, scores.criteria_steps) == (0, 1)
+    plain = score_behaviour(make_persona(), run, PRICES)
+    assert plain.criteria_steps == 0
+
+
+def test_ac_24_54_hours_computed():
+    """AC-24.54: a "—" step lowers the share; effort `disclose: never` makes it n/a; no report → n/a."""
+    persona, run = _captured_run(asks=1, hours=["72 h", "—"])
+    scores = score_behaviour(persona, run, PRICES)
+    assert (scores.hours_steps_with_number, scores.hours_steps) == (1, 2)
+    never = _judgement_persona({"steps[*].effort": "never"})
+    assert score_behaviour(never, run, PRICES).hours_steps == 0
+    run.report = None
+    assert score_behaviour(persona, run, PRICES).hours_steps == 0
+
+
+def test_ac_24_53_54_scorecard_rows():
+    """The two rows: 100 % passes, below fails, no steps shows n/a and never fails."""
+    from eval.evalkit.scorecard import target_rows
+
+    from .test_scorecard import persona_score as make_score
+
+    def rows(**behaviour):
+        score = make_score()
+        score.behaviour = score.behaviour.model_copy(update=behaviour)
+        return {r.name: r for r in target_rows(score)}
+
+    ok = rows(criteria_asked=1, criteria_steps=1, hours_steps_with_number=3, hours_steps=3)
+    assert ok["criteria asked"].status == "✓" and ok["hours computed"].status == "✓"
+    bad = rows(criteria_asked=0, criteria_steps=1, hours_steps_with_number=0, hours_steps=3)
+    assert bad["criteria asked"].fails and bad["hours computed"].fails
+    na = rows()
+    assert na["criteria asked"].status == "n/a" and not na["criteria asked"].fails
+    assert na["hours computed"].status == "n/a"

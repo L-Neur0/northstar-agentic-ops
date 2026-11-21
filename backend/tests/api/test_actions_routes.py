@@ -38,7 +38,8 @@ def test_ac_15_39_confirm_roles_sets_the_flag_and_recomputes_the_phase(api: ApiH
     assert response.status_code == 200
     body = response.json()
     assert body["profile"]["process"]["roles_confirmed"] is True
-    assert body["finish"]["blockedBy"] == "tools_not_confirmed" and body["phase"] == "confirm"
+    # amended 2026-11-21 (AC-14.127): the lists no longer block, an old `confirm` session moves to review
+    assert body["finish"]["ready"] is True and body["phase"] == "review"
     response = api.client.post(f"/api/sessions/{seeded.id}/confirm", json={"target": "tools"}, headers=visitor())
     body = response.json()
     assert body["profile"]["process"]["tools_confirmed"] is True
@@ -94,8 +95,6 @@ def test_ac_15_41_close_sets_no_candidate_and_later_messages_are_closed(api: Api
     ("flags", "reason"),
     [
         ({"substeps_complete": False, "roles_confirmed": True, "tools_confirmed": True}, "substeps_incomplete"),
-        ({"roles_confirmed": False, "tools_confirmed": True}, "roles_not_confirmed"),
-        ({"roles_confirmed": True, "tools_confirmed": False}, "tools_not_confirmed"),
     ],
 )
 def test_ac_15_42_finish_on_an_incomplete_map_is_409_with_the_first_blocker(api: ApiHarness, flags, reason):

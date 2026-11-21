@@ -1,4 +1,4 @@
-"""End to end with scripted models: a two-step persona is played in process, finishes and is scored (spec 24 AC-24.28).
+"""End to end with scripted models: a two-step persona is played in process, finishes and is scored (spec 24 AC-24.28, AC-24.48).
 
 Why: the unit tests pin each piece; only a full run proves they compose through the real app (the
 real `create_app`, its lifespan, the memory store, every route) into a run folder and a scorecard.
@@ -36,6 +36,7 @@ STEP = {
     "approvals": [{"none": True}],
     "exceptions": [{"none": True}],
     "handover": "by e-mail",
+    "decision_type": {"kind": "rules", "evidence": "same checks every month"},
 }
 
 
@@ -136,7 +137,12 @@ async def test_ac_24_28_a_tiny_persona_is_played_end_to_end(tmp_path: Path):
     assert persona["efficiency"]["wasted"] == 0, persona["efficiency"]
     assert len(persona["curve"]) == persona["efficiency"]["messages"] and persona["curve"][-1]["quality"] == 1.0
     assert card["calibration"]["passed"] is True
-    assert json.loads((run_dir / "run.json").read_text())["judge_prompt_version"] == "judge-v1"
+    assert json.loads((run_dir / "run.json").read_text())["judge_prompt_version"] == "judge-v3"
+    # AC-24.48: answer length is measured on the run and every scripted answer is a busy person's length
+    assert persona["employee"]["avg_expert_words"] <= 45
+    expert_words = [len(m["text"].split()) for m in json.loads((folder / "transcript.json").read_text())
+                    if m["role"] == "expert"]  # fmt: skip
+    assert expert_words and max(expert_words) <= 45
     assert (run_dir / "scorecard.md").read_text().startswith("# Evaluation scorecard")
     assert not (tmp_path / "reports" / "latest.json").exists()  # a quick run never replaces latest
     assert code in (0, 1)

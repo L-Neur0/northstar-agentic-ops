@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from eval.evalkit.persona import HARD_CAP
 from eval.evalkit.play import Snapshot
 from eval.evalkit.score_efficiency import is_confirmation, progress_curve, score_efficiency, sparkline, word_set
 
@@ -32,14 +33,18 @@ def series(scores: list[float]) -> list[Snapshot]:
 def test_ac_24_31_messages_and_their_targets():
     persona = make_persona()
     eff = score_efficiency(persona, series([0.1 * i for i in range(1, 29)]), 61, WORDS, messages_to_finish=28)
-    assert (eff.messages, eff.messages_to_finish, eff.message_target) == (28, 28, 30)
-    difficult = make_persona(kind="difficult")
-    assert score_efficiency(difficult, series([0.5]), 1, WORDS, messages_to_finish=1).message_target == 40
+    assert (eff.messages, eff.messages_to_finish) == (28, 28)
+    assert not hasattr(eff, "message_target")  # amended 2026-11-20: messages are reported, not a target
 
 
 def test_ac_24_32_no_finish_is_a_failed_session():
     eff = score_efficiency(make_persona(), series([0.1] * 60), 30, WORDS, messages_to_finish=None)
     assert eff.failed and eff.efficiency is None and eff.messages_to_finish is None
+
+
+def test_ac_24_32_the_safety_net_is_eighty_messages():
+    assert HARD_CAP == 80
+    assert not score_efficiency(make_persona(), series([0.5] * 80), 30, WORDS, messages_to_finish=80).failed
 
 
 def test_ac_24_33_efficiency_is_correct_fields_per_message():

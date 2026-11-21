@@ -11,6 +11,7 @@ import { Search } from 'lucide-react'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { PHASE_LABELS, type Phase } from '../../types/process-discovery'
+import { PRODUCT_NAME } from '../../config/product'
 
 const STAGES: Array<{ title: string; body: string; phases: Phase[] }> = [
   {
@@ -30,7 +31,7 @@ const STAGES: Array<{ title: string; body: string; phases: Phase[] }> = [
   },
   {
     title: 'Confirm and finish',
-    body: 'Confirm the roles and systems collected from your steps, fill any gaps, and press Finish once all four conditions below are met.',
+    body: 'Confirm what the assistant filled in for you, fill any gaps, and press Finish once both conditions below are met.',
     phases: ['confirm', 'review'],
   },
   {
@@ -43,15 +44,13 @@ const STAGES: Array<{ title: string; body: string; phases: Phase[] }> = [
 const CONDITIONS = [
   'Your map is at least 80 % complete (the bar at the top turns green)',
   'Every step is described',
-  'The roles involved are confirmed',
-  'The systems involved are confirmed',
 ]
 
 export function DiscoveryIntroModal({ onDismiss }: { onDismiss: () => void }) {
   const start = useRef<HTMLButtonElement>(null)
   return (
     <Modal
-      title="Process Discovery"
+      title={`How the ${PRODUCT_NAME} works`}
       icon={<Search className="h-5 w-5 text-link" aria-hidden="true" />}
       onClose={onDismiss}
       initialFocusRef={start}

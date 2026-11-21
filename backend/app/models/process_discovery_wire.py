@@ -85,6 +85,8 @@ class ScoreOut(WireModel):
     value: float
     filled_points: int
     total_points: int
+    #: How far along the interview path, 0–1, for the bar; the gate uses `value` (spec 14 §3.20 O4).
+    progress: float = 0.0
 
 
 class ScopeOut(WireModel):
@@ -311,20 +313,6 @@ class ReportCover(WireModel):
     status: str
 
 
-class TopOpportunity(WireModel):
-    id: str
-    title: str
-    steps_label: str
-    hours: str
-
-
-class AtAGlancePart(ReportPartBase):
-    hours: str = ""
-    route_headline: str | None = None
-    top: list[TopOpportunity] = Field(default_factory=list)
-    prepare: list[str] = Field(default_factory=list)
-
-
 class FieldsPart(ReportPartBase):
     fields: list[ReportField] = Field(default_factory=list)
     notes: list[ReportNote] = Field(default_factory=list)
@@ -349,6 +337,10 @@ class StepRow(WireModel):
     number: int
     name: str
     hours: str
+    #: Spec 27 §3.3 Q1 per step: "strong" | "partial" | "weak" | "not_rated", its words, and the reasons.
+    level: str | None = None
+    level_label: str = ""
+    because: list[str] = Field(default_factory=list)
     fit: str | None = None
     fit_label: str
     route_id: str | None = None
@@ -364,86 +356,6 @@ class StepsPart(ReportPartBase):
     catalogue_note: str | None = None
 
 
-class RouteItem(WireModel):
-    number: int
-    name: str
-    hours: str = ""
-    route_name: str = ""
-    reason: str = ""
-
-
-class RouteGroup(WireModel):
-    key: str
-    title: str
-    items: list[RouteItem] = Field(default_factory=list)
-
-
-class RoutePart(ReportPartBase):
-    headline: str = ""
-    groups: list[RouteGroup] = Field(default_factory=list)
-    prepare: list[str] = Field(default_factory=list)
-    catalogue_note: str | None = None
-
-
-class ReportOpportunity(WireModel):
-    id: str
-    title: str
-    steps_label: str
-    type_label: str
-    what_changes: str = ""
-    how: str = ""
-    prepare_first: str = ""
-    impact: str
-    impact_reason: str = ""
-    feasibility: str
-    feasibility_reason: str = ""
-    evidence: str = ""
-    evidence_label: str = ""
-    review: str | None = None
-
-
-class ReportStayHuman(WireModel):
-    steps_label: str
-    reason: str = ""
-    evidence: str = ""
-
-
-class AssessmentPart(ReportPartBase):
-    summary: str = ""
-    opportunities: list[ReportOpportunity] = Field(default_factory=list)
-    stay_human: list[ReportStayHuman] = Field(default_factory=list)
-
-
-class StepValueRow(WireModel):
-    number: int
-    name: str
-    hours_per_run: str
-    runs_per_year: str
-    hours_per_year: str
-
-
-class OpportunityValueRow(WireModel):
-    id: str
-    title: str
-    steps_label: str
-    step_hours: str
-
-
-class TotalsRow(WireModel):
-    hours: str
-
-
-class PotentialPart(ReportPartBase):
-    complete: bool = False
-    steps: list[StepValueRow] = Field(default_factory=list)
-    opportunities: list[OpportunityValueRow] = Field(default_factory=list)
-    totals: TotalsRow = Field(default_factory=lambda: TotalsRow(hours="—"))
-    formulas: list[str] = Field(default_factory=list)
-    assumptions: list[str] = Field(default_factory=list)
-    problems: list[str] = Field(default_factory=list)
-    parked_line: str = ""
-
-
 class ReadinessRow(WireModel):
     key: str
     label: str
@@ -455,59 +367,45 @@ class ReadinessRow(WireModel):
     note: str = ""
 
 
-class ReadinessPart(ReportPartBase):
-    dimensions: list[ReadinessRow] = Field(default_factory=list)
-    footer: str = ""
+class SummaryPart(ReportPartBase):
+    """Part 1 (spec 27 §3.5): fixed code sentences, each left out when its data is missing."""
+
+    sentences: list[str] = Field(default_factory=list)
 
 
-class PathItem(WireModel):
-    opportunity_id: str
-    title: str
-    steps_label: str
-    step_hours: str
+class QuestionRow(WireModel):
+    """One guiding question (spec 27 §3.1 block A): a level in words, never yes / no."""
+
+    key: Literal["q1", "q2", "q3"]
+    question: str
+    level: str
+    level_label: str
+    why: str = ""
+    quote: str = ""
 
 
-class PathGroup(WireModel):
-    key: str
-    title: str
-    prepare_lines: list[str] = Field(default_factory=list)
-    items: list[PathItem] = Field(default_factory=list)
-    empty_text: str | None = None
+class FeasibilityPart(ReportPartBase):
+    """Part 6, AI readiness and feasibility (spec 27 §3.1): A questions, B readiness, C bullets and the gaps line."""
 
-
-class PathPart(ReportPartBase):
-    groups: list[PathGroup] = Field(default_factory=list)
-
-
-class DocumentRow(WireModel):
-    name: str
-    outcome: str
-
-
-class GapsPart(ReportPartBase):
-    fields: list[ReportField] = Field(default_factory=list)
-    documents: list[DocumentRow] = Field(default_factory=list)
-    closing_note: str = ""
+    questions: list[QuestionRow] = Field(default_factory=list)
+    readiness: list[ReadinessRow] = Field(default_factory=list)
+    readiness_footer: str = ""
+    bullets: list[str] = Field(default_factory=list)
+    gaps: str = ""
 
 
 class DiscoveryReport(WireModel):
-    """The cover and the eleven parts, in order (F-16). No overall score or verdict, by design (AC-20.27)."""
+    """The cover and the six parts, in order (F-16, spec 27). No overall score or verdict, by design (AC-20.27)."""
 
     cover: ReportCover
-    at_a_glance: AtAGlancePart
+    summary: SummaryPart
     process: FieldsPart
     measures: FieldsPart
     map: MapPart
     steps: StepsPart
-    route: RoutePart
-    assessment: AssessmentPart
-    potential: PotentialPart
-    readiness: ReadinessPart
-    path: PathPart
-    gaps: GapsPart
+    feasibility: FeasibilityPart
     generated_at: str
 
     def parts(self) -> list[ReportPartBase]:
-        """The eleven parts in report order."""
-        return [self.at_a_glance, self.process, self.measures, self.map, self.steps, self.route,
-                self.assessment, self.potential, self.readiness, self.path, self.gaps]  # fmt: skip
+        """The six parts in report order."""
+        return [self.summary, self.process, self.measures, self.map, self.steps, self.feasibility]

@@ -30,7 +30,8 @@ def named(ctx, name=NAME):
 
 
 def verdict(label):
-    signals = {"process": (1, 1, 1, 1, 1), "borderline": (1, 1, 1, 0, 0), "task": (0, 0, 1, 1, 0)}[label]
+    # a task here does not recur: recurring individual work asks no widening question (§3.20 O3, AC-14.119)
+    signals = {"process": (1, 1, 1, 1, 1), "borderline": (1, 1, 1, 0, 0), "task": (0, 1, 1, 0, 0)}[label]
     keys = ("multi_role", "multi_system", "trigger_and_outcome", "recurring", "external_consumer")
     return build_scope_verdict({**{k: bool(v) for k, v in zip(keys, signals, strict=True)}, "reasoning": "r"})
 
@@ -97,7 +98,7 @@ async def test_the_widening_question_is_asked_even_when_the_phase_moved_on(ctx):
                     "multi_role": False,
                     "multi_system": False,
                     "trigger_and_outcome": True,
-                    "recurring": True,
+                    "recurring": False,
                     "external_consumer": False,
                     "reasoning": "one person",
                 }

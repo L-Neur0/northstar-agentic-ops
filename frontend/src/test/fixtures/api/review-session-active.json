@@ -1,6 +1,6 @@
 {
-  "id": "2d2131a3-7b42-4ebe-a71b-6c8a72b85c6c",
-  "etag": "\"9ce78f6866814d4f915751685c5fa0cd\"",
+  "id": "5e0d449a-c740-4003-8b78-ceb53ab5b4de",
+  "etag": "\"342b52da1c8d43d284517ffe145f538f\"",
   "summary": {
     "department": null,
     "function": null,
@@ -92,6 +92,12 @@
         "key": "handover",
         "id": "S12",
         "label": "Hand-over",
+        "cells": []
+      },
+      {
+        "key": "decision_type",
+        "id": "S13",
+        "label": "Rules or judgement",
         "cells": []
       }
     ]

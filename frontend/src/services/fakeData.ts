@@ -48,7 +48,13 @@ export const STEP_FIELDS: Array<{ leaf: keyof Step; id: string; label: string; w
   { leaf: 'approvals', id: 'S10', label: 'Approvals', weight: 1 },
   { leaf: 'exceptions', id: 'S11', label: 'Exceptions', weight: 1 },
   { leaf: 'handover', id: 'S12', label: 'Hand-over', weight: 0 },
+  { leaf: 'decision_type', id: 'S13', label: 'Rules or judgement', weight: 1 },
+  { leaf: 'decision_criteria', id: 'S14', label: 'Decision criteria', weight: 0 },
 ]
+
+/** S14 applies only to a judgement or mix step (spec 12 §3.13 `field_applies`; AC-23.151). */
+export const stepFieldApplies = (leaf: keyof Step, step: Step): boolean =>
+  leaf !== 'decision_criteria' || ['judgement', 'mix'].includes(step.decision_type.kind.trim().toLowerCase())
 
 export const CLUSTERS: ClusterRef[] = [
   { code: 'FIN', name: 'Finance', description: 'Planning, recording and reporting money - budgets, invoices, costs and the monthly close.' },
@@ -106,6 +112,8 @@ export function emptyStep(): Step {
     approvals: [],
     exceptions: [],
     handover: '',
+    decision_type: { kind: '', evidence: '' },
+    decision_criteria: { basis: '', set_by: '', written: '', varies: '' },
   }
 }
 
@@ -123,6 +131,8 @@ export const COST_REVIEW_STEPS: Step[] = [
     approvals: [{ none: true }],
     exceptions: [{ none: true }],
     handover: 'Raw cost file goes to consolidation',
+    decision_type: { kind: 'rules', evidence: 'I always take the same SAP export' },
+    decision_criteria: { basis: '', set_by: '', written: '', varies: '' },
   },
   {
     name: 'Consolidate',
@@ -137,6 +147,8 @@ export const COST_REVIEW_STEPS: Step[] = [
     approvals: [{ none: true }],
     exceptions: [{ description: 'Figures do not add up', loops_back_to: 1 }],
     handover: 'Consolidated view goes to analysis',
+    decision_type: { kind: 'rules', evidence: 'Every cost centre maps to one cluster' },
+    decision_criteria: { basis: '', set_by: '', written: '', varies: '' },
   },
   {
     name: 'Analyse variances',
@@ -154,6 +166,8 @@ export const COST_REVIEW_STEPS: Step[] = [
     approvals: [{ none: true }],
     exceptions: [{ none: true }],
     handover: 'Comments go into the review pack',
+    decision_type: { kind: 'judgement', evidence: 'I decide which variances need a reason' },
+    decision_criteria: { basis: 'Variances above 5 % of budget', set_by: 'Head of controlling', written: 'no', varies: 'How much detail each site gives' },
   },
   {
     name: 'Review and sign off',
@@ -168,6 +182,8 @@ export const COST_REVIEW_STEPS: Step[] = [
     approvals: [{ approver_role: 'Head of controlling', waiting_time: '2 days' }],
     exceptions: [{ description: 'Questions from management', loops_back_to: 3 }],
     handover: '',
+    decision_type: { kind: 'mix', evidence: 'Management mostly follows the pack, sometimes asks more' },
+    decision_criteria: { basis: 'Whether the pack explains every large variance', set_by: '', written: 'partly', varies: '' },
   },
 ]
 
@@ -273,7 +289,7 @@ export const SCRIPT: ScriptTurn[] = [
 /* ---- Documents (spec 23 §11.15.3): what the fake "reads" from a procedure or a BPMN file ---- */
 
 export const FAKE_CONFIG = {
-  productName: 'Process Discovery',
+  productName: 'AI Use Case Discovery Agent',
   regions: ['North America', 'Europe', 'Middle East', 'Asia-Pacific'],
   languages: ['en', 'de'],
   documents: { allowedTypes: ['pdf', 'docx', 'xlsx', 'csv', 'txt', 'md', 'bpmn', 'xml'], maxFiles: 5, maxFileMb: 10, maxImageMb: 5 },

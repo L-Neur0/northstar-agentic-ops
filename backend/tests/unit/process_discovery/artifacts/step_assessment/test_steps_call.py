@@ -44,7 +44,7 @@ async def _run(*replies, profile=None):
 
 async def test_ac_26_3_one_call_with_rules_catalogue_and_fenced_profile() -> None:
     """AC-26.3 (call): one structured ASSESS_STEPS call; system = rules + catalogue; user = fenced profile."""
-    (ratings, dropped), llm = await _run(copy.deepcopy(STEPS_REPLY))
+    (ratings, dropped, _motivations), llm = await _run(copy.deepcopy(STEPS_REPLY))
     assert len(llm.calls) == 1
     call = llm.calls[0]
     assert (call.call_type, call.method, call.model_name) == (CallType.ASSESS_STEPS, "structured", "AssessStepsOut")
@@ -95,7 +95,7 @@ async def test_ac_26_18_one_log_line_counts_only(caplog: pytest.LogCaptureFixtur
     assert len(lines) == 1
     record = lines[0].__dict__
     assert (record["call"], record["outcome"], record["kept"]) == ("ASSESS_STEPS", "generated", 4)
-    assert record["dropped"] == {"step": 0, "quote": 1, "invalid": 0, "cap": 0, "route": 1}
+    assert record["dropped"] == {"step": 0, "quote": 1, "invalid": 0, "cap": 0, "route": 1, "signal": 0}
     assert record["placeholder_catalogue"] is True
     assert isinstance(record["duration_ms"], int)
     for r in caplog.records:

@@ -43,7 +43,8 @@ describe('fake API (AC-23.47)', () => {
       phases.add(current.phase)
       expect(turn.reply).toEqual(current.messages[current.messages.length - 1])
     }
-    expect([...phases]).toEqual(expect.arrayContaining(['context', 'find', 'boundaries', 'measure', 'steps', 'confirm', 'review']))
+    expect([...phases]).toEqual(expect.arrayContaining(['context', 'find', 'boundaries', 'measure', 'steps', 'review']))
+    expect(phases.has('confirm')).toBe(false)
     expect(ideas).toBe(2)
     expect((await api.listIdeas()).ideas).toHaveLength(2)
     expect(current.profile.process.name).toBe('Monthly cost review')
@@ -53,6 +54,21 @@ describe('fake API (AC-23.47)', () => {
     expect(finished).toMatchObject({ status: 'finished', phase: 'finished', reportStatus: 'mapped' })
     const list = await api.listSessions()
     expect(list.sessions[0]).toMatchObject({ status: 'finished', processName: 'Monthly cost review' })
+  })
+
+  it('scores 12 points per step (S01–S11 and S13; S12 hand-over unscored) and sends S13 views (AC-23.33)', async () => {
+    const api = make()
+    const done = await playToEnd(api, await api.createSession({}))
+    expect(done.score.totalPoints).toBe(18 + 12 * 4)
+    expect(done.score.filledPoints).toBe(done.score.totalPoints)
+    const s13 = done.fieldViews.find((v) => v.key === 'process.substeps[1].decision_type')
+    expect(s13).toMatchObject({ id: 'S13', label: 'Rules or judgement', status: 'complete' })
+    const step4 = done.fieldViews.filter((v) => v.key.startsWith('process.substeps[4].'))
+    expect(step4.find((v) => v.id === 'S12')?.status).toBe('empty')
+    // S14 (unscored) only for a judgement or mix step: step 4 is mix, step 1 rules (AC-23.151)
+    expect(step4.map((v) => v.id).slice(-3)).toEqual(['S12', 'S13', 'S14'])
+    const step1 = done.fieldViews.filter((v) => v.key.startsWith('process.substeps[1].'))
+    expect(step1.map((v) => v.id).slice(-2)).toEqual(['S12', 'S13'])
   })
 
   it('proposes the cluster FIN while asking about it', async () => {
@@ -102,7 +118,8 @@ describe('fake API (AC-23.47)', () => {
     const after = await api.confirm(s.id, 'substeps')
     expect(after.profile.process.substep_count).toBe(rows)
     expect(after.profile.process.substeps_complete).toBe(true)
-    expect(after.phase).toBe('confirm')
+    // Amended 2026-11-21 (spec 23 §3.6 rule 8, spec 14 §3.20 O10): the walk closes straight into review.
+    expect(after.phase).toBe('review')
   })
 
   it('starts an idea once, with its name proposed for P04', async () => {
@@ -244,8 +261,6 @@ describe('fake report and PDF (AC-23.101)', () => {
     const s0 = await api.createSession({})
     await api.sendMessage(s0.id, '/finish-ready')
     await api.confirm(s0.id, 'substeps')
-    await api.confirm(s0.id, 'roles')
-    await api.confirm(s0.id, 'tools')
     return api.finish(s0.id)
   }
 
@@ -253,20 +268,20 @@ describe('fake report and PDF (AC-23.101)', () => {
     const api = make()
     const s = await finished(api)
     const report = await api.getReport(s.id)
-    expect(report.atAGlance.hours).toBe('About 342 hours a year.')
+    expect(report.summary.sentences).toContain('About 342 hours a year go into this process today: a moderate process.')
     const active = await api.createSession({})
     await expect(api.getReport(active.id)).rejects.toMatchObject({ status: 409, code: 'report_not_ready' })
     await expect(api.getReport('nope')).rejects.toMatchObject({ status: 404 })
   })
 
-  it('/report-failed steps marks steps and route; /report-missing map leaves the map out', async () => {
+  it('/report-failed steps marks the steps part; /report-missing map leaves the map out (report v2)', async () => {
     const api = make()
     const s = await finished(api)
     const extra = await api.createSession({})
     await api.sendMessage(extra.id, '/report-failed steps')
     const failed = await api.getReport(s.id)
     expect(failed.steps.note?.kind).toBe('failed')
-    expect(failed.route.note?.kind).toBe('failed')
+    expect(failed.feasibility.note).toBeNull()
     await api.sendMessage(extra.id, '/report-missing map')
     const missing = await api.getReport(s.id)
     expect('map' in missing).toBe(false)

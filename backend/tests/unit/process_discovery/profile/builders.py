@@ -56,6 +56,8 @@ def step_changes(index: int, *, leave_out: tuple[str, ...] = ()) -> dict[str, An
         "approvals": [{"none": True}],
         "exceptions": [{"none": True}],
         "handover": "by e-mail",
+        "decision_type": {"kind": "mix", "evidence": "mostly fixed rules"},
+        "decision_criteria": {"basis": "the variance threshold", "written": "yes"},  # S14, a mix step (§3.21)
     }
     return {step_cell_key(index, leaf): value for leaf, value in cells.items() if leaf not in leave_out}
 

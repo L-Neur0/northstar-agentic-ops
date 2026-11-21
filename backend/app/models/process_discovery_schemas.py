@@ -147,7 +147,7 @@ class FieldMeta(StorageModel):
     write time, and one source per item when a value mixes sources.
     """
 
-    source: Literal["expert", "document", "specialist"]
+    source: Literal["expert", "document", "specialist", "agent"]
     status: Literal["proposed", "confirmed"]
     document_id: str | None = None
     quote: str | None = None
@@ -277,8 +277,24 @@ class StepEffort(ProfileModel):
     frequency: str = ""
 
 
+class DecisionType(ProfileModel):
+    """S13 (short step walk, approved 2026-11-20): `rules`, `judgement` or `mix`, with the expert's words."""
+
+    kind: str = ""
+    evidence: str = ""
+
+
+class DecisionCriteria(ProfileModel):
+    """S14 (spec 12 §3.13): what a judgement step's decision is based on, who sets it, whether it is written."""
+
+    basis: str = ""
+    set_by: str = ""
+    written: str = ""
+    varies: str = ""
+
+
 class Step(ProfileModel):
-    """One main step (S01–S12) with its cell provenance and skipped cells."""
+    """One main step (S01–S14) with its cell provenance and skipped cells."""
 
     name: str = ""
     goal: str = ""
@@ -292,6 +308,8 @@ class Step(ProfileModel):
     approvals: list[NoneRow | ApprovalRow] = Field(default_factory=list)
     exceptions: list[NoneRow | ExceptionRow] = Field(default_factory=list)
     handover: str = ""
+    decision_type: DecisionType = Field(default_factory=DecisionType)
+    decision_criteria: DecisionCriteria = Field(default_factory=DecisionCriteria)
     meta: dict[str, FieldMeta] = Field(default_factory=dict, alias="__meta")
     skipped: list[str] = Field(default_factory=list, alias="__skipped")
     conflicts: dict[str, list[ConflictRecord]] = Field(default_factory=dict, alias="__conflicts")
@@ -386,6 +404,8 @@ class ScopeVerdict(StorageModel):
     score: int = Field(ge=0, le=5)
     signals: dict[str, bool]
     reasoning: str = ""
+    #: Set when the mapped steps turned a signal on (spec 12 §3.13 M4).
+    refreshed: bool = False
 
 
 class ScopeState(StorageModel):
@@ -423,6 +443,8 @@ class LastQuestion(StorageModel):
     confirm: Literal["cluster", "roles", "systems", "recommendation"] | None = None
     #: The conflict keys of a conflict question (spec 14 §3.17, AC-12.49).
     conflicts: list[str] = Field(default_factory=list)
+    #: Values the question offered for the expert to accept, by key (spec 14 §3.20 O5, amended 2026-11-21).
+    offered: dict[str, Any] = Field(default_factory=dict)
 
 
 class StepListItem(StorageModel):
@@ -669,6 +691,40 @@ class StepRating(StorageModel):
     evidence_source: EvidenceSource | None = None
     route_id: str | None = None
     route_reason: str = ""
+    #: Spec 27 §3.2: grounded signals (a dropped signal is absent, read as false) and their quotes.
+    signals: dict[str, bool] = Field(default_factory=dict)
+    signal_evidence: dict[str, str] = Field(default_factory=dict)
+
+
+Level = Literal["strong", "partial", "weak", "not_rated"]
+
+
+class StepFit(StorageModel):
+    """Q1 for one step (spec 27 §3.3): a level and the code reasons behind it."""
+
+    step: int = Field(ge=1)
+    level: Level
+    because: list[str] = Field(default_factory=list)
+
+
+class QuestionAnswer(StorageModel):
+    """One guiding question (spec 27 §3.3): a code level, code reasons, and a checked motivation. Never yes / no."""
+
+    level: Level
+    reasons: list[str] = Field(default_factory=list)
+    motivation: str = ""
+    evidence: str = ""
+
+
+class Questions(StorageModel):
+    """The three guiding questions of the transformation assessment (spec 27 §3.3)."""
+
+    steps: list[StepFit] = Field(default_factory=list)
+    q1: QuestionAnswer
+    q2: QuestionAnswer
+    q3: QuestionAnswer
+    prepare: list[str] = Field(default_factory=list)
+    risks: list[str] = Field(default_factory=list)
 
 
 class RouteSummary(StorageModel):
@@ -683,8 +739,17 @@ class RouteSummary(StorageModel):
     prepare: list[str] = Field(default_factory=list)
 
 
+class Motivation(StorageModel):
+    """A motivation line of ASSESS_STEPS and its quote, as returned (checked later, spec 27 §3.2)."""
+
+    text: str = ""
+    evidence: str = ""
+
+
 class StepAssessment(StorageModel):
     steps: list[StepRating] = Field(default_factory=list)
+    #: Spec 27 §3.2: keyed q1 / q2 / q3.
+    motivations: dict[str, Motivation] = Field(default_factory=dict)
     route: RouteSummary | None = None
     inputs_hash: str = ""
     placeholder_catalogue: bool = False
@@ -700,6 +765,8 @@ class Assessment(StorageModel):
     readiness: Readiness | None = None
     path: Path | None = None
     step_assessment: StepAssessment | None = None
+    #: Spec 27 §3.3; `None` on assessments made before report v2.
+    questions: Questions | None = None
     steps_hash: str = ""
     generated_at: str = ""
     outcomes: dict[

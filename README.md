@@ -1,8 +1,10 @@
-# NorthStar Agentic Ops · Discovery Agent
+# NorthStar Agentic Ops · AI Use Case Discovery Agent
+
+*Find a workflow worth transforming, map it step by step, and see where AI can help.*
 
 AI prototype for **NorthStar Infrastructure Group (NIG)**, a fictional 50,000-person engineering, construction and operations company that wants to become an agentic enterprise.
 
-**Discovery Agent** *(working name)* answers the programme's first question: **which processes should AI take over first?** Any employee finds a process in their own work in a 15–20 minute guided interview, maps it step by step, and gets a **discovery report**: the mapped process and its transformation assessment (hours a year, where automation or AI fits and how, what to prepare first). Documents the expert already has can be uploaded; the AI reads them and the expert confirms. Specialists review instead of interviewing, every report joins one process overview, and the opportunities chosen for a build go to the AI engineers as an implementation brief. The tool guides; it never says go or no-go.
+The **AI Use Case Discovery Agent** *(renamed 2026-11-21 from "Discovery Agent")* answers the programme's first question: **which processes should AI take over first?** Any employee finds a process in their own work in a 15–20 minute guided interview, maps it step by step, and gets a **discovery report**: the mapped process and its transformation assessment (hours a year, where automation or AI fits and how, what to prepare first). Documents the expert already has can be uploaded; the AI reads them and the expert confirms. Specialists review instead of interviewing, every report joins one process overview, and the opportunities chosen for a build go to the AI engineers as an implementation brief. The tool guides; it never says go or no-go.
 
 **It is not a chatbot.** It is a guided interview with a fixed form behind it. Code decides what counts as answered, when the map is complete, and every number; the model reads answers and phrases questions.
 

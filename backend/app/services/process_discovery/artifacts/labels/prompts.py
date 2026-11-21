@@ -8,7 +8,7 @@ What: `LABEL_SYSTEM` (one literal string with the five rules, the PROFILE fence 
 JSON-only line) and `labels_user` (lead-in plus the shared fenced profile).
 Must not: pass the system prompt through `str.format`, ask for scores or numbers, or render the
 profile a second way.
-Spec 19 §3.3; AC-19.18.
+Spec 19 §3.3, §3.8 (decision criteria make a decision explainable); AC-19.18, AC-19.48.
 """
 
 from __future__ import annotations
@@ -41,6 +41,9 @@ in at most 15 words. Each decision gets one kind:
    - `fixed_rule`: a written rule or threshold decides; anyone applying it gets the same answer;
    - `explainable_judgement`: a person decides but can name the criteria and give examples;
    - `pure_judgement`: experience or relationships decide; hard to write down.
+   A step may carry `Decision criteria` (what the expert's decisions are based on, who sets them, \
+whether they are written down). When the step's decision criteria say what a decision is based on, \
+that decision is `explainable_judgement` unless the expert's words say it rests on experience or feel.
 4. `evidence`: the expert's words from THAT step, copied exactly, at least three words or a whole \
 short answer. No paraphrase, no joining of passages, no "...". Copy from ONE answer only: never the \
 field labels (such as `inputs:` or `approver role:`), never a list joined with commas or semicolons. \

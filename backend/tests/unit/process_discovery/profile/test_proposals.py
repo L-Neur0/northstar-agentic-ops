@@ -182,7 +182,7 @@ def test_example_4_confirming_the_step_names_sets_the_count(vocab):
     names = [step_cell_key(i, "name") for i in range(1, 6)]
     confirmed = confirm_proposals(proposed, names, vocab=vocab, at=AT).profile
     assert confirmed["process"]["substep_count"] == 5
-    assert score(confirmed, vocab=vocab)[1:] == (9, 73)
+    assert score(confirmed, vocab=vocab)[1:] == (9, 78)
     one = apply_proposals(
         empty_profile(),
         ProposalDiff("d1", steps=(StepProposal((FieldProposal("name", "Only", "Only"),)),)),

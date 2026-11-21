@@ -6,7 +6,8 @@ What: `assess` on the EU cost-review fixture with a `FakeLLM` scripted with the 
 worked replies; a barrier double proves the calls really overlap; a slow double proves the
 per-call timeout; scripted errors prove each part degrades alone.
 Must not: call Azure, or patch `assess` itself.
-Covers AC-20.1 to AC-20.12, AC-20.45, AC-20.49.
+Covers AC-20.1 to AC-20.12, AC-20.45, AC-20.49, as amended by spec 27 (report v2): *Finish* makes three
+calls, MAP, LABEL and ASSESS_STEPS; OPPORTUNITIES is no longer called (AC-27.8).
 """
 
 from __future__ import annotations
@@ -26,7 +27,8 @@ from tests.fixtures.assessment.replies import map_reply, opportunities_reply
 from tests.fixtures.assessment_19.cases import LABEL_REPLY, STEPS_REPLY, example_catalogue
 
 NOW = "2026-11-20T10:00:00+00:00"
-ALL = (CallType.OPPORTUNITIES, CallType.MAP, CallType.LABEL, CallType.ASSESS_STEPS)
+ALL = (CallType.MAP, CallType.LABEL, CallType.ASSESS_STEPS)  # spec 27: no OPPORTUNITIES call
+PARTS = ("diagram", "labels", "steps")
 
 
 def _replies() -> dict[CallType, Any]:
@@ -66,9 +68,11 @@ async def _first() -> Assessment:
 async def test_ac_20_1_finish_makes_one_call_of_each_kind_and_all_are_generated():
     llm = _llm()
     assessment, logs = await _run(llm)
-    assert [len(llm.calls_of(c)) for c in ALL] == [1, 1, 1, 1]
-    assert assessment.outcomes == dict.fromkeys(("opportunities", "diagram", "labels", "steps"), "generated")
-    assert _words(logs) == dict.fromkeys(("opportunities", "diagram", "labels", "steps"), "generated")
+    assert [len(llm.calls_of(c)) for c in ALL] == [1, 1, 1]
+    assert llm.calls_of(CallType.OPPORTUNITIES) == []  # AC-27.8
+    assert assessment.outcomes == dict.fromkeys(PARTS, "generated")
+    assert _words(logs) == dict.fromkeys(PARTS, "generated")
+    assert assessment.questions is not None and assessment.opportunities == []
     assert assessment.value is not None and assessment.value.hours_per_year == 342
     assert assessment.step_assessment is not None and assessment.step_assessment.route is not None
     assert assessment.step_assessment.route.start_with == [2, 3]
@@ -78,7 +82,7 @@ async def test_ac_20_1_finish_makes_one_call_of_each_kind_and_all_are_generated(
 class _Barrier:
     """Every call waits until all four have started: run one after another, this deadlocks."""
 
-    def __init__(self, inner: FakeLLM, parties: int = 4) -> None:
+    def __init__(self, inner: FakeLLM, parties: int = 3) -> None:
         self.inner = inner
         self.barrier = asyncio.Barrier(parties)
 
@@ -115,8 +119,7 @@ async def test_ac_20_4_only_the_parts_whose_input_changed_run():
     profile["process"]["substeps"][2]["pain_points"].append("the threshold check is slow")
     llm = FakeLLM({c: [_replies()[c]] for c in ALL if c is not CallType.MAP})
     await _run(llm, previous=first, profile=profile)
-    assert sorted(c.call_type for c in llm.calls) == sorted([CallType.OPPORTUNITIES, CallType.LABEL,
-                                                             CallType.ASSESS_STEPS])  # fmt: skip
+    assert sorted(c.call_type for c in llm.calls) == sorted([CallType.LABEL, CallType.ASSESS_STEPS])
 
     llm = FakeLLM({CallType.ASSESS_STEPS: [STEPS_REPLY]})
     await _run(llm, previous=first, catalogue=example_catalogue(version="test-2"))
@@ -127,16 +130,16 @@ async def test_ac_20_5_refresh_runs_all_four_even_when_nothing_changed():
     first = await _first()
     llm = _llm()
     await _run(llm, previous=first, refresh=True)
-    assert [len(llm.calls_of(c)) for c in ALL] == [1, 1, 1, 1]
+    assert [len(llm.calls_of(c)) for c in ALL] == [1, 1, 1]
 
 
-async def test_ac_20_6_a_failed_opportunities_call_does_not_stop_the_others():
-    assessment, logs = await _run(_llm(OPPORTUNITIES=LLMUnavailableError(503)))
-    assert assessment.outcomes == {"opportunities": "failed", "diagram": "generated", "labels": "generated",
-                                   "steps": "generated"}  # fmt: skip
-    assert assessment.opportunities == [] and assessment.summary == ""
+async def test_ac_27_8_no_opportunities_call_even_when_one_is_scripted():
+    """AC-27.8 (replaces AC-20.6): the opportunities job lives in ASSESS_STEPS and the three questions."""
+    llm = _llm()
+    assessment, logs = await _run(llm)
+    assert llm.calls_of(CallType.OPPORTUNITIES) == [] and "opportunities" not in assessment.outcomes
+    assert "opportunities" not in _words(logs)
     assert assessment.value is not None and assessment.value.complete and assessment.value.hours_per_year == 342
-    assert _words(logs)["opportunities"] == "failed"
 
 
 async def test_ac_20_7_an_unusable_map_reply_gives_the_simplified_map():
@@ -158,7 +161,7 @@ async def test_ac_20_8_a_failed_label_call_leaves_data_and_rules_unknown():
     assert assessment.readiness is not None
     levels = {d.key: d.level for d in assessment.readiness.dimensions}
     assert levels["data"] == levels["rules"] == "unknown"
-    assert assessment.outcomes["opportunities"] == assessment.outcomes["steps"] == "generated"
+    assert assessment.outcomes["steps"] == "generated"
 
 
 class _Slow:
@@ -177,7 +180,7 @@ async def test_ac_20_9_a_call_slower_than_the_timeout_is_cancelled_and_degrades(
     llm = _llm()
     assessment, logs = await asyncio.wait_for(_run(_Slow(llm), timeout=0.05), timeout=3)
     assert _words(logs)["diagram"] == "timeout_linear" and assessment.outcomes["diagram"] == "fallback"
-    assert assessment.outcomes["opportunities"] == "generated"
+    assert assessment.outcomes["steps"] == "generated"
 
 
 async def test_ac_20_10_a_failed_refresh_keeps_what_was_stored():
@@ -196,7 +199,7 @@ async def test_ac_20_11_an_unexpected_exception_in_any_part_never_escapes(seed: 
     rng = random.Random(seed)
     errors: list[Exception] = [RuntimeError("bug"), KeyError("x"), ValueError("bad"), ZeroDivisionError()]
     replies: dict[CallType, Any] = _replies()
-    for call in rng.sample(ALL, rng.randint(1, 4)):
+    for call in rng.sample(ALL, rng.randint(1, 3)):
         replies[call] = rng.choice(errors)
     assessment, logs = await _run(FakeLLM({k: [v] for k, v in replies.items()}))
     assert assessment.value is not None and assessment.readiness is not None
@@ -210,14 +213,10 @@ async def test_ac_20_11_an_unexpected_exception_in_any_part_never_escapes(seed: 
 async def test_ac_20_12_reviews_and_specialist_notes_survive_a_re_run():
     first = await _first()
     assert first.readiness is not None
-    reviewed = [o.model_copy(update={"review": "accepted"}) if o.id == "o1" else o for o in first.opportunities]
     dims = [d.model_copy(update={"note": "Checked with IT"}) if d.key == "systems" else d
             for d in first.readiness.dimensions]  # fmt: skip
-    previous = first.model_copy(
-        update={"opportunities": reviewed, "readiness": first.readiness.model_copy(update={"dimensions": dims})}
-    )
+    previous = first.model_copy(update={"readiness": first.readiness.model_copy(update={"dimensions": dims})})
     again, _ = await _run(_llm(), previous=previous, refresh=True)
-    assert next(o for o in again.opportunities if o.title.startswith("Read the site")).review == "accepted"
     assert again.readiness is not None
     assert next(d for d in again.readiness.dimensions if d.key == "systems").note == "Checked with IT"
 
@@ -225,7 +224,7 @@ async def test_ac_20_12_reviews_and_specialist_notes_survive_a_re_run():
 async def test_ac_20_45_a_failed_step_assessment_leaves_the_other_parts_generated():
     assessment, logs = await _run(_llm(ASSESS_STEPS=LLMUnavailableError(503)))
     assert assessment.step_assessment is None and assessment.outcomes["steps"] == "failed"
-    assert [assessment.outcomes[p] for p in ("opportunities", "diagram", "labels")] == ["generated"] * 3
+    assert [assessment.outcomes[p] for p in ("diagram", "labels")] == ["generated"] * 2
     assert _words(logs)["steps"] == "failed"
 
 

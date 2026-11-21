@@ -7,14 +7,18 @@ is deferred after 3 asks and given up after 2 more; a step cell is settled after
 posture escalates on schedule; the list confirmation changes manner after 6 turns.
 What: field limits and states (`deferred_keys`, `given_up_keys`), `phase_blocks`,
 `phase_from_state`, `advance_phase` (collecting phases never move backwards; the tail may step
-back; terminals never change), `missing_fields`, `step_focus`, `posture`, `proposal_group`,
+back; terminals never change), `missing_fields`, `walk_ask`, `step_focus`, `field_group`, `posture`, `proposal_group`,
 `steering_ask`, `next_ask`, `charge_asks` (never charges a `steer:` key) and `cell_escapes`.
 Must not: write the profile, call a model, read a clock or mutate its inputs; every function
 derives what it needs from the whole `counters` so no caller can forget a set.
 Spec 14 §3.3, §3.5, §3.6, §3.8, §3.15 item 10; AC-14.20 to AC-14.30, AC-14.41 to AC-14.43, AC-14.65,
 AC-14.73. Amendment §3.17: the `conflict` ask (after `widening`, before `proposals`), its group
 (`conflict_group`), its counter (`charge_conflicts`: 2 asks, then `left`), and proposal groups that
-leave out a unit under dispute (AC-14.92 to AC-14.94, AC-14.99).
+leave out a unit under dispute (AC-14.92 to AC-14.94, AC-14.99). Amendment §3.19 (short step walk,
+approved 2026-11-20): code groups the questions (`field_group`, `walk_ask`), an optional field is
+given up at its limit, and agent proposals wait for one bulk confirmation in the review
+(AC-14.105 to AC-14.113). Amendment §3.20 (owner test, 2026-11-21): no `confirm` phase, `progress`
+for the bar and `suggest_now` in `find` (AC-14.118, AC-14.120, AC-14.127).
 """
 
 from __future__ import annotations
@@ -27,10 +31,12 @@ from app.core.config import SteeringConfig
 from ..domain.field_spec import (
     CELL_ASK_LIMIT,
     COLLECTING_PHASES,
-    CONFIRM_TURN_LIMIT,
     FIELD_ASK_LIMIT,
     FIND_DIRECT_TURN,
     FIND_FOCUS_TURN,
+    GROUP_A,
+    GROUP_B,
+    GROUP_EFFORT,
     NONE_KEY,
     PHASE_CONFIRM,
     PHASE_CONTEXT,
@@ -41,14 +47,18 @@ from ..domain.field_spec import (
     PHASE_REVIEW,
     PHASE_STEPS,
     PROFILE_SPECS,
+    PROGRESS_DEFAULT_STEPS,
     REVIEW_ASK_LIMIT,
     STATUS_INVALID,
     STEP_SPECS,
     FieldSpec,
     Vocabulary,
+    field_applies,
     has_any_answer,
+    progress_step_specs,
     specs_for_phase,
     step_cell_key,
+    step_specs_in_group,
 )
 from ..domain.scope import proposable_code
 from ..profile.coercion import coerce_count
@@ -56,10 +66,9 @@ from ..profile.conflicts import ConflictView, conflicted_fields, open_conflicts
 from ..profile.constants import (
     FLAG_SUBSTEPS_COMPLETE,
     NONE_ROW_LEAVES,
-    ROLLUP_FLAGS,
     ROLLUP_KEYS,
-    ROLLUP_TARGETS,
 )
+from ..profile.inferred import is_agent_proposal
 from ..profile.proposals import proposed_keys
 from ..profile.shapes import as_list, as_mapping, meta_for, normalized_profile, parse_step_key, process_of, rows_of
 from ..profile.verdicts import (
@@ -136,6 +145,8 @@ def _state(profile: Mapping[str, Any], spec: FieldSpec, counters: Mapping[str, A
     limit = field_limit(spec)
     if asks < limit:
         return "open"
+    if spec.optional:  # §3.19 W2: an optional field is given up at its limit, never deferred
+        return "given_up"
     if asks < limit + REVIEW_ASK_LIMIT:
         return "deferred"
     return "given_up"
@@ -166,16 +177,13 @@ def phase_blocks(profile: Mapping[str, Any], phase: str, counters: Mapping[str, 
 
 
 def phase_from_state(profile: Mapping[str, Any], counters: Mapping[str, Any], *, vocab: Vocabulary) -> str:
-    """The first collecting phase that blocks; else `steps` until the walk closes; else `confirm`; else `review`."""
+    """The first collecting phase that blocks; else `steps` until the walk closes; else `review` (no `confirm`, §3.20 O10)."""
     p = normalized_profile(profile)
     for phase in COLLECTING_PHASES:
         if phase_blocks(p, phase, counters, vocab=vocab):
             return phase
-    proc = process_of(p)
-    if proc.get(FLAG_SUBSTEPS_COMPLETE) is not True:
+    if process_of(p).get(FLAG_SUBSTEPS_COMPLETE) is not True:
         return PHASE_STEPS
-    if not all(proc.get(ROLLUP_FLAGS[t]) is True for t in ROLLUP_TARGETS):
-        return PHASE_CONFIRM
     return PHASE_REVIEW
 
 
@@ -197,32 +205,55 @@ def _cell_open(row: Mapping[str, Any], leaf: str, vocab: Vocabulary) -> bool:
     return not cell_counts(row, leaf, vocab=vocab) and not cell_skipped(row, leaf)
 
 
-def _walk_leaves(index: int, expected: int) -> list[FieldSpec]:
-    """S01→S12; the last step's hand-over is never asked (there is no next step)."""
-    return [s for s in STEP_SPECS if not (s.key == "handover" and index >= expected)]
+def _askable(row: Mapping[str, Any], leaf: str, vocab: Vocabulary) -> bool:
+    """Open and not a proposal (proposals are presented as a group, §3.8)."""
+    return _cell_open(row, leaf, vocab) and not cell_proposed(row, leaf)
 
 
-def step_focus(profile: Mapping[str, Any], *, vocab: Vocabulary) -> str | None:
-    """The one cell to ask next: P16 while there is no count; else the first open, unproposed cell; else `None`."""
+def walk_ask(profile: Mapping[str, Any], *, vocab: Vocabulary) -> tuple[str, ...]:
+    """The cells of the next walk question (§3.19 W4); `()` when the walk has nothing left to ask.
+
+    P16 while there is no count; else every open step name together; else, step by step, the open
+    Tier A cells together, then the open Tier B cells together; else every open effort cell of all
+    steps together. Tier C is never asked: code proposes it (`profile.inferred`).
+    """
     p = normalized_profile(profile)
     expected = expected_steps(p, vocab=vocab)
     if expected == 0:
-        return P16_KEY
-    rows = rows_of(p)
-    for index in range(1, min(expected, len(rows)) + 1):
-        row = rows[index - 1]
-        for spec in _walk_leaves(index, expected):
-            if _cell_open(row, spec.key, vocab) and not cell_proposed(row, spec.key):
-                return step_cell_key(index, spec.key)
-    return None
+        return (P16_KEY,)
+    rows = rows_of(p)[:expected]
+    names = [step_cell_key(i, "name") for i, row in enumerate(rows, start=1) if _askable(row, "name", vocab)]
+    if names:
+        return tuple(names)
+    for index, row in enumerate(rows, start=1):
+        for group in (GROUP_A, GROUP_B):
+            open_specs = [
+                s for s in step_specs_in_group(group) if field_applies(s, row) and _askable(row, s.key, vocab)
+            ]
+            if group == GROUP_B and not _optional_worth_asking(open_specs):
+                continue
+            if open_specs:
+                return tuple(step_cell_key(index, s.key) for s in open_specs)
+    effort = [
+        step_cell_key(i, s.key)
+        for i, row in enumerate(rows, start=1)
+        for s in step_specs_in_group(GROUP_EFFORT)
+        if _askable(row, s.key, vocab)
+    ]
+    return tuple(effort)
 
 
-def _focus_step(profile: Mapping[str, Any], vocab: Vocabulary) -> int | None:
-    focus = step_focus(profile, vocab=vocab)
-    parsed = parse_step_key(focus) if focus else None
-    if parsed is not None:
-        return parsed[0]
-    return current_step_index(profile, vocab=vocab)
+def _optional_worth_asking(open_specs: list[FieldSpec]) -> bool:
+    """§3.20 O8: the optional question is asked while one of its scored cells is open; hand-over alone
+    (unscored) never is. §3.21 P1: an open decision criteria cell (S14, unscored but conditional) also
+    keeps it open, since it only applies to a judgement or mix step."""
+    return any(s.weight or s.applies_when for s in open_specs)
+
+
+def step_focus(profile: Mapping[str, Any], *, vocab: Vocabulary) -> str | None:
+    """The first cell of the next walk question (P16 while there is no count), or `None`."""
+    keys = walk_ask(profile, vocab=vocab)
+    return keys[0] if keys else None
 
 
 def missing_fields(
@@ -233,21 +264,7 @@ def missing_fields(
     if phase in COLLECTING_PHASES:
         return _blocking(p, phase, counters, vocab)
     if phase == PHASE_STEPS:
-        if expected_steps(p, vocab=vocab) == 0:
-            return [P16_KEY]
-        index = _focus_step(p, vocab)
-        rows = rows_of(p)
-        if index is None or index > len(rows):
-            return []
-        expected = expected_steps(p, vocab=vocab)
-        return [
-            step_cell_key(index, s.key)
-            for s in _walk_leaves(index, expected)
-            if _cell_open(rows[index - 1], s.key, vocab)
-        ]
-    if phase == PHASE_CONFIRM:
-        proc = process_of(p)
-        return [ROLLUP_KEYS[t] for t in ROLLUP_TARGETS if proc.get(ROLLUP_FLAGS[t]) is not True]
+        return list(walk_ask(p, vocab=vocab))
     if phase == PHASE_REVIEW:
         return [s.key for s in PROFILE_SPECS if _state(p, s, counters, vocab) not in ("counts", "given_up")]
     return []
@@ -261,6 +278,40 @@ def posture(find_turns: int) -> Posture:
     if question < FIND_DIRECT_TURN:
         return "narrowed"
     return "direct"
+
+
+# --- Progress and suggestions (spec 14 §3.20 O2, O4, amended 2026-11-21) -------------------------
+
+
+def progress(profile: Mapping[str, Any], counters: Mapping[str, Any], *, vocab: Vocabulary) -> float:
+    """How far along the interview path, 0–1, for the bar; `score` stays the gate's number.
+
+    Process fields that count or are given up, plus the asked, non-optional step cells (8 per step) that
+    count or are skipped, over process points + E × 8, E = P16 or 4 while it is not known.
+    """
+    p = normalized_profile(profile)
+    done = sum(s.weight for s in PROFILE_SPECS if s.weight and _state(p, s, counters, vocab) in ("counts", "given_up"))
+    steps = expected_steps(p, vocab=vocab) or PROGRESS_DEFAULT_STEPS
+    specs = progress_step_specs()
+    for row in rows_of(p)[:steps]:
+        done += sum(s.weight for s in specs if cell_counts(row, s.key, vocab=vocab) or cell_skipped(row, s.key))
+    total = sum(s.weight for s in PROFILE_SPECS) + steps * sum(s.weight for s in specs)
+    return min(1.0, round(done / total, 4)) if total else 0.0
+
+
+#: Find questions (1-based) on which the guide is told to suggest candidates while none was heard (§3.20 O2).
+SUGGEST_MAX_TURNS = 4
+
+
+def suggest_now(state: Mapping[str, Any], *, vocab: Vocabulary) -> bool:
+    """Code decides WHEN the model suggests candidates (§3.20 O2): in `find`, P04 not counting, no candidate
+    heard yet, on the first `SUGGEST_MAX_TURNS` find questions. The model decides WHAT to suggest."""
+    profile = normalized_profile(as_mapping(state.get("profile")))
+    if state.get("phase") != PHASE_FIND or field_counts(profile, NAME_KEY, vocab=vocab):
+        return False
+    if read_steering(as_mapping(state.get("steering")))["candidates"]:
+        return False
+    return read_counters(as_mapping(state.get("counters")))["find_turns"] < SUGGEST_MAX_TURNS
 
 
 # --- Proposal groups ------------------------------------------------------------------------------
@@ -280,6 +331,7 @@ def proposal_group(
     rows = rows_of(p)
     fields: list[str] = []
     cells: dict[int, list[str]] = {}
+    agent: list[str] = []
     for key in proposed_keys(p):
         parsed = parse_step_key(key)
         if parsed is None:
@@ -287,10 +339,16 @@ def proposal_group(
                 fields.append(key)
             continue
         index, leaf = parsed
-        if index <= len(rows) and not cell_skipped(rows[index - 1], leaf) and key not in held:
+        if index > len(rows) or cell_skipped(rows[index - 1], leaf) or key in held:
+            continue
+        if is_agent_proposal(p, key):  # §3.19 W8: held until the review, then confirmed in bulk
+            agent.append(key)
+        else:
             cells.setdefault(index, []).append(key)
     if fields:
         return fields[:PROPOSAL_GROUP_MAX]
+    if agent and phase == PHASE_REVIEW:
+        return agent
     names = [k for keys in cells.values() for k in keys if k.endswith(".name")]
     if names:
         return names
@@ -392,11 +450,22 @@ def _cluster_mode(state: Mapping[str, Any], counters: Mapping[str, Any]) -> Lite
     return "propose"
 
 
+def field_group(missing: list[str]) -> tuple[str, ...]:
+    """The first missing field and every other missing field of its group, in ask order (§3.19 W1)."""
+    first = next((s for s in PROFILE_SPECS if s.key == missing[0]), None)
+    if first is None or first.group is None:
+        return (missing[0],)
+    grouped = {s.key for s in PROFILE_SPECS if s.group == first.group}
+    return tuple(k for k in missing if k in grouped)
+
+
 def wrap_up_keys(profile: Mapping[str, Any], counters: Mapping[str, Any], *, vocab: Vocabulary) -> list[str]:
     """Given-up fields not yet offered in the wrap-up (Q4: offered once, with an easy way to settle)."""
     out: list[str] = []
     for key in given_up_keys(profile, counters, vocab=vocab):
         spec = next(s for s in PROFILE_SPECS if s.key == key)
+        if spec.optional:  # §3.19 W2: an optional field is never offered again
+            continue
         if field_asks(counters, key) < field_limit(spec) + REVIEW_ASK_LIMIT + WRAP_UP_ASKS:
             out.append(key)
     return out
@@ -440,16 +509,13 @@ def next_ask(state: Mapping[str, Any], *, vocab: Vocabulary, steering: SteeringC
         if missing and missing[0] == CLUSTER_KEY:
             return Ask("cluster", (CLUSTER_KEY,), _cluster_mode(state, counters))
         if missing:
-            return Ask("field", (missing[0],))
+            return Ask("field", field_group(missing))
     if phase == PHASE_STEPS:
-        focus = step_focus(profile, vocab=vocab)
-        if focus == P16_KEY:
-            return Ask("field", (P16_KEY,))
-        if focus is not None:
-            return Ask("cell", (focus,))
-    if phase == PHASE_CONFIRM and missing:
-        keys = missing if counters["confirm_turns"] >= CONFIRM_TURN_LIMIT else missing[:1]
-        return Ask("rollups", tuple(keys))
+        keys = walk_ask(profile, vocab=vocab)
+        if keys == (P16_KEY,):
+            return Ask("field", keys)
+        if keys:
+            return Ask("cell", keys)
     return Ask("wrap_up", tuple(wrap_up_keys(profile, counters, vocab=vocab)))
 
 

@@ -37,7 +37,7 @@ def test_every_status_and_the_details(vocab):
         "cell_asks": {step_cell_key(1, "goal"): 3},
     }
     views = field_views(profile, counters=counters, vocab=vocab, documents=[{"id": "d1", "name": "Procedure.docx"}])
-    assert len(views) == len(PROFILE_SPECS) + 2 * len(STEP_SPECS)
+    assert len(views) == len(PROFILE_SPECS) + 2 * len([s for s in STEP_SPECS if s.applies_when is None])
     by_key = {v["key"]: v for v in views}
     assert by_key["process.trigger"]["status"] == "proposed"
     assert by_key["process.trigger"]["document_name"] == "Procedure.docx"

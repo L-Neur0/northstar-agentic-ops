@@ -30,7 +30,7 @@ from app.models.workspace_wire import (
     SummaryOut,
 )
 
-from ..domain.field_spec import SKIPPED_KEY, STEP_SPECS, Vocabulary, step_cell_key
+from ..domain.field_spec import SKIPPED_KEY, Vocabulary, step_cell_key, step_specs_shown
 from ..profile.coercion import coerce_count
 from ..profile.shapes import as_list, process_of, rows_of
 from ..profile.verdicts import step_is_started
@@ -52,7 +52,7 @@ def step_grid(
 ) -> StepGridOut:
     """One grid row per step field, one cell per step; `views=None` leaves source and status empty."""
     grid_rows: list[GridRowOut] = []
-    for spec in STEP_SPECS:
+    for spec in step_specs_shown(rows):
         cells: list[GridCellOut] = []
         for index, row in enumerate(rows, start=1):
             view = (views or {}).get(step_cell_key(index, spec.key), {})

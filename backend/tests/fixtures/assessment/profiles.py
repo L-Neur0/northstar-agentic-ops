@@ -28,6 +28,12 @@ def load_profile(variant: Literal["eu", "na"] = "eu") -> dict[str, Any]:
     return json.loads((HERE / f"monthly_cost_review_{variant}.json").read_text(encoding="utf-8"))
 
 
+def load_cv_screening() -> dict[str, Any]:
+    """The p05 CV-screening profile from evaluation run 20261121-094609, with the demo's live correction
+    applied (steps 3 and 4 once per role; criteria set by the hiring manager, partly written). Spec 27."""
+    return json.loads((HERE / "cv_screening_p05.json").read_text(encoding="utf-8"))
+
+
 @cache
 def nig_config() -> CompanyConfig:
     return load_company_config(NIG)

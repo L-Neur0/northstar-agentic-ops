@@ -13,7 +13,10 @@ waiting → steering, on a recommendation turn → rules → phase focus → blo
 test can find each one. On a `steer` or `recommend` turn the posture text is left out (§3.15 item 10).
 What: `guide_system(state, ask, finish, *, vocab)`, `guide_messages` (system + the last
 `GUIDE_HISTORY_TURNS` messages, expert turns fenced as `EXPERT`), `missing_line`, `finish_block`
-and `FINISH_TEXT` (one sentence per `FinishBlock` code).
+and `FINISH_TEXT` (one sentence per `FinishBlock` code). Amendment §3.19 (short step walk): a group ask
+lists every field it covers and says to ask them together; agent proposals are marked as filled in
+from the expert's answers (AC-14.115). Amendment §3.20 (owner test, 2026-11-21): the SUGGEST block in
+`find`, and the OUTPUT block: GUIDE answers with `{"question", "offered"}` (AC-14.118, AC-14.121). Amendment §3.21 (p05 evaluation, 2026-11-21): a read-back value goes in `offered`; never ask estimate-or-measured alone (AC-14.135).
 Must not: tell the model to end the session, let it give a number about hours, cost or value, or
 inline untrusted text without a fence or `single_line`. Spec 14 §3.9, §3.15 item 12; AC-14.39 to AC-14.50,
 AC-14.58, AC-14.77.
@@ -28,6 +31,7 @@ from app.utils.prompt_safety import fence_instruction, fence_untrusted, single_l
 
 from ...domain.field_spec import (
     CONFIRM_TURN_LIMIT,
+    GROUP_QUICK,
     MAX_STEPS,
     MIN_STEPS,
     PHASE_CONFIRM,
@@ -36,10 +40,11 @@ from ...domain.field_spec import (
     Vocabulary,
 )
 from ...domain.scope import is_one_off
+from ...profile.inferred import is_agent_proposal
 from ...profile.scoring import FinishCheck, rejected_substep_count
 from ...profile.shapes import as_list, as_mapping, meta_for, normalized_profile, process_of, resolve_key, stored_value
 from ...profile.verdicts import answer_started, grade
-from ..phases import ask_count, missing_fields, posture, read_counters, step_focus
+from ..phases import ask_count, missing_fields, posture, read_counters, suggest_now
 from ..steering import STEER_PREFIX, ranked, read_steering
 from ..types import Ask
 from .common import field_brief, inline_name, render_profile, text_value
@@ -56,7 +61,7 @@ from .posture import posture_text
 from .steering_text import recommend_text, steer_text, steering_block
 
 GUIDE_ROLE = (
-    "You are a process discovery assistant. You interview a process expert the way a good analyst does: you help "
+    "You are an AI use case discovery assistant. You interview a process expert the way a good analyst does: you help "
     "them notice which recurring work in their week is worth mapping, then map that one process step by step, so "
     "the tool can show where AI and automation could help. The expert is not expected to arrive with a process in "
     "mind; finding it with them is part of your job, not a precondition for starting."
@@ -73,13 +78,12 @@ RULES = """RULES:
 - Never ask the expert to classify their work into an internal framework, and never ask them to name a cluster unaided.
 - Never give a number about hours, cost, value or savings: the tool computes those after Finish, except the numbers in the STEERING block, copied as given.
 - Never end the session. If the expert wants to stop, say they can close it with the Close button.
-- If the expert has no process in mind, ask about their week, their recurring frustrations and their hand-offs, then propose a candidate in their own words."""
+- If the expert has no process in mind, suggest two or three likely recurring workflows for their department and role (the SUGGEST block says when), then propose a candidate in their own words.
+- Recurring work done mostly by one person is a fine candidate: never ask the expert to justify who depends on it before accepting it."""
 
 FINISH_TEXT: dict[str, str] = {
     "below_gate": "not enough of the map is answered yet: keep to STILL MISSING",
     "substeps_incomplete": "the steps are not all described yet",
-    "roles_not_confirmed": "the list of roles is not confirmed yet",
-    "tools_not_confirmed": "the list of systems is not confirmed yet",
 }
 
 #: Fields where "there are none" is a real answer (P11, P15, S04, S10, S11).
@@ -106,6 +110,7 @@ def _documents(state: Mapping[str, Any]) -> dict[str, str]:
 
 IMAGE_KINDS = ("png", "jpeg")
 IMAGE_MARK = " (from an image)"
+AGENT_MARK = " (filled in from the expert's answers)"
 
 
 def image_documents(state: Mapping[str, Any]) -> frozenset[str]:
@@ -174,6 +179,7 @@ def _proposals_block(
         name = documents.get(str(meta.get("documentId") or ""))
         origin = f" (from {single_line(name, 120)})" if name else ""
         origin += IMAGE_MARK if from_image(profile, key, images) else ""
+        origin += AGENT_MARK if is_agent_proposal(profile, key) else ""
         lines.append(f'- {_label(key, vocab)}: {value}; quote{origin}: "{single_line(meta.get("quote") or "", 200)}"')
     return (
         "PROPOSALS WAITING:\n"
@@ -189,6 +195,12 @@ def _this_turn(state: Mapping[str, Any], ask: Ask, finish: FinishCheck, *, vocab
     counters = read_counters(as_mapping(state.get("counters")))
     if ask.kind == "widening":
         return widening_block(as_mapping(state.get("scope")) or {})
+    if ask.kind == "proposals" and ask.keys and all(is_agent_proposal(profile, k) for k in ask.keys):
+        return (
+            "Present the PROPOSALS WAITING below together in one short question: the system filled them in from "
+            "the expert's own answers (they were never asked). Show them as a short list grouped by step and ask "
+            "for one yes, or for corrections; that is the only question for this turn."
+        )
     if ask.kind == "proposals":
         return "Present the PROPOSALS WAITING below together in one short question; that is the only question for this turn."
     steer = read_steering(as_mapping(state.get("steering")))
@@ -216,6 +228,15 @@ def _this_turn(state: Mapping[str, Any], ask: Ask, finish: FinishCheck, *, vocab
         if top and posture(counters["find_turns"]) == "direct":
             text += f" If you propose one candidate, propose {inline_name(top[0]['name'])}: the system ranked it first."
         return text
+    if len(ask.keys) > 1 and ask.kind == "field":
+        lines = "\n".join(f"- {_label(k, vocab)} (`{k}`)" for k in ask.keys)
+        quick = any((a := resolve_key(k)) is not None and a.spec.group == GROUP_QUICK for k in ask.keys)
+        how = " Put them as two quick yes/no questions in one message." if quick else ""
+        return (
+            f"Ask about ALL of these together in ONE question; that is the only question for this turn.{how}\n{lines}"
+        )
+    if ask.kind == "cell":
+        return "Ask the grouped step question described in PHASE FOCUS; that is the only question for this turn."
     return f"Ask about {_label(key, vocab)} (`{key}`) now; that is the only question for this turn."
 
 
@@ -230,11 +251,18 @@ def _phase_focus(state: Mapping[str, Any], ask: Ask, *, vocab: Vocabulary) -> st
         if text:
             parts.append(text)
     if ask.kind == "cell" or (phase == "steps" and ask.kind == "field"):
-        parts.append(step_instructions(profile, step_focus(profile, vocab=vocab), vocab=vocab))
+        counters = read_counters(as_mapping(state.get("counters")))
+        asked_before = ask.kind == "cell" and ask_count(ask, counters) >= 1
+        parts.append(step_instructions(profile, ask.keys, vocab=vocab, asked_before=asked_before))
     elif ask.kind == "field" and ask.keys:
-        address = resolve_key(ask.keys[0])
-        if address is not None and vocab.question(address.spec):
-            parts.append("The field for this turn:\n" + field_brief(address.spec, vocab))
+        briefs = [
+            field_brief(a.spec, vocab)
+            for a in (resolve_key(k) for k in ask.keys)
+            if a is not None and vocab.question(a.spec)
+        ]
+        if briefs:
+            head = "The field for this turn:\n" if len(briefs) == 1 else "The fields for this turn:\n"
+            parts.append(head + "\n".join(briefs))
     return "\n".join(parts)
 
 
@@ -298,6 +326,41 @@ def _one_off_block(state: Mapping[str, Any]) -> str:
     )
 
 
+def suggest_block(state: Mapping[str, Any], *, vocab: Vocabulary) -> str:
+    """SUGGEST (§3.20 O2): code says WHEN; the model decides WHAT, from what it knows of the expert."""
+    if not suggest_now(state, vocab=vocab):
+        return ""
+    return (
+        "SUGGEST: the expert has not named any recurring work yet. From what you know (their department, role "
+        "and region in the profile, their own words so far, any document), think about what recurring, manual, "
+        "multi-step work someone in that role most likely does every week, and propose two or three concrete "
+        "candidates in their terms (for an HR talent scout, for example: screening CVs against a vacancy, "
+        "scheduling first interviews, writing candidate summaries for hiring managers), or ask one concrete "
+        "question about their work with such examples. Suggestions are only offers: put the candidate names you "
+        "propose, as a list, under `process.name` in `offered`; nothing is the process until the expert picks or "
+        "names one."
+    )
+
+
+def output_block(ask: Ask) -> str:
+    """OUTPUT (§3.20 O5): one JSON object with the question and the values it offers for this turn's keys."""
+    keys = ", ".join(f"`{k}`" for k in ask.keys) or "(none)"
+    return (
+        "OUTPUT: Reply with ONE JSON object and nothing else: "
+        '{"question": "<your message to the expert>", "offered": {}}.\n'
+        f"Keys of this turn: {keys}.\n"
+        "When your question suggests concrete values for a key of this turn that the expert can accept as they "
+        "are (for example the step names you propose, as `process.substeps[1].name`, or the kinds of sensitive "
+        'data you list, as rows `[{"item": "..."}]`), put exactly those values under that key in `offered`, in '
+        "the field's shape. Leave `offered` empty when you only ask, and never put alternatives the expert must "
+        "choose between, or a key that is not of this turn.\n"
+        "When your question reads back a value the expert already gave and asks them to confirm it, put that "
+        "value in `offered` under its key, so a plain yes keeps it.\n"
+        "Never ask whether a figure is estimated or measured as a question of its own: a rough estimate is fine, "
+        'and their own words ("about", "roughly") already say so.'
+    )
+
+
 def guide_system(state: Mapping[str, Any], ask: Ask, finish: FinishCheck, *, vocab: Vocabulary) -> str:
     """The GUIDE system prompt, sections in the order of spec 14 §3.9."""
     profile = normalized_profile(as_mapping(state.get("profile")))
@@ -333,8 +396,10 @@ def guide_system(state: Mapping[str, Any], ask: Ask, finish: FinishCheck, *, voc
         "PHASE FOCUS:\n" + _phase_focus(state, ask, vocab=vocab),
         _one_off_block(state),
         _step_count_block(profile),
+        suggest_block(state, vocab=vocab),
         _asked_already(state, ask, vocab=vocab),
         finish_block(finish),
+        output_block(ask),
     ]
     return "\n\n".join(s for s in sections if s)
 

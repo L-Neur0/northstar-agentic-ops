@@ -256,3 +256,13 @@ def test_question_override(nig_vocabulary):
     vocab = Vocabulary(taxonomy=nig_vocabulary.taxonomy, regions=nig_vocabulary.regions, wording=wording)
     assert vocab.question(spec("S06")) == "Which tools?"
     assert vocab.label(spec("S06")) == "Systems"
+
+
+def test_ac_27_11_target_unit_ignores_singular_and_plural():
+    """AC-27.11 (spec 27 §3.6 R1): "1 working day per role" is in the unit of "3 working days per role"."""
+    from app.services.process_discovery.domain.field_spec import same_unit
+
+    assert same_unit("working day per role", "working days per role")
+    assert same_unit("Hours", "hour")
+    assert not same_unit("hours", "days")
+    assert not same_unit("working days", "working days per role")

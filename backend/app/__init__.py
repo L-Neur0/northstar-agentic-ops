@@ -1,1 +1,1 @@
-"""The Discovery Agent backend application package. It holds the FastAPI shell (api, core, models, utils) and the discovery engine under services. See specs/02-architecture.md §3 for the layers."""
+"""The AI Use Case Discovery Agent backend application package. It holds the FastAPI shell (api, core, models, utils) and the discovery engine under services. See specs/02-architecture.md §3 for the layers."""

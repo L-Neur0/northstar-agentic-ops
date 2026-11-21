@@ -23,6 +23,7 @@ ALLOWED = (
     "app.services.process_discovery.llm",
     "app.services.process_discovery.fake_llm",
     "app.services.process_discovery.domain",
+    "app.models.process_discovery_schemas",  # spec 24 §13 D5: the demo copy is a stored `Session`
 )
 FILES = sorted(p for p in EVAL.rglob("*.py") if "__pycache__" not in p.parts)
 

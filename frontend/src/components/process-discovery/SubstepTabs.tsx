@@ -1,9 +1,14 @@
 /**
  * The Steps section body: one tab per step and the **No further steps** button (spec 23
  * §3.8.9–10; AC-23.33, AC-23.50, AC-23.51).
- * Why: the sub-step tabs: `Step k (f/11)` tabs that scroll horizontally and
- * keep the active one in view, a panel with the twelve cells of the chosen step, S12 marked
- * "(not scored)". Counts come from the 1-based cell field views (`process.substeps[k].<leaf>`).
+ * Why: the sub-step tabs: `k · <name> (f/12)` tabs (`Step k (f/12)` while unnamed; the name cut with
+ * an ellipsis, full in `title` and `aria-label`; amended 2026-11-21, §3.6 rule 11, AC-23.150) that scroll horizontally and
+ * keep the active one in view, a panel with the thirteen cells of the chosen step in registry
+ * order (S13 "Rules or judgement" after S12), S12 marked "(not scored)". Counts come from the
+ * 1-based cell field views (`process.substeps[k].<leaf>`); S01–S11 and S13 are scored (short step
+ * walk, amended 2026-11-20). S14 *Decision criteria* follows S13 only when the server sends its view
+ * (a judgement or mix step), marked "(not scored)" and never counted (amended 2026-11-21, §3.6 rule 12,
+ * AC-23.151). An agent proposal (source `agent`) gets the same ✓ / ✎ as a document one.
  * Part 2 (spec 23 §11.7, §11.8; AC-23.77, AC-23.78): proposed cells carry ✓ / ✎, a step with two
  * or more proposed cells offers "Confirm all <n> proposals in step k" (keys in field view order),
  * and a tab says "· proposed" in text while its step has a proposal.
@@ -55,7 +60,19 @@ export function SubstepTabs({ profile, fieldViews, activeIndex, onSelect, sessio
               const views = viewsForStep(fieldViews, i + 1)
               const score = stepScore(views)
               const proposed = views.some((v) => v.status === 'proposed') ? ' · proposed' : ''
-              return { id: `step-${i + 1}`, label: `Step ${i + 1} (${score.filled}/${score.total})${proposed}`, title: row.name || undefined }
+              const name = row.name.trim()
+              const count = `(${score.filled}/${score.total})`
+              const answered = `${score.filled} of ${score.total} answered${proposed ? ', proposed' : ''}`
+              if (!name) {
+                return { id: `step-${i + 1}`, label: `Step ${i + 1} ${count}${proposed}`, ariaLabel: `Step ${i + 1}, ${answered}` }
+              }
+              const label = (
+                <>
+                  <span className="inline-block max-w-[12rem] truncate align-bottom">{`${i + 1} · ${name}`}</span> {count}
+                  {proposed}
+                </>
+              )
+              return { id: `step-${i + 1}`, label, title: name, ariaLabel: `Step ${i + 1}: ${name}, ${answered}` }
             })}
           />
           <div role="tabpanel" id="steps-panel" aria-labelledby={`steps-tab-${index}`} className="pt-2">

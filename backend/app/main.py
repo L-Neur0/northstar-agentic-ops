@@ -90,7 +90,7 @@ def create_app(settings: Settings | None = None, *, llm: LLM | None = None) -> F
                 await llm.aclose()
             await store.close()
 
-    app = FastAPI(title="Discovery Agent", version=settings.app_version, lifespan=lifespan)
+    app = FastAPI(title=company.organisation.product_name, version=settings.app_version, lifespan=lifespan)
     # Set state now too, so dependencies work in tests that skip the lifespan.
     app.state.settings = settings
     app.state.company = company

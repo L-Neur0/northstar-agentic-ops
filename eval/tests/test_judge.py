@@ -97,3 +97,17 @@ async def test_ac_24_17_calibration_passes_at_27_of_30_and_fails_at_26():
     assert any("judge failed calibration" in r for r in card.reasons)
     text = render_markdown(card)
     assert "NOT TRUSTED" in text and "Code-only" in text
+
+
+def test_ac_24_55_judge_v3_per_run_qualifier():
+    """AC-24.55 (spec 24 §12 V5): judge-v3 says a per-unit-of-work qualifier keeps the meaning, a per-period one does not."""
+    from eval.evalkit.calibrate import load_pairs
+    from eval.evalkit.judge import JUDGE_PROMPT_VERSION, SYSTEM
+    from eval.evalkit.persona import EVAL_DIR
+
+    assert JUDGE_PROMPT_VERSION == "judge-v3"
+    text = " ".join(SYSTEM.split())
+    assert "per role" in text and "per week" in text
+    pairs = {(p.hidden, p.captured): p.label for p in load_pairs(EVAL_DIR / "judge_calibration.yaml")}
+    assert pairs[("3 working days", "3 working days per role")] is True
+    assert pairs[("3 hours", "3 hours per week")] is False

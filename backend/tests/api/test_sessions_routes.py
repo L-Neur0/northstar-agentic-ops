@@ -44,7 +44,12 @@ def test_ac_15_27_create_returns_the_welcome_and_calls_no_model(api: ApiHarness)
     assert (body["status"], body["phase"], body["displayName"]) == ("active", "context", "Anna")
     [welcome] = body["messages"]
     assert welcome["role"] == "agent" and set(welcome) == {"id", "role", "text", "at"}
-    assert body["score"] == {"value": 0.0, "filledPoints": 0, "totalPoints": body["score"]["totalPoints"]}
+    assert body["score"] == {
+        "value": 0.0,
+        "filledPoints": 0,
+        "totalPoints": body["score"]["totalPoints"],
+        "progress": 0.0,  # spec 14 §3.20 O4
+    }
     assert body["finish"] == {"ready": False, "blockedBy": "below_gate", "looksLikeTask": False}
     assert body["scope"] is None and body["clusterProposal"] is None and body["reportStatus"] is None
     assert body["fieldViews"] and body["fieldViews"][0]["key"] == "department"

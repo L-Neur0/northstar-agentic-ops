@@ -1,7 +1,7 @@
 /**
  * Keeps one broken report part from blanking the page (spec 23 §11.11.3; AC-23.97; F-16.2).
- * Why: the report is eleven independent parts; if one cannot be drawn, the expert must still get
- * the other ten, with a plain sentence where the broken one would be.
+ * Why: the report is six independent parts (report v2, spec 27); if one cannot be drawn, the expert must still get
+ * the other five, with a plain sentence where the broken one would be.
  * Rules: an error boundary per part; on a render error it shows the fallback (the part's heading
  * and "This part could not be shown.") and logs only the error class to the console, never text.
  * Must not: retry, hide the other parts, or show the error message.

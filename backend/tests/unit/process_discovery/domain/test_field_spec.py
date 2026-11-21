@@ -45,6 +45,8 @@ S_TABLE = [
     ("S10", "approvals", "object_list", 1),
     ("S11", "exceptions", "object_list", 1),
     ("S12", "handover", "text", 0),
+    ("S13", "decision_type", "object", 1),
+    ("S14", "decision_criteria", "object", 0),  # spec 12 §3.13 (2026-11-21)
 ]
 
 # Product §5.1 and §5.2, default wording, verbatim.
@@ -52,7 +54,7 @@ QUESTIONS = {
     "P01": "Which department are you in?",
     "P02": "What is your own role in that department?",
     "P03": "Which region do you work in?",
-    "P04": "Thinking about a normal week, what work comes round again and again, and who else gets involved?",
+    "P04": "Thinking about a normal week, which piece of work comes round again and again and takes you the most time?",
     "P06": "What starts this process off?",
     "P07": "What exists at the end that did not exist before?",
     "P08": "Who uses that result, and what for?",
@@ -61,9 +63,9 @@ QUESTIONS = {
     "P11": "Who owns this process end to end?",
     "P12": "How would you measure how this process performs today?",
     "P13": "Where would that number need to get to?",
-    "P14": "Do other teams or regions do this the same way?",
-    "P15": "Does it involve personal or sensitive data, or a regulation?",
-    "P16": "Into how many main steps would you split this process?",
+    "P14": "Do other teams or regions do this the same way? A yes or no is enough.",
+    "P15": "Does it involve personal or sensitive data, or a regulation? A yes or no is enough.",
+    "P16": "List the main steps in order, 2 to 6.",
     "S01": "What would you call this step?",
     "S02": "What has to be true for this step to be done?",
     "S03": "What do you actually do in this step?",
@@ -76,6 +78,8 @@ QUESTIONS = {
     "S10": "Does anything here need an approval or sign-off?",
     "S11": "What goes wrong here, and where do you end up when it does?",
     "S12": "How does the work get to whoever does the next step?",
+    "S13": "Is this step mostly fixed rules, judgement, or a mix?",
+    "S14": "What do you base that decision on, who sets those criteria, and are they written down?",
 }
 
 ALL_SPECS = (*fs.PROFILE_SPECS, *fs.STEP_SPECS)
@@ -96,7 +100,7 @@ def test_registry_matches_the_process_table():
 
 
 def test_registry_matches_the_step_table():
-    """AC-12.1: S01–S12 in order; every step spec sits in the `steps` phase."""
+    """AC-12.1: S01–S14 in order; every step spec sits in the `steps` phase."""
     assert [(s.id, s.key, s.kind, s.weight) for s in fs.STEP_SPECS] == S_TABLE
     assert {s.phase for s in fs.STEP_SPECS} == {"steps"}
 
@@ -105,7 +109,7 @@ def test_derived_specs_and_unique_ids():
     """AC-12.1: D01–D02 follow, and every ID is unique across the three series."""
     assert [(d.id, d.key) for d in fs.DERIVED_SPECS] == [("D01", "process.all_roles"), ("D02", "process.all_tools")]
     ids = [s.id for s in ALL_SPECS] + [d.id for d in fs.DERIVED_SPECS]
-    assert len(ids) == len(set(ids)) == 30
+    assert len(ids) == len(set(ids)) == 32
 
 
 def test_keys_are_unique_and_shaped_per_series():
@@ -140,7 +144,7 @@ def test_object_specs_declare_scalar_subfields_and_real_groups():
 
 def test_validators_sit_on_the_documented_fields():
     """AC-12.3: the cross-field and vocabulary rules are validators, nothing else is."""
-    assert {s.id for s in ALL_SPECS if s.validator} == {"P03", "P05", "P13", "P14", "P16"}
+    assert {s.id for s in ALL_SPECS if s.validator} == {"P03", "P05", "P13", "P14", "P16", "S13", "S14"}
     assert spec_of("P10").complete_when == (("count", "period"), ("raw",))
 
 
@@ -158,12 +162,12 @@ def test_phase_strings_match_the_enum():
     values = {p.value for p in Phase}
     assert set(fs.PHASE_ORDER) <= values
     assert {s.phase for s in ALL_SPECS} <= values
-    assert set(fs.PHASE_ORDER) | {"finished", "no_candidate"} == values
+    assert set(fs.PHASE_ORDER) | {"confirm", "finished", "no_candidate"} == values  # confirm: old sessions only
 
 
 def test_phase_order_and_collecting_phases():
-    """AC-12.4: eight non-terminal phases; each collecting phase has a field; terminals excluded."""
-    assert fs.PHASE_ORDER == ("context", "find", "boundaries", "measure", "step_count", "steps", "confirm", "review")
+    """AC-12.4 (amended 2026-11-21, §3.20 O10: no `confirm` on the path)."""
+    assert fs.PHASE_ORDER == ("context", "find", "boundaries", "measure", "step_count", "steps", "review")
     assert fs.COLLECTING_PHASES == fs.PHASE_ORDER[:5]
     for phase in fs.COLLECTING_PHASES:
         assert fs.specs_for_phase(phase), phase
@@ -175,11 +179,11 @@ def test_phase_order_and_collecting_phases():
 
 
 def test_points_are_derived_from_the_weights():
-    """AC-12.5: 18 process points, 11 per step, totals as documented."""
+    """AC-12.5 (amended 2026-11-20, short step walk): 18 process points, 12 per step, totals as documented."""
     assert fs.PROCESS_POINTS == 18
-    assert fs.STEP_POINTS == 11
-    assert [fs.total_points_for(n) for n in (None, 0, 2, 6, 9)] == [18, 18, 40, 84, 84]
-    assert [fs.total_points_for(n) for n in (4, 5)] == [62, 73]
+    assert fs.STEP_POINTS == 12
+    assert [fs.total_points_for(n) for n in (None, 0, 2, 6, 9)] == [18, 18, 42, 90, 90]
+    assert [fs.total_points_for(n) for n in (4, 5)] == [66, 78]
 
 
 def test_limits_and_constants():
@@ -190,7 +194,7 @@ def test_limits_and_constants():
     assert (fs.WIDENING_LIMIT, fs.CONFIRM_TURN_LIMIT) == (2, 6)
     assert (fs.FIND_FOCUS_TURN, fs.FIND_DIRECT_TURN, fs.ACTIVITIES_SOFT_MAX) == (4, 6, 5)
     assert spec_of("S03").max_items == fs.ACTIVITIES_SOFT_MAX
-    assert [s.id for s in fs.scored_step_specs()] == [f"S{i:02d}" for i in range(1, 12)]
+    assert [s.id for s in fs.scored_step_specs()] == [*(f"S{i:02d}" for i in range(1, 12)), "S13"]
 
 
 # --- AC-12.6: questions and rules ------------------------------------------------------------
@@ -299,7 +303,7 @@ STEP_TEMPLATES = [f"process.substeps[i].{leaf}" for _, leaf, _, _ in S_TABLE]
 
 
 def test_extract_keys():
-    """AC-12.19: every P key except the cluster, then the 12 step templates; nothing else."""
+    """AC-12.19: every P key except the cluster, then every step template (S14 since §3.13); nothing else."""
     keys = fs.extract_keys()
     assert keys == [k for _, k, *_ in P_TABLE if k != "process.cluster"] + STEP_TEMPLATES
     forbidden = {"process.cluster", "process.all_roles", "process.all_tools", "__meta", "__skipped"}

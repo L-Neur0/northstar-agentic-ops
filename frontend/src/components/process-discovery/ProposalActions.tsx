@@ -11,6 +11,8 @@
  * Colours are theme tokens only, never raw palette classes (spec 23 §3.13.2; AC-23.57, AC-23.102).
  * Amendment (spec 17 §3.21 P4, approved 2026-11-20): "(from an image)" comes from the value's own
  * meta (`fromImage`), and a value read from several files names the file of each item (AC-17.76).
+ * Amendment (spec 23 §3.8.9 item 9, short step walk, approved 2026-11-20): a value code proposed
+ * from the expert's answers (source `agent`) reads "suggested from your answers" with the same ✓ / ✎.
  */
 import { useId, useState } from 'react'
 import { Check, ChevronDown, ChevronRight, Pencil } from 'lucide-react'
@@ -32,6 +34,9 @@ export interface ProposalControls {
 
 const IMAGE_MARK = ' (from an image)'
 
+/** A goal, owner or hand-over code proposed from the expert's answers (spec 23 §3.8.9 item 9, short step walk). */
+export const AGENT_SOURCE = 'suggested from your answers'
+
 /** One item's file: "<item> from <file>", "(from an image)" only after an image item (spec 17 §3.21 P4). */
 function itemSource(item: NonNullable<FieldView['items']>[number]): string {
   const from = item.source === 'document' ? `from ${item.documentName ?? 'a removed document'}` : 'from you'
@@ -40,10 +45,12 @@ function itemSource(item: NonNullable<FieldView['items']>[number]): string {
 
 /**
  * "from <document>", "from <document> (from an image)", "from a removed document", "from your idea",
+ * "suggested from your answers" (source `agent`, short step walk),
  * or, for a value read from several files, the file of each item (spec 17 §3.21 P4: per item, from meta).
  */
 function proposalSource(view: FieldView): string {
   if (view.items && view.items.length > 0) return view.items.map(itemSource).join('; ')
+  if (view.source === 'agent') return AGENT_SOURCE
   if (view.source !== 'document') return 'from your idea'
   if (!view.documentName) return 'from a removed document'
   return `from ${view.documentName}${view.fromImage ? IMAGE_MARK : ''}`

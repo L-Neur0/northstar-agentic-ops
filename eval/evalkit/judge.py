@@ -10,6 +10,8 @@ is judged once) and also keeps an in-memory memo per run. Two invalid replies ma
 `judge_error`, counted as wrong.
 Must not: send `temperature` (the client never does), see transcript text (AC-24.14), or run on the
 same deployment as the simulated expert (`check_deployments`, AC-24.15).
+judge-v2 (2026-11-20 review): a dropped qualifier that names the same thing is the same meaning.
+judge-v3 (spec 24 §12 V5, 2026-11-21): "per <unit of work>" keeps the meaning, "per <period>" does not; AC-24.55.
 Spec 24 §3.8; AC-24.14, AC-24.15, AC-24.16.
 """
 
@@ -22,7 +24,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.core.settings import Settings
 from app.services.process_discovery.llm import LLM, CallType, ChatMessage, LLMInvalidOutputError
 
-JUDGE_PROMPT_VERSION = "judge-v1"
+JUDGE_PROMPT_VERSION = "judge-v3"
 
 SYSTEM = f"""You compare two values of one field of a business-process description ({JUDGE_PROMPT_VERSION}).
 HIDDEN is the true value. CAPTURED is what an interview recorded. Decide whether CAPTURED says the
@@ -30,6 +32,11 @@ same thing as HIDDEN.
 
 Rules:
 - Same facts and the same numbers = same meaning. Different wording, order or detail level is fine.
+- A qualifier word dropped or added that does not change which thing is meant is fine
+  ("the invoice" for "the supplier invoice").
+- A time or count with "per <unit of work>" added or dropped ("per role", "per case", "each request")
+  only says it is for one run of the process: same meaning ("3 working days" = "3 working days per
+  role"). "Per <period>" changes it ("3 hours" is not "3 hours per week").
 - For a list: same meaning when CAPTURED covers the main points of HIDDEN; one small extra point is fine.
 - Not the same: a key fact missing or added, a different number or unit amount, a negation, a
   different role, system or event.

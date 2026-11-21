@@ -28,12 +28,14 @@ import { CountsLine, SessionTable } from '../components/workspace/SessionTable'
 import { SessionDialog } from '../components/workspace/SessionDialog'
 import type { MapRenderer } from '../components/report/ProcessMap'
 import { useApi } from '../services/apiContext'
+import { PRODUCT_NAME, PRODUCT_SHORT_NAME } from '../config/product'
 import { clearWorkspaceToken, readWorkspaceToken } from '../access/workspaceToken'
 import { sessionEndedText, watchSession, workspaceErrorText } from '../utils/discoveryErrors'
 import { NO_FILTERS } from '../utils/workspaceFormat'
 import type { ReviewFilters, ReviewRow, WorkspaceLogin as Login } from '../types/workspace'
 
-const TITLE = 'Process Discovery · Workspace'
+const TITLE = `${PRODUCT_NAME} · Workspace`
+const SHORT_TITLE = `${PRODUCT_SHORT_NAME} · Workspace`
 
 export function Workspace({ mapRenderer }: { mapRenderer?: MapRenderer }) {
   const api = useApi()
@@ -94,7 +96,7 @@ export function Workspace({ mapRenderer }: { mapRenderer?: MapRenderer }) {
   if (!login) {
     return (
       <div className="flex min-h-screen flex-col bg-page">
-        <AppHeader title={TITLE} />
+        <AppHeader title={TITLE} shortTitle={SHORT_TITLE} />
         <main className="flex-1">
           <WorkspaceLogin
             notice={notice}
@@ -144,6 +146,7 @@ export function Workspace({ mapRenderer }: { mapRenderer?: MapRenderer }) {
     <div className="flex min-h-screen flex-col bg-page">
       <AppHeader
         title={TITLE}
+        shortTitle={SHORT_TITLE}
         actions={
           <>
             <span className="max-w-[7rem] truncate text-sm text-muted sm:max-w-[14rem]">Signed in as {login.name}</span>

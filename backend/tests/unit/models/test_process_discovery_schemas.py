@@ -156,7 +156,9 @@ def test_new_idea_defaults():
 def test_scope_and_placement_shapes_match_scope_py(nig_taxonomy):
     """§3.11: `ScopeVerdict` and `Placement` have exactly the shapes `scope.py` returns."""
     verdict = scope.build_scope_verdict({"multi_role": True})
-    assert ScopeVerdict.model_validate(verdict).model_dump() == verdict
+    assert ScopeVerdict.model_validate(verdict).model_dump() == {**verdict, "refreshed": False}
+    refreshed = scope.refresh_scope_from_map(verdict, roles=["a", "b"], systems=["x", "y"])  # spec 12 §3.13
+    assert ScopeVerdict.model_validate(refreshed).model_dump() == refreshed
     for placement in (
         scope.build_placement({"code": "FIN", "confidence": 0.9}, nig_taxonomy),
         scope.keyword_placement("FIN"),

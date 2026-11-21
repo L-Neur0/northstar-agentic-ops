@@ -9,7 +9,8 @@ the PROFILE fence sentence, the JSON-only line), `render_catalogue` (one line pe
 from configuration) and `assess_steps_user` (lead-in plus the shared fenced profile).
 Must not: pass the system prompt through `str.format`, name any company tool in code (entries reach
 the prompt only from `solutions.yaml`), ask for hours, money or scores, or render the profile a second way.
-Spec 26 §3.4 and its decision note; AC-26.3, AC-26.17, AC-26.20.
+Spec 26 §3.4 and its decision note (rule 3b: the S13 rules-or-judgement answer, short step walk,
+approved 2026-11-20) and §3.9 (S14 decision criteria as input, draft 2026-11-21); AC-26.3, AC-26.17, AC-26.20, AC-26.21.
 """
 
 from __future__ import annotations
@@ -30,7 +31,8 @@ LINE_MAX = 300
 ASSESS_STEPS_SYSTEM = (
     """You are a senior process and AI analyst. You are given a business process profile captured \
 in a structured interview: the process, and its numbered steps (`--- STEP n ---`) with their goal, \
-activities, roles, owner, systems, inputs and outputs, effort, pain points, approvals and exceptions. \
+activities, roles, owner, systems, inputs and outputs, effort, pain points, approvals, exceptions and \
+whether the step runs on fixed rules, judgement or a mix (`Rules or judgement`). \
 You are also given the company's SOLUTION CATALOGUE.
 
 For EACH step, rate how AI fits it and choose the kind of solution that fits best.
@@ -42,6 +44,13 @@ Rules:
    - `automate`: AI or automation can do the step; a person checks samples or exceptions.
    - `assist`: AI drafts, reads, checks or suggests; a person decides or finishes.
    - `human`: judgement, relationships, accountability or physical work that stays with people.
+   The step's `Rules or judgement` answer is the expert's own view: `rules` leans to `automate`, \
+`judgement` to `assist` or `human`, `mix` to `assist`. It never overrides what the step's other answers say.
+   The step's `Decision criteria` (when present: what the decision is based on, who sets it, whether \
+it is written down, what varies) are input too: criteria that are written down and the same each time \
+lean a `judgement` step towards `assist`; criteria that are not written down, or that change from person \
+to person, keep it at `assist` or `human`, and the `route_reason` names writing the criteria down as the \
+first thing to prepare. They never override what the step's other answers say.
 4. `reason`: one or two sentences naming the step's inputs, systems, decisions or pain behind the fit.
 5. `evidence`: the expert's words copied exactly from THAT step or from the process fields, at least \
 three words or a whole short answer. No paraphrase, no joining of passages, no "...". Copy from ONE \
@@ -59,6 +68,26 @@ matches the step;
 9. A step whose fit is `human` takes the `none` entry (stays with people) or "".
 10. `route_reason`: one sentence on why this route fits better than the next best.
 11. Never give hours, money, savings or scores; code computes them.
+12. `signals`: list every signal below that holds for the step, each with `evidence` copied exactly from \
+THAT step's words (as in rule 5). Leave a signal out when the step's words do not show it:
+   - `reads_unstructured`: the step reads documents or free text whose layout or wording varies (CVs, e-mails, \
+free-layout files).
+   - `compares_to_criteria`: the step checks items against requirements, criteria or a policy written in words.
+   - `finds_patterns`: the step looks across many items for patterns, outliers or duplicates.
+   - `drafts_text`: the step writes, summarises or explains in words.
+   - `must_be_exact`: the result must be exactly right every time (an amount, a legal or safety decision), with \
+no room for a reviewed draft.
+   - `fixed_rules`: the same written rule gives the same answer every time; a script or a rules engine could do it.
+13. Three motivations for the whole process, each one or two sentences with `evidence` copied exactly from one \
+field of the profile: `fit_motivation` (is this a good use of AI, and why), `assistant_motivation` (would a \
+dedicated solution or a general assistant such as a chat tool suit it better, and why: think of sensitive data, \
+systems to reach, instructions repeated every run), `worth_motivation` (is it worth the effort, and why). Never \
+answer yes or no and never give a verdict; describe what fits and why.
+
+GUIDELINES (what AI is good at): AI language models are strong at reading varied documents, comparing text with \
+criteria, finding patterns in language, and summarising or drafting. They are weak where the same input must \
+always give the same output, at strict arithmetic or rule logic, and where an unchecked mistake is costly: there, \
+rules or a script come first, and the common design is a hybrid (rules check, AI reads and drafts, a person approves).
 
 """
     + PROFILE_FENCE_INSTRUCTION

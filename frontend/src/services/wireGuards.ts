@@ -16,9 +16,11 @@ import { PART_KEYS, type LoadedReport } from '../types/report'
 
 type Check = (value: unknown, path: string, problems: string[]) => void
 
-const PHASES = [...PHASE_ORDER, 'finished', 'no_candidate']
+// `confirm` left the path (spec 14 §3.20 O10) but a session stored there is still a valid wire value
+const PHASES = [...PHASE_ORDER, 'confirm', 'finished', 'no_candidate']
 const STATUSES = ['active', 'finished', 'no_candidate']
 const FIELD_STATUSES = ['complete', 'partial', 'invalid', 'proposed', 'skipped', 'empty', 'deferred', 'given_up']
+// the two list codes are no longer sent (spec 14 §3.20 O10) but an old server may still send them
 const FINISH_BLOCKS = ['below_gate', 'substeps_incomplete', 'roles_not_confirmed', 'tools_not_confirmed']
 
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
@@ -74,7 +76,7 @@ const fieldView = shape({
   status: oneOf(FIELD_STATUSES),
   reason: str,
   missing: arrayOf(str),
-  source: nullable(oneOf(['expert', 'document', 'specialist'])),
+  source: nullable(oneOf(['expert', 'document', 'specialist', 'agent'])),
   quote: nullable(str),
   documentName: nullable(str),
   asks: num,
@@ -84,7 +86,7 @@ const fieldView = shape({
     shape({
       sub: nullable(str),
       item: nullable(str),
-      source: nullable(oneOf(['expert', 'document', 'specialist'])),
+      source: nullable(oneOf(['expert', 'document', 'specialist', 'agent'])),
       documentName: nullable(str),
       fromImage: bool,
     }),
@@ -120,6 +122,8 @@ const process = shape({
       approvals: arrayOf(object),
       exceptions: arrayOf(object),
       handover: str,
+      decision_type: shape({ kind: str, evidence: str }),
+      decision_criteria: shape({ basis: str, set_by: str, written: str, varies: str }),
     }),
   ),
   all_roles: arrayOf(str),
@@ -196,13 +200,11 @@ const diagram = shape({
   stepsHash: str,
 })
 
+const readinessRow = shape({ key: str, label: str, question: str, level: str, levelLabel: str, reason: str, toPrepare: str, note: str })
+
+// Report v2 (spec 27 §3.1, §4; amended 2026-11-21 (report v2), AC-23.152): six parts.
 const REPORT_PARTS: Record<string, Check> = {
-  atAGlance: part({
-    hours: str,
-    routeHeadline: nullable(str),
-    top: arrayOf(shape({ id: str, title: str, stepsLabel: str, hours: str })),
-    prepare: arrayOf(str),
-  }),
+  summary: part({ sentences: arrayOf(str) }),
   process: part({ fields: arrayOf(reportField), notes: arrayOf(note) }),
   measures: part({ fields: arrayOf(reportField), notes: arrayOf(note) }),
   map: part({
@@ -219,6 +221,9 @@ const REPORT_PARTS: Record<string, Check> = {
         number: num,
         name: str,
         hours: str,
+        level: nullable(str),
+        levelLabel: str,
+        because: arrayOf(str),
         fit: nullable(str),
         fitLabel: str,
         routeId: nullable(str),
@@ -231,62 +236,13 @@ const REPORT_PARTS: Record<string, Check> = {
     ),
     catalogueNote: nullable(str),
   }),
-  route: part({
-    headline: str,
-    groups: arrayOf(shape({ key: str, title: str, items: arrayOf(shape({ number: num, name: str, hours: str, routeName: str, reason: str })) })),
-    prepare: arrayOf(str),
-    catalogueNote: nullable(str),
+  feasibility: part({
+    questions: arrayOf(shape({ key: oneOf(['q1', 'q2', 'q3']), question: str, level: str, levelLabel: str, why: str, quote: str })),
+    readiness: arrayOf(readinessRow),
+    readinessFooter: str,
+    bullets: arrayOf(str),
+    gaps: str,
   }),
-  assessment: part({
-    summary: str,
-    opportunities: arrayOf(
-      shape({
-        id: str,
-        title: str,
-        stepsLabel: str,
-        typeLabel: str,
-        whatChanges: str,
-        how: str,
-        prepareFirst: str,
-        impact: str,
-        impactReason: str,
-        feasibility: str,
-        feasibilityReason: str,
-        evidence: str,
-        evidenceLabel: str,
-        review: nullable(str),
-      }),
-    ),
-    stayHuman: arrayOf(shape({ stepsLabel: str, reason: str, evidence: str })),
-  }),
-  potential: part({
-    complete: bool,
-    steps: arrayOf(shape({ number: num, name: str, hoursPerRun: str, runsPerYear: str, hoursPerYear: str })),
-    opportunities: arrayOf(shape({ id: str, title: str, stepsLabel: str, stepHours: str })),
-    totals: shape({ hours: str }),
-    formulas: arrayOf(str),
-    assumptions: arrayOf(str),
-    problems: arrayOf(str),
-    parkedLine: str,
-  }),
-  readiness: part({
-    dimensions: arrayOf(
-      shape({ key: str, label: str, question: str, level: str, levelLabel: str, reason: str, toPrepare: str, note: str }),
-    ),
-    footer: str,
-  }),
-  path: part({
-    groups: arrayOf(
-      shape({
-        key: str,
-        title: str,
-        prepareLines: arrayOf(str),
-        items: arrayOf(shape({ opportunityId: str, title: str, stepsLabel: str, stepHours: str })),
-        emptyText: nullable(str),
-      }),
-    ),
-  }),
-  gaps: part({ fields: arrayOf(reportField), documents: arrayOf(shape({ name: str, outcome: str })), closingNote: str }),
 }
 
 const cover = shape({

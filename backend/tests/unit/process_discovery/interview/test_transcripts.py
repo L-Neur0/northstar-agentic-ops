@@ -120,7 +120,7 @@ def cooperative(question, phase):
         return "yes", {}
     if not focus:
         return "nothing to add", {}
-    return f"answer {focus[0]}", {focus[0]: _value(focus[0])}
+    return f"answer {', '.join(focus)}", {k: _value(k) for k in focus}  # a group is answered at once (§3.19)
 
 
 async def run(ctx, persona: Persona, limit: int = 300):
@@ -151,6 +151,9 @@ async def test_a_cooperative_expert_walks_every_phase_in_order(ctx):
     """AC-14.31."""
     session, phases = await run(ctx, cooperative)
     order = list(dict.fromkeys(phases))
+    assert session.last_question.proposals  # §3.19 W8: the agent's proposals are confirmed in bulk in review
+    llm = PersonaLLM()
+    session = (await run_turn(session, "yes", llm=llm, graph=build_graph(llm, ctx), ctx=ctx, now=NOW)).session  # type: ignore[arg-type]
     assert order == list(PHASE_ORDER)
     assert session.profile.process.substeps_complete is True
     assert session.profile.process.cluster.code == "FIN"

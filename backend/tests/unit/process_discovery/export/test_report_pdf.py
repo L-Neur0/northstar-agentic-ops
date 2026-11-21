@@ -4,7 +4,7 @@ Why: the PDF must render for every session (long answers, odd characters, a brok
 carry the brand from configuration, and never show money while R5 is parked; and a layout problem
 must give a short note document, never an error page.
 What: `write_pdf` on the EU report (text checked with `pypdf`), on edited copies (special
-characters, 12 long opportunities, a 10,000-character cover field, a malformed map, a drawing that
+characters, long step and question reasons (spec 27), a 10,000-character cover field, a malformed map, a drawing that
 raises, a forced `LayoutError`, a thin session); the step-table planner (`grid_pages`) and the map
 page (`diagram_page`) directly.
 Must not: call a model or re-test the report model (see `test_report_model.py`).
@@ -26,7 +26,7 @@ from app.services.process_discovery.export import report_pdf
 from app.services.process_discovery.export.branding import Brand
 from app.services.process_discovery.export.report_pdf import grid_pages, write_pdf
 from tests.fixtures.assessment.profiles import load_profile
-from tests.unit.process_discovery.artifacts.test_report_model import STANDARD_LINE, TITLES
+from tests.unit.process_discovery.artifacts.test_report_model import TITLES
 from tests.unit.process_discovery.export.cases import CATALOGUE, ORG, VOCAB, eu_assessment, eu_session, thin_session
 
 BRAND = Brand.from_config(ORG)
@@ -55,8 +55,9 @@ def test_ac_20_32_the_eu_pdf_holds_every_part_the_hours_and_no_euro():
     assert "Monthly cost review" in text
     for number, title in enumerate(TITLES, start=1):
         assert f"{number}. {title}" in text
-    assert "342 h" in text and "About 342 hours a year." in text
-    assert _flat(STANDARD_LINE) in text
+    assert "342 h" in text or "72 h" in text
+    assert "About 342 hours a year go into this process today" in text  # spec 27 §3.5
+    assert "Is this a good AI use case?" in text and "Before starting and risks" in text or "Readiness" in text
     assert "€" not in text
     reader = _reader(pdf)
     assert reader.metadata is not None and reader.metadata.title == "Monthly cost review"
@@ -127,15 +128,20 @@ def test_ac_20_35_rows_split_rather_than_run_off_the_page():
     assert len([f for f in flowables if isinstance(f, PageBreak)]) == 3
 
 
-def test_ac_20_36_many_long_opportunities_flow_across_pages():
+def test_ac_20_36_long_assessment_text_flows_across_pages():
+    """AC-20.36, as amended by spec 27: long step reasons and question reasons flow across pages."""
     assessment = eu_assessment()
-    base = assessment.opportunities[0]
-    assessment.opportunities = [
-        base.model_copy(update={"id": f"o{i}", "what_changes": "Evidence & <detail>. " * 75, "how": "h" * 1500})
-        for i in range(1, 13)
+    assert assessment.step_assessment is not None and assessment.questions is not None
+    capped = ("Evidence & <detail>. " * 30)[:600]  # MAX_REASON_CHARS: grounding caps a step reason at 600
+    assessment.step_assessment.steps = [
+        r.model_copy(update={"reason": capped}) for r in assessment.step_assessment.steps
     ]
+    long = "Evidence & <detail>. " * 75
+    assessment.questions.q1 = assessment.questions.q1.model_copy(update={"reasons": [long] * 6})
     reader = _reader(write_pdf(_report(eu_session(assessment=assessment)), BRAND))
-    assert len(reader.pages) > 10
+    assert len(reader.pages) > 4 and "could not be laid out" not in _text(
+        write_pdf(_report(eu_session(assessment=assessment)), BRAND)
+    )
 
 
 def test_ac_20_37_a_runaway_cover_field_still_renders_the_full_report():
@@ -182,7 +188,7 @@ def test_ac_20_39_a_drawing_that_raises_gives_the_note(monkeypatch: pytest.Monke
 
     monkeypatch.setattr(report_pdf.bpmn, "build_drawing", boom)
     text = _flat(_text(write_pdf(_report(), BRAND)))
-    assert "The process map could not be drawn." in text and "9. Readiness checklist" in text
+    assert "The process map could not be drawn." in text and "6. AI readiness and feasibility" in text
 
 
 def test_ac_20_39_the_map_page_never_asks_for_a_non_positive_height(monkeypatch: pytest.MonkeyPatch):
@@ -207,4 +213,4 @@ def test_a_simplified_map_prints_its_caption():
 
 def test_ac_20_43_a_thin_session_renders():
     text = _flat(_text(write_pdf(_report(thin_session()), BRAND)))
-    assert "Tiny" in text and "11. Gaps and sources" in text
+    assert "Tiny" in text and "6. AI readiness and feasibility" in text

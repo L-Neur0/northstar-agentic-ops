@@ -1,7 +1,8 @@
 /**
  * The discovery report page, route `/report/:sessionId` (spec 23 §11.10–§11.14; AC-23.82–23.86,
- * AC-23.97, AC-23.99, AC-23.100).
- * Why: after *Finish* the expert reads the cover and the eleven parts of spec 20, sees the map,
+ * AC-23.97, AC-23.99, AC-23.100; report v2, amended 2026-11-21: AC-23.84, AC-23.86 as amended).
+ * Why: after *Finish* the expert reads the cover and the six parts of spec 27 (the summary first,
+ * the three guiding questions last), sees the map,
  * and downloads the PDF to share; this page shows exactly the server's report model.
  * Rules: one `GET …/report` per open (React Query `['report', id]`, no retry, no polling); a part
  * that is missing or breaks shows its heading and a plain sentence while the others render; a
@@ -21,19 +22,7 @@ import { Spinner } from '../components/ui/Spinner'
 import { ReportNoteBox } from '../components/report/ReportNote'
 import { ReportPartBoundary } from '../components/report/ReportPartBoundary'
 import type { MapRenderer } from '../components/report/ProcessMap'
-import {
-  AtAGlance,
-  GapsAndSources,
-  HoursTables,
-  MapAndSteps,
-  OpportunityList,
-  ReadinessTable,
-  RecommendedRoute,
-  ReportCover,
-  ReportFields,
-  StepAssessmentTable,
-  SuggestedPath,
-} from '../components/report/ReportParts'
+import { Feasibility, MapAndSteps, ReportCover, ReportFields, StepLevelTable, SummarySentences } from '../components/report/ReportParts'
 import { useApi } from '../services/apiContext'
 import { ApiError } from '../services/api'
 import { loadReport } from '../services/wireGuards'
@@ -43,8 +32,8 @@ import { PART_FALLBACK_TITLES, PART_KEYS, type LoadedReport, type PartBase, type
 
 const SLOW_AFTER_MS = 10_000
 
-/** `atAGlance` → `at_a_glance`, the anchor key of spec 23 §11.10.5. */
-const anchorOf = (key: PartKey) => `part-${key.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`)}`
+/** The anchor of a part (`#part-summary` … `#part-feasibility`, spec 23 §11.10.5). */
+const anchorOf = (key: PartKey) => `part-${key}`
 
 function PartSection({ partKey, index, part, children }: { partKey: PartKey; index: number; part: PartBase | null; children?: ReactNode }) {
   const id = anchorOf(partKey)
@@ -61,8 +50,8 @@ function PartSection({ partKey, index, part, children }: { partKey: PartKey; ind
 
 function renderPart(key: PartKey, report: LoadedReport, mapRenderer?: MapRenderer): ReactNode {
   switch (key) {
-    case 'atAGlance':
-      return report.atAGlance && <AtAGlance part={report.atAGlance} />
+    case 'summary':
+      return report.summary && <SummarySentences part={report.summary} />
     case 'process':
       return report.process && <ReportFields part={report.process} />
     case 'measures':
@@ -70,19 +59,9 @@ function renderPart(key: PartKey, report: LoadedReport, mapRenderer?: MapRendere
     case 'map':
       return report.map && <MapAndSteps part={report.map} render={mapRenderer} />
     case 'steps':
-      return report.steps && <StepAssessmentTable part={report.steps} />
-    case 'route':
-      return report.route && <RecommendedRoute part={report.route} />
-    case 'assessment':
-      return report.assessment && <OpportunityList part={report.assessment} />
-    case 'potential':
-      return report.potential && <HoursTables part={report.potential} />
-    case 'readiness':
-      return report.readiness && <ReadinessTable part={report.readiness} />
-    case 'path':
-      return report.path && <SuggestedPath part={report.path} />
-    case 'gaps':
-      return report.gaps && <GapsAndSources part={report.gaps} />
+      return report.steps && <StepLevelTable part={report.steps} />
+    case 'feasibility':
+      return report.feasibility && <Feasibility part={report.feasibility} />
   }
 }
 
@@ -105,7 +84,7 @@ function ContentsLinks({ report }: { report: LoadedReport }) {
   )
 }
 
-/** The report body: cover, contents and the eleven parts (exported for the part tests). */
+/** The report body: cover, contents and the six parts (exported for the part tests). */
 export function ReportView({ report, mapRenderer }: { report: LoadedReport; mapRenderer?: MapRenderer }) {
   return (
     <div className="mx-auto flex w-full max-w-[1280px] gap-8 px-4 py-6">

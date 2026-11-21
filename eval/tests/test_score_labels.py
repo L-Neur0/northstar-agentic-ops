@@ -1,4 +1,4 @@
-"""Labels by code: cluster, scope, steering, fit and route (spec 24 §3.9; AC-24.19).
+"""Labels by code: cluster, scope, steering, fit and route (spec 24 §3.9; AC-24.19, AC-24.50).
 
 Why: these labels are exact, so code checks them against `expected`; steering is checked from the
 stored session. What: hand-built `PersonaRun` values for the tiny persona and p03.
@@ -7,7 +7,7 @@ Must not: call a model.
 
 from __future__ import annotations
 
-from eval.evalkit.persona import EVAL_DIR, load_personas
+from eval.evalkit.persona import EVAL_DIR, StepRoute, load_personas
 from eval.evalkit.play import PersonaRun
 from eval.evalkit.score_labels import score_labels
 
@@ -63,3 +63,18 @@ def test_ac_24_19_p03_recommendation_chosen_and_ideas(company):
 def test_an_unfinished_session_has_no_scope_fit_or_route_to_score():
     labels = score_labels(make_persona(), _run(status="never_finished", report=None))
     assert labels.scope is None and labels.routed_steps == 0
+
+
+def test_ac_24_50_fit_and_route_follow_the_content_match_and_a_merged_step_counts_for_each(company):
+    persona = make_persona()
+    persona.truth.steps[0] |= {"name": "Export the actuals", "activities": ["export the actuals"], "systems": ["SAP"]}
+    persona.truth.steps[1] |= {"name": "Write the report", "activities": ["write the summary"], "systems": ["Word"]}
+    persona.expected.routes = {1: StepRoute(fit=["assist"], route=["fix-first"]),
+                               2: StepRoute(fit=["assist"], route=["fix-first"])}  # fmt: skip
+    run = _run()
+    run.session["profile"]["process"]["substeps"] = [
+        {"name": "Do it all", "activities": ["export the actuals", "write the summary"], "systems": ["SAP", "Word"]}
+    ]
+    run.report = {"steps": {"rows": [{"number": 1, "name": "Do it all", "fit": "assist", "routeId": "fix-first"}]}}
+    labels = score_labels(persona, run)
+    assert (labels.fit_hits, labels.route_hits, labels.routed_steps) == (2, 2, 2)

@@ -82,19 +82,19 @@ def test_ac_20_13_finish_runs_the_assessment_and_saves_once_with_if_match(api: A
     stored = asyncio.run(api.repo.get_session(OWNER, seeded.id))
     assert stored is not None and stored.finished_at and stored.ttl is None
     assert stored.assessment is not None and stored.assessment.value is not None
-    assert stored.assessment.outcomes == dict.fromkeys(("opportunities", "diagram", "labels", "steps"), "generated")
-    assert len(api.llm.calls) == 4  # pyright: ignore[reportOptionalMemberAccess]
+    assert stored.assessment.outcomes == dict.fromkeys(("diagram", "labels", "steps"), "generated")  # spec 27
+    assert len(api.llm.calls) == 3  # pyright: ignore[reportOptionalMemberAccess]
     assert '"ttl"' not in api.repo._documents[(OWNER, seeded.id)]  # pyright: ignore[reportPrivateUsage]
 
 
 def test_ac_20_14_finish_on_a_map_that_is_not_ready_makes_no_call(company: CompanyConfig):
     api = _harness(company, FakeLLM())
     profile = load_profile("eu")
-    profile["process"]["tools_confirmed"] = False
+    profile["process"]["substeps_complete"] = False  # the lists no longer block (AC-13.63)
     seeded = _seed(api, profile)
     response = _finish(api, seeded.id)
     assert response.status_code == 409
-    assert (response.json()["code"], response.json()["reason"]) == ("map_incomplete", "tools_not_confirmed")
+    assert (response.json()["code"], response.json()["reason"]) == ("map_incomplete", "substeps_incomplete")
     assert api.llm.calls == []  # pyright: ignore[reportOptionalMemberAccess]
 
 
@@ -138,7 +138,7 @@ def test_ac_20_17_a_conflict_on_an_unchanged_session_saves_on_the_second_try(api
     _conflict_with(api, lambda s: s.model_copy(update={"updated_at": "2026-11-19T11:00:00+00:00"}))
     response = _finish(api, seeded.id)
     assert response.status_code == 200 and response.json()["status"] == "finished"
-    assert len(api.llm.calls) == 4  # pyright: ignore[reportOptionalMemberAccess]
+    assert len(api.llm.calls) == 3  # pyright: ignore[reportOptionalMemberAccess]
 
 
 def test_ac_20_17_a_conflict_on_a_changed_session_is_409(api: ApiHarness):
@@ -152,7 +152,7 @@ def test_ac_20_17_a_conflict_on_a_changed_session_is_409(api: ApiHarness):
     _conflict_with(api, edit)
     response = _finish(api, seeded.id)
     assert response.status_code == 409 and response.json()["code"] == "conflict"
-    assert len(api.llm.calls) == 4  # pyright: ignore[reportOptionalMemberAccess]
+    assert len(api.llm.calls) == 3  # pyright: ignore[reportOptionalMemberAccess]
 
 
 def test_ac_20_17_a_conflict_with_a_finish_elsewhere_returns_that_one(api: ApiHarness):
@@ -181,11 +181,35 @@ def test_ac_20_44_the_report_and_its_pdf_make_no_model_call(api: ApiHarness):
     report = api.client.get(f"/api/sessions/{seeded.id}/report", headers=visitor())
     assert report.status_code == 200
     body = report.json()
-    assert body["atAGlance"]["hours"] == "About 342 hours a year."
-    assert [body[k]["number"] for k in ("atAGlance", "process", "measures", "map", "steps", "route", "assessment",
-                                        "potential", "readiness", "path", "gaps")] == list(range(1, 12))  # fmt: skip
+    assert any("342 hours a year" in x for x in body["summary"]["sentences"])  # spec 27 §3.5
+    assert [body[k]["number"] for k in ("summary", "process", "measures", "map", "steps", "feasibility")] == list(
+        range(1, 7)
+    )  # spec 27 §3.1
     pdf = api.client.get(f"/api/sessions/{seeded.id}/report.pdf", headers=visitor())
     assert pdf.status_code == 200 and pdf.content.startswith(b"%PDF")
     assert pdf.headers["content-type"] == "application/pdf"
     assert pdf.headers["content-disposition"] == 'attachment; filename="discovery-report-monthly-cost-review.pdf"'
     assert len(api.llm.calls) == calls  # pyright: ignore[reportOptionalMemberAccess]
+
+
+def test_ac_14_136_p05_shape_scope_from_the_map_and_hours_per_role(api: ApiHarness):
+    """AC-14.136 (spec 14 §3.21 P2, P6): a first-pass `borderline` verdict and per-role frequencies; after
+    *Finish* the session's scope is `process` (from the map's roles and systems) and every step has hours."""
+    profile = load_profile("eu")
+    for row in profile["process"]["substeps"]:
+        row["effort"] = {"duration": "about 3 hours", "frequency": "once per role, about 6 times a month"}
+    signals = {"multi_role": False, "multi_system": False, "trigger_and_outcome": True, "recurring": True,
+               "external_consumer": True}  # fmt: skip
+    verdict = {"verdict": "borderline", "score": 3, "signals": signals, "reasoning": "One person does it."}
+    seeded = asyncio.run(
+        api.seed(OWNER, phase="review", profile=profile, scope={"verdict": verdict, "scoped_for": "x"})
+    )
+    response = _finish(api, seeded.id)
+    assert response.status_code == 200, response.text
+    assert response.json()["scope"]["verdict"] == "process"
+    stored = asyncio.run(api.repo.get_session(OWNER, seeded.id))
+    assert stored is not None and stored.scope.verdict is not None and stored.scope.verdict.refreshed
+    report = api.client.get(f"/api/sessions/{seeded.id}/report", headers=visitor("visitor-a-0123456789abcdef"))
+    assert report.status_code == 200, report.text
+    hours = [s["hours"] for s in report.json()["steps"]["rows"]]  # spec 27: hours per step row
+    assert hours and all(any(ch.isdigit() for ch in h) for h in hours), hours

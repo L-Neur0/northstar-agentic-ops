@@ -1,5 +1,5 @@
 {
-  "id": "d4c047e2-d9d4-47c7-9fef-9ab3f9cd142b",
+  "id": "180e8a6b-7c1b-490c-8311-422f77d1a316",
   "status": "active",
   "phase": "boundaries",
   "displayName": null,
@@ -8,13 +8,13 @@
   "finishedAt": null,
   "messages": [
     {
-      "id": "af6417ac-8078-483f-ba2e-4f9433cb5be6",
+      "id": "9e7eaeac-ac32-4cbc-a77e-e1064f5b8386",
       "role": "agent",
       "text": "Welcome",
       "at": "2026-11-19T10:00:00+00:00"
     },
     {
-      "id": "0f2a10a9-291d-4b63-b72a-5c139b5d8687",
+      "id": "ba6f68e7-4a6a-40ff-99dd-3815f10e890a",
       "role": "agent",
       "text": "From \"Monthly cost review procedure.docx\" I'd fill:\n- Trigger: Month-end close is completed in the ledger\n- End result: The monthly cost report\n- Who uses the result: The CFO uses it to decide on budget corrections\n- Volume: count: 1; period: month; raw: every month for 14 cost centres\nThere is more in it (25 other values); I'll ask about those next.\nShould I fill it like this, or is something wrong?",
       "at": "2026-11-19T10:00:01+00:00"
@@ -93,7 +93,17 @@
           "pain_points": [],
           "approvals": [],
           "exceptions": [],
-          "handover": ""
+          "handover": "",
+          "decision_type": {
+            "kind": "",
+            "evidence": ""
+          },
+          "decision_criteria": {
+            "basis": "",
+            "set_by": "",
+            "written": "",
+            "varies": ""
+          }
         },
         {
           "name": "Compare with budget",
@@ -123,7 +133,17 @@
           "pain_points": [],
           "approvals": [],
           "exceptions": [],
-          "handover": ""
+          "handover": "",
+          "decision_type": {
+            "kind": "",
+            "evidence": ""
+          },
+          "decision_criteria": {
+            "basis": "",
+            "set_by": "",
+            "written": "",
+            "varies": ""
+          }
         },
         {
           "name": "Collect explanations",
@@ -157,7 +177,17 @@
               "loops_back_to": null
             }
           ],
-          "handover": ""
+          "handover": "",
+          "decision_type": {
+            "kind": "",
+            "evidence": ""
+          },
+          "decision_criteria": {
+            "basis": "",
+            "set_by": "",
+            "written": "",
+            "varies": ""
+          }
         },
         {
           "name": "Review",
@@ -187,7 +217,17 @@
             }
           ],
           "exceptions": [],
-          "handover": ""
+          "handover": "",
+          "decision_type": {
+            "kind": "",
+            "evidence": ""
+          },
+          "decision_criteria": {
+            "basis": "",
+            "set_by": "",
+            "written": "",
+            "varies": ""
+          }
         },
         {
           "name": "Send the cost report",
@@ -216,7 +256,17 @@
           "pain_points": [],
           "approvals": [],
           "exceptions": [],
-          "handover": ""
+          "handover": "",
+          "decision_type": {
+            "kind": "",
+            "evidence": ""
+          },
+          "decision_criteria": {
+            "basis": "",
+            "set_by": "",
+            "written": "",
+            "varies": ""
+          }
         }
       ],
       "all_roles": [
@@ -714,6 +764,24 @@
       "items": []
     },
     {
+      "key": "process.substeps[1].decision_type",
+      "id": "S13",
+      "label": "Rules or judgement",
+      "phase": "steps",
+      "status": "empty",
+      "reason": "Rules or judgement has not been answered yet.",
+      "missing": [
+        "kind"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
+    },
+    {
       "key": "process.substeps[2].name",
       "id": "S01",
       "label": "Step name",
@@ -924,6 +992,24 @@
       "items": []
     },
     {
+      "key": "process.substeps[2].decision_type",
+      "id": "S13",
+      "label": "Rules or judgement",
+      "phase": "steps",
+      "status": "empty",
+      "reason": "Rules or judgement has not been answered yet.",
+      "missing": [
+        "kind"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
+    },
+    {
       "key": "process.substeps[3].name",
       "id": "S01",
       "label": "Step name",
@@ -1122,6 +1208,24 @@
       "reason": "Hand-over has not been answered yet.",
       "missing": [
         "handover"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
+    },
+    {
+      "key": "process.substeps[3].decision_type",
+      "id": "S13",
+      "label": "Rules or judgement",
+      "phase": "steps",
+      "status": "empty",
+      "reason": "Rules or judgement has not been answered yet.",
+      "missing": [
+        "kind"
       ],
       "source": null,
       "quote": null,
@@ -1342,6 +1446,24 @@
       "items": []
     },
     {
+      "key": "process.substeps[4].decision_type",
+      "id": "S13",
+      "label": "Rules or judgement",
+      "phase": "steps",
+      "status": "empty",
+      "reason": "Rules or judgement has not been answered yet.",
+      "missing": [
+        "kind"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
+    },
+    {
       "key": "process.substeps[5].name",
       "id": "S01",
       "label": "Step name",
@@ -1551,12 +1673,31 @@
       "fromImage": false,
       "conflict": null,
       "items": []
+    },
+    {
+      "key": "process.substeps[5].decision_type",
+      "id": "S13",
+      "label": "Rules or judgement",
+      "phase": "steps",
+      "status": "empty",
+      "reason": "Rules or judgement has not been answered yet.",
+      "missing": [
+        "kind"
+      ],
+      "source": null,
+      "quote": null,
+      "documentName": null,
+      "asks": 0,
+      "fromImage": false,
+      "conflict": null,
+      "items": []
     }
   ],
   "score": {
     "value": 0.3333,
     "filledPoints": 6,
-    "totalPoints": 18
+    "totalPoints": 18,
+    "progress": 0.12
   },
   "finish": {
     "ready": false,
@@ -1568,7 +1709,7 @@
   "reportStatus": null,
   "documents": [
     {
-      "id": "d395e63b2",
+      "id": "d0dd296da",
       "name": "Monthly cost review procedure.docx",
       "kind": "docx",
       "bytes": 38347,

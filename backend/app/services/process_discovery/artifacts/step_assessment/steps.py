@@ -25,7 +25,7 @@ from app.models.process_discovery_schemas import StepRating
 
 from ...domain.field_spec import Vocabulary
 from ...llm import LLM, CallType, ChatMessage, LLMError
-from .grounding import DROP_REASONS, ground_step_ratings
+from .grounding import DROP_REASONS, ground_step_ratings, raw_motivations
 from .prompts import assess_steps_system, assess_steps_user
 from .schemas import AssessStepsOut
 
@@ -63,8 +63,9 @@ async def run_step_assessment(
     *,
     vocab: Vocabulary,
     documents: Sequence[Mapping[str, str]] = (),
-) -> tuple[list[StepRating], dict[str, int]]:
-    """One ASSESS_STEPS call, grounded. Raises `StepAssessmentFailedError` on any `LLMError`."""
+) -> tuple[list[StepRating], dict[str, int], dict[str, tuple[str, str]]]:
+    """One ASSESS_STEPS call, grounded, with the unchecked motivations (spec 27 §3.2). Raises
+    `StepAssessmentFailedError` on any `LLMError`."""
     messages: list[ChatMessage] = [
         {"role": "system", "content": assess_steps_system(catalogue)},
         {"role": "user", "content": assess_steps_user(profile, vocab=vocab, documents=documents)},
@@ -77,4 +78,4 @@ async def run_step_assessment(
         raise StepAssessmentFailedError("The step assessment could not be generated.") from error
     ratings, dropped = ground_step_ratings(reply, profile, catalogue)
     _log("generated", started, catalogue, kept=sum(r.fit is not None for r in ratings), dropped=dropped)
-    return ratings, dropped
+    return ratings, dropped, raw_motivations(reply)

@@ -8,7 +8,8 @@
  * (AC-23.48). Error codes, statuses and sentences are the server's own (`api/errors.py`), checked
  * against recorded responses in `contract.test.ts`. Manual triggers: `/error <code>` fails the next call
  * (also a document, proposal, report or PDF call), `/finish-ready` completes the map,
- * `/report-failed <part>` and `/report-missing <part>` shape the next report.
+ * `/report-failed <part>` and `/report-missing <part>` shape the next report (a v2 part key: summary, process,
+ * measures, map, steps, feasibility; amended 2026-11-21 (report v2)).
  * Part 2 (spec 23 §11.15; AC-23.81, AC-23.101): document upload with progress and scripted
  * outcomes by file name, fill-only proposals with quotes, ✓ / ✎, removal, the report and the PDF.
  * Divergence kept on purpose: like the built server, a report asked for before *Finish* is 409
@@ -37,13 +38,15 @@ import {
   WORKSPACE_SEED,
   emptyProfile,
   emptyStep,
+  stepFieldApplies,
   type WorkspaceSeedSession,
 } from './fakeData'
 import { readWorkspaceToken } from '../access/workspaceToken'
 import type { ReviewRow, ReviewSessionOut, StepGrid } from '../types/workspace'
 import { euReport, withFailedNote } from '../test/fixtures/report'
 import { formatValue, getValue } from '../utils/discoveryFormat'
-import { PART_KEYS, type DiscoveryReport } from '../types/report'
+import { PART_KEYS, type DiscoveryReport, type PartKey } from '../types/report'
+import { SCORED_CELLS_PER_STEP } from '../types/process-discovery'
 import { typeSentence } from '../utils/documentLimits'
 import type {
   ApiErrorCode,
@@ -177,6 +180,8 @@ function grade(key: string, value: unknown): { status: 'complete' | 'partial' | 
     variation: [['same']],
     data: [['inputs', 'outputs']],
     effort: [['duration', 'frequency']],
+    decision_type: [['kind', 'evidence']],
+    decision_criteria: [['basis']],
   }
   const g = groups[leaf]
   if (g && typeof value === 'object' && !Array.isArray(value) && value !== null) {
@@ -251,8 +256,9 @@ function fieldViews(s: FakeSession): FieldView[] {
   const views = PROCESS_FIELDS.map((f) =>
     makeView(f.key, f.id, f.label, f.phase, getValue(s.profile, f.key), s.proposals[f.key], s),
   )
-  s.profile.process.substeps.forEach((_, i) => {
+  s.profile.process.substeps.forEach((step, i) => {
     for (const f of STEP_FIELDS) {
+      if (!stepFieldApplies(f.leaf, step)) continue // S14 only for a judgement or mix step (AC-23.151)
       const key = `process.substeps[${i + 1}].${f.leaf}`
       views.push(makeView(key, f.id, f.label, 'steps', getValue(s.profile, key), undefined, s))
     }
@@ -262,12 +268,12 @@ function fieldViews(s: FakeSession): FieldView[] {
 
 function score(views: FieldView[], p: Profile): SessionOut['score'] {
   const steps = Math.min(Math.max(p.process.substep_count ?? 0, 0), 6)
-  const totalPoints = 18 + 11 * steps
+  const totalPoints = 18 + SCORED_CELLS_PER_STEP * steps
   let filled = 0
   for (const v of views) {
     if (v.status !== 'complete') continue
     if (v.phase === 'steps') {
-      if (!v.key.endsWith('.handover')) filled += 1
+      filled += STEP_FIELDS.find((f) => v.key.endsWith(`.${f.leaf}`))?.weight ?? 0
     } else {
       filled += PROCESS_FIELDS.find((f) => f.key === v.key)?.weight ?? 0
     }
@@ -282,11 +288,7 @@ function finishState(sc: SessionOut['score'], p: Profile): FinishState {
       ? 'below_gate'
       : !p.process.substeps_complete
         ? 'substeps_incomplete'
-        : !p.process.roles_confirmed
-          ? 'roles_not_confirmed'
-          : !p.process.tools_confirmed
-            ? 'tools_not_confirmed'
-            : null
+        : null
   return { ready: blockedBy === null, blockedBy, looksLikeTask: false }
 }
 
@@ -298,8 +300,7 @@ function phaseOf(s: FakeSession, views: FieldView[]): Phase {
   }
   const p = s.profile.process
   if (!p.substeps_complete) return 'steps'
-  if (!p.roles_confirmed || !p.tools_confirmed) return 'confirm'
-  return 'review'
+  return 'review' // no roles and systems confirmation (spec 14 §3.20 O10)
 }
 
 function rebuildRollups(p: Profile): void {
@@ -510,7 +511,7 @@ function stepGrid(s: FakeSession, substeps: Step[]): StepGrid {
   const views = fieldViews(view)
   return {
     stepNames: substeps.map((st) => st.name),
-    rows: STEP_FIELDS.map((f) => ({
+    rows: STEP_FIELDS.filter((f) => substeps.some((st) => stepFieldApplies(f.leaf, st))).map((f) => ({
       key: f.leaf,
       id: f.id,
       label: f.label,
@@ -1019,9 +1020,8 @@ export function createFakeApi(options: FakeApiOptions = {}): DiscoveryApi {
           throw new ApiError(409, 'report_not_ready', 'The report is ready once the map is finished.')
         }
         let report: DiscoveryReport = structuredClone(euReport)
-        if (reportFailed) {
-          const keys = reportFailed === 'steps' ? ['steps', 'route'] : [reportFailed]
-          report = withFailedNote(report, keys as Array<'steps' | 'route'>)
+        if (reportFailed && (PART_KEYS as readonly string[]).includes(reportFailed)) {
+          report = withFailedNote(report, [reportFailed as PartKey])
           reportFailed = null
         }
         if (reportMissing && (PART_KEYS as readonly string[]).includes(reportMissing)) {

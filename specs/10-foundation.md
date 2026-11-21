@@ -87,7 +87,7 @@ Invalid settings stop the app at start-up with one message per problem.
 
 | File | Model | Content (NIG) | Cross-checks |
 |---|---|---|---|
-| `organisation.yaml` | `Organisation` | product name "Discovery Agent", company "NorthStar Infrastructure Group", regions (North America, Europe, Middle East, Asia-Pacific), languages (`en`, `de`), report branding (primary and accent colours, optional logo path) | Regions non-empty and unique; colours are hex |
+| `organisation.yaml` | `Organisation` | product name "AI Use Case Discovery Agent" (renamed 2026-11-21), company "NorthStar Infrastructure Group", regions (North America, Europe, Middle East, Asia-Pacific), languages (`en`, `de`), report branding (primary and accent colours, optional logo path) | Regions non-empty and unique; colours are hex |
 | `taxonomy.yaml` | defined in spec 12 | the 9 clusters | spec 12 |
 | `rates.yaml` | `Rates` | default hourly rate 90 (EUR), realisation `conservative: 0.5`, `expected: 0.75`, saving share per opportunity type (8 types) | Shares in [0, 0.9]; all 8 types present |
 | `readiness.yaml` | `ReadinessConfig` | per dimension: thresholds and "to prepare" wording; application list (system name, aliases, export/API yes/no) | 6 dimensions present; thresholds ordered |

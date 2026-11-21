@@ -160,6 +160,18 @@ def test_profile_values_cover_every_text_of_the_table():
     assert not any(k.startswith(("department", "user_function", "region")) for k in keys)
 
 
+def test_the_rules_or_judgement_words_are_a_step_value():
+    """AC-18.8 (S13, short step walk): the expert's words behind "rules or judgement" are searched as
+    a step value; the `kind` code word is not."""
+    profile = load_profile("eu")
+    step = profile["process"]["substeps"][2]
+    step["decision_type"] = {"kind": "mix", "evidence": "the threshold is fixed but the questions are my call"}
+    values = profile_values(profile)
+    hit = find_evidence("the threshold is fixed but the questions are my call", restrict_to_step_or_process(values, 3))
+    assert hit is not None and hit.key == "process.substeps[3].decision_type"
+    assert ("process.substeps[3].decision_type", "mix", "expert") not in values
+
+
 def test_none_rows_and_numbers_add_no_value():
     values = profile_values(load_profile("eu"))
     texts = [text for _, text, _ in values]
@@ -186,3 +198,22 @@ def test_restrict_to_step_or_process_puts_the_step_first_and_never_another_step(
     hit = find_evidence("I copy the numbers into the master file by hand", narrowed)
     assert hit is not None and hit.key == "process.substeps[2].pain_points"
     assert find_evidence("Month-end close is completed in SAP", narrowed) is not None
+
+
+def test_ac_26_22_decision_criteria_words_are_step_evidence() -> None:
+    """AC-26.22 (spec 26 §3.9): words copied from a step's S14 are that step's words."""
+    from app.services.process_discovery.artifacts.evidence import find_evidence, profile_values, restrict_to_step
+
+    profile = load_profile("eu")
+    profile["process"]["substeps"][2]["decision_criteria"] = {
+        "basis": "the hiring manager's must-haves and the job ad",
+        "set_by": "Hiring manager",
+        "written": "partly",
+        "varies": "every hiring manager wants something different",
+    }
+    values = restrict_to_step(profile_values(profile), 3)
+    for quote in ("the hiring manager's must-haves", "every hiring manager wants something different"):
+        hit = find_evidence(quote, values)
+        assert hit is not None and hit.key == "process.substeps[3].decision_criteria"
+    partly = find_evidence("partly", values)  # `written` is a code word, never evidence
+    assert partly is None or "decision_criteria" not in partly.key

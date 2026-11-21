@@ -2,7 +2,7 @@
  * The interview page: chat on the left, "Your process" on the right, phase meter on top
  * (spec 23 §3.4–3.9, §11.1–§11.9; AC-23.14–23.16, 23.21–23.27, 23.32, 23.40, 23.41, 23.44, 23.45,
  * 23.49, 23.61–23.79, 23.103–23.105).
- * Why: the Process Discovery page, styled with Tailwind: same header
+ * Why: the discovery conversation page, styled with Tailwind: same header
  * actions, same layout (chat 60 %, panel up to 480 px), same honest exit, same first-visit intro
  * and welcome-back dialog; the Copilot prompt and analysis buttons are replaced by *Finish*.
  * Rules: server-derived state lives in `useDiscoveryState`; presentation state (open sections,

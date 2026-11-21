@@ -16,6 +16,8 @@ from ..profile.builders import AT, cost_review_profile
 from .helpers import fake, turn
 from .sessions import BOUNDARIES, MEASURE, profile_with, session_at
 
+RESULT_PAIR = ("process.end_result", "process.value_at_end")  # asked together (§3.19 W1)
+
 
 def ask(ctx, profile, phase, **parts):
     return next_ask({"profile": profile, "phase": phase, **parts}, vocab=ctx.vocab)
@@ -44,12 +46,9 @@ def test_the_priority_table(ctx):
     assert ask(ctx, no_cluster, "find").mode == "picker"
     assert ask(ctx, base, "boundaries") == ("field", ("process.trigger",), None)
     walking = profile_with(ctx, *BOUNDARIES, *MEASURE, steps=2)
-    assert ask(ctx, walking, "steps") == ("cell", (step_cell_key(1, "name"),), None)
+    assert ask(ctx, walking, "steps") == ("cell", (step_cell_key(1, "name"), step_cell_key(2, "name")), None)
     closed = cost_review_profile(ctx.vocab, steps=2)
-    assert ask(ctx, closed, "confirm") == ("rollups", ("process.all_roles",), None)
-    assert ask(ctx, closed, "confirm", counters={"confirm_turns": 6}).keys == ("process.all_roles", "process.all_tools")
-    closed["process"]["roles_confirmed"] = closed["process"]["tools_confirmed"] = True
-    assert ask(ctx, closed, "review").kind == "wrap_up"
+    assert ask(ctx, closed, "review").kind == "wrap_up"  # no roles and systems ask (§3.20 O10, AC-14.127)
     context_proposal = apply_proposals(
         empty_profile(),
         ProposalDiff("d1", fields=(FieldProposal("process.trigger", "T", "t"),)),
@@ -61,14 +60,14 @@ def test_the_priority_table(ctx):
 
 async def test_this_turn_names_the_target_and_last_question_records_it(ctx):
     """AC-14.41."""
-    session = session_at(ctx, "boundaries", profile_with(ctx, "process.trigger"))
+    session = session_at(ctx, "boundaries", profile_with(ctx, "process.trigger", *RESULT_PAIR))
     llm = fake(EXTRACT=[{}], GUIDE=["Q?"])
     result = await turn(session, "hm", llm, ctx)
     system = str(llm.calls_of(CallType.GUIDE)[0].messages[0]["content"])
     this_turn = system.split("THIS TURN:\n", 1)[1].split("\n\n", 1)[0]
-    assert "`process.end_result`" in this_turn
+    assert "`process.business_pain`" in this_turn
     assert this_turn.count("`process.") == 1
-    assert result.session.last_question.focus == ["process.end_result"]
+    assert result.session.last_question.focus == ["process.business_pain"]
 
 
 def test_proposal_groups(ctx):

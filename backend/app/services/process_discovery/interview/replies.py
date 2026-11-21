@@ -16,7 +16,8 @@ yes, "well yes, but" is not; a correction in the same message outranks a yes.
 Must not: write the profile (the extract node applies what these return), call a model, or read a
 clock. Spec 14 §3.7, §3.15 item 9; AC-14.6 to AC-14.19, AC-14.72. Amendment §3.17 item 4:
 `read_conflict_reply` reads keep / mine / the document / both / 1–3 / a file name; anything else is
-the expert's own words (AC-14.96).
+the expert's own words (AC-14.96). Amendment §3.20 (owner test, 2026-11-21): `Lexicon.accepts` and
+`read_offer_reply` read a yes to the values the agent's own question offered (AC-14.122).
 """
 
 from __future__ import annotations
@@ -70,6 +71,12 @@ class Lexicon:
     no: frozenset[str]
     roles_cues: tuple[str, ...]
     systems_cues: tuple[str, ...]
+    #: Phrases that accept the values the last question offered (§3.20 O6).
+    accept: tuple[str, ...] = ()
+    #: "The same everywhere" (P14) and its opposites, and picking one offered candidate (§3.20 O2, O11).
+    same: tuple[str, ...] = ()
+    not_same: tuple[str, ...] = ()
+    pick: tuple[str, ...] = ()
 
     @classmethod
     def from_config(cls, language: LanguageConfig) -> Lexicon:
@@ -79,6 +86,10 @@ class Lexicon:
             no=frozenset(normalise_reply(w) for lang in words for w in lang.no),
             roles_cues=tuple(dict.fromkeys(normalise_reply(w) for lang in words for w in lang.roles_cues)),
             systems_cues=tuple(dict.fromkeys(normalise_reply(w) for lang in words for w in lang.systems_cues)),
+            accept=tuple(dict.fromkeys(normalise_reply(w) for lang in words for w in lang.accept)),
+            same=tuple(dict.fromkeys(normalise_reply(w) for lang in words for w in lang.same)),
+            not_same=tuple(dict.fromkeys(normalise_reply(w) for lang in words for w in lang.not_same)),
+            pick=tuple(dict.fromkeys(normalise_reply(w) for lang in words for w in lang.pick)),
         )
 
     def short(self, text: str | None) -> str:
@@ -95,6 +106,30 @@ class Lexicon:
 
     def is_no(self, text: str | None) -> bool:
         return self.short(text) in self.no
+
+    def says_same(self, text: str | None) -> bool:
+        """P14 (§3.20 O11): a yes, or "the same everywhere" said anywhere, with no no word and no "different"."""
+        reply = normalise_reply(text)
+        if not reply or any(mentions(reply, w) for w in (*self.no, *self.not_same)):
+            return False
+        return self.is_yes(text) or reply.split()[0] in self.yes or any(mentions(reply, p) for p in self.same)
+
+    def picks(self, text: str | None) -> bool:
+        """The reply picks one of several offered candidates ("the second one", "that one")."""
+        reply = normalise_reply(text)
+        return bool(reply) and any(mentions(reply, p) for p in self.pick)
+
+    def accepts(self, text: str | None) -> bool:
+        """Accepting offered values (§3.20 O6): a yes; a first word that is a yes word; or an accept phrase.
+
+        Never when the reply says a no word anywhere ("yes the one u have listed" and "those are exact" accept).
+        """
+        reply = normalise_reply(text)
+        if not reply or any(mentions(reply, w) for w in self.no):
+            return False
+        if self.is_yes(text) or reply.split()[0] in self.yes:
+            return True
+        return any(mentions(reply, phrase) for phrase in self.accept)
 
 
 # --- Reading the conversation ------------------------------------------------------------------------
@@ -247,6 +282,23 @@ def read_proposal_reply(
     if lexicon.is_no(text):
         return "no", keys
     return None, ()
+
+
+# --- Offered values (§3.20 O6) ----------------------------------------------------------------------------
+
+
+def read_offer_reply(
+    state: Mapping[str, Any], text: str | None, *, lexicon: Lexicon
+) -> tuple[Literal["yes", "no"] | None, dict[str, Any]]:
+    """Whether the reply accepts or rejects the values the last question offered, with those values."""
+    offered = dict(as_mapping(_last_question(state).get("offered")) or {})
+    if not offered:
+        return None, {}
+    if lexicon.is_no(text):
+        return "no", offered
+    if lexicon.accepts(text):
+        return "yes", offered
+    return None, offered
 
 
 # --- Roll-up lists --------------------------------------------------------------------------------------

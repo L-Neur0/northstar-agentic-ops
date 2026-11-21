@@ -37,8 +37,9 @@ ROLLUP_SOURCE_LEAF: dict[str, str] = {"roles": "roles", "systems": "systems"}
 #: A number read from a document outside these bounds is a parse artefact, not a fact.
 NUMBER_BOUNDS_PROPOSAL: tuple[int, int] = (0, 1_000_000)
 
-#: The none-able leaves a step-cell limit settles with the none row (spec 14 §3.5).
-NONE_ROW_LEAVES: tuple[str, ...] = ("roles", "approvals", "exceptions")
+#: The none-able leaves a step-cell limit settles with the none row (spec 14 §3.5). Approvals and exceptions are
+#: optional since the owner test (amended 2026-11-21): at their limit they are skipped and leave the total.
+NONE_ROW_LEAVES: tuple[str, ...] = ("roles",)
 
 Refusal = Literal[
     "unknown_key",

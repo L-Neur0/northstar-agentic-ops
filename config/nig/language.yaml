@@ -1,4 +1,8 @@
 # Words code reads as a plain yes or no to a proposal, and cue words for the roll-up review (spec 14).
+# "accept" (amended 2026-11-21, owner test; spec 14 §3.20 O6): phrases that accept the values the agent's last
+# question offered ("those are exact", "the ones you listed"); read only when that question offered values.
+# "same" / "not_same" (same amendment, O11): how a reply says the work runs the same way everywhere, or not;
+# read only when the last question asked P14. "pick": how a reply picks one of several offered candidates.
 # "ok", "okay", "sure" and "fine" are deliberately not yes words: they are often just acknowledgements.
 # Every word is quoted: plain YAML would read yes, no, true and false as booleans.
 "languages":
@@ -37,6 +41,51 @@
     - "no thanks"
     - "false"
     - "disagree"
+    "accept":
+    - "you listed"
+    - "u listed"
+    - "you have listed"
+    - "u have listed"
+    - "you mentioned"
+    - "u mentioned"
+    - "you suggested"
+    - "as listed"
+    - "those are right"
+    - "those are correct"
+    - "those are exact"
+    - "those are fine"
+    - "these are right"
+    - "these are correct"
+    - "that is exact"
+    - "thats exact"
+    - "all of them"
+    - "all of those"
+    "same":
+    - "same everywhere"
+    - "the same everywhere"
+    - "same way"
+    - "the same way"
+    - "same in every region"
+    - "same in all regions"
+    - "everywhere the same"
+    - "identical"
+    "not_same":
+    - "not the same"
+    - "different"
+    - "differs"
+    - "partly"
+    - "partially"
+    - "depends"
+    "pick":
+    - "first"
+    - "second"
+    - "third"
+    - "the last one"
+    - "that one"
+    - "this one"
+    - "number 1"
+    - "number 2"
+    - "number 3"
     "roles_cues":
     - "role"
     - "roles"
@@ -59,6 +108,23 @@
     - "falsch"
     - "nicht richtig"
     - "eher nicht"
+    "accept":
+    - "wie genannt"
+    - "wie aufgelistet"
+    - "alle davon"
+    - "die stimmen"
+    "same":
+    - "überall gleich"
+    - "überall gleiche"
+    - "gleich"
+    "not_same":
+    - "nicht gleich"
+    - "unterschiedlich"
+    - "teilweise"
+    "pick":
+    - "erste"
+    - "zweite"
+    - "dritte"
     "roles_cues":
     - "rolle"
     - "rollen"

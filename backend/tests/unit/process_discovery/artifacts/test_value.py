@@ -177,3 +177,19 @@ def test_ac_19_13_no_opportunities_value_zero() -> None: ...
 
 @pytest.mark.skip(reason=f"AC-19.14: {PARKED_REASON}")
 def test_ac_19_14_role_group_rates() -> None: ...
+
+
+def test_ac_19_47_p05_regression_hours_from_per_role_answers() -> None:
+    """AC-19.47 (spec 19 §3.8): the p05 answers give 19 h a run and 1,368 h a year."""
+    profile = load_profile("eu")
+    rows = profile["process"]["substeps"][:3]
+    for row, duration in zip(rows, ("about 3 hours", "about 1 day", "about 1 day"), strict=True):
+        row["effort"] = {"duration": duration, "frequency": "once per role, about 6 times a month"}
+    profile["process"]["substeps"] = rows
+    profile["process"]["substep_count"] = 3
+    profile["process"]["volume"] = {"count": 6, "period": "month", "raw": "6 times a month."}
+    value = compute_value(profile, [], nig_config().rates)
+    assert value.complete
+    assert value.runs_per_year == 72
+    assert [s.hours_per_year for s in value.steps] == [216, 576, 576]
+    assert value.hours_per_year == 1368

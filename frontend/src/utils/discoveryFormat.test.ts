@@ -4,7 +4,7 @@
  * none sentinels need a case; phase labels and relative time are shared by Home and the dialogs.
  * Rules: the formatter reads the profile by field key and never grades a value.
  */
-import { emptyProfile, fullStep } from '../test/fixtures/sessions'
+import { emptyProfile, emptyStep, fullStep } from '../test/fixtures/sessions'
 import { completenessPct, formatRelativeTime, formatValue, phaseLabel, sessionStatusText } from './discoveryFormat'
 import { summary } from '../test/fixtures/sessions'
 
@@ -39,6 +39,7 @@ describe('formatValue (AC-23.30)', () => {
     ['process.substeps[1].exceptions', 'Numbers missing → back to step 1'],
     ['process.substeps[1].data', 'in: Ledger · out: Report'],
     ['process.substeps[1].effort', '2 hours · monthly'],
+    ['process.substeps[1].decision_type', 'Rules: The same checks every month'],
   ])('formats %s as "%s"', (key, expected) => {
     expect(formatValue(profile, key)).toBe(expected)
   })
@@ -63,6 +64,25 @@ describe('formatValue (AC-23.30)', () => {
     expect(formatValue(p, 'process.variation')).toBe('Yes')
     p.process.variation = { same: 'no', differences: 'Each site' }
     expect(formatValue(p, 'process.variation')).toBe('No: Each site')
+  })
+
+  it('words the S13 kind (rules, judgement, a mix) and shows an empty one as empty (short step walk)', () => {
+    const p = emptyProfile()
+    p.process.substeps = [{ ...fullStep('A'), decision_type: { kind: 'mix', evidence: 'mostly rules' } }, emptyStep('B')]
+    expect(formatValue(p, 'process.substeps[1].decision_type')).toBe('A mix: mostly rules')
+    expect(formatValue(p, 'process.substeps[2].decision_type')).toBe('')
+  })
+
+  it('words S14 as "Based on: …; set by …; not written down; varies: …" and an empty one as empty (AC-23.151)', () => {
+    const p = emptyProfile()
+    p.process.substeps = [
+      { ...fullStep('A'), decision_criteria: { basis: 'the threshold', set_by: 'Head of controlling', written: 'no', varies: 'by site' } },
+      { ...fullStep('B'), decision_criteria: { basis: 'experience', set_by: '', written: 'Partly', varies: '' } },
+      emptyStep('C'),
+    ]
+    expect(formatValue(p, 'process.substeps[1].decision_criteria')).toBe('Based on: the threshold; set by Head of controlling; not written down; varies: by site')
+    expect(formatValue(p, 'process.substeps[2].decision_criteria')).toBe('Based on: experience; partly written down')
+    expect(formatValue(p, 'process.substeps[3].decision_criteria')).toBe('')
   })
 
   it('returns an empty string for empty values and unknown keys', () => {

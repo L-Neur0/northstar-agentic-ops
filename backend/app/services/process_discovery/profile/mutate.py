@@ -25,6 +25,7 @@ from typing import Any, NamedTuple
 
 from ..domain.field_spec import (
     CONFLICTS_KEY,
+    GROUP_C,
     MAX_STEPS,
     META_KEY,
     MIN_STEPS,
@@ -109,6 +110,8 @@ _CODE_OWNED_LEAVES: frozenset[str] = frozenset(
     }
 )
 _SIDECARS: frozenset[str] = frozenset({META_KEY, SKIPPED_KEY, CONFLICTS_KEY})
+#: Tier C step leaves (short step walk): proposed by code, never asked, feed no roll-up.
+_TIER_C: frozenset[str] = frozenset(s.key for s in STEP_SPECS if s.group == GROUP_C)
 
 
 class ChangeResult(NamedTuple):
@@ -368,9 +371,13 @@ def finish_batch(
     steps_landed: bool,
     leaves: set[str],
 ) -> None:
-    """The steps after every batch, in order: invalidate, resize, close test, roll-ups."""
+    """The steps after every batch, in order: invalidate, resize, close test, roll-ups.
+
+    A batch that wrote only Tier C cells (goal, owner, hand-over: the review's bulk confirmation and
+    its corrections, spec 14 §3.19 W8) does not reopen the walk: those cells feed no list.
+    """
     proc = process_of(profile)
-    if steps_landed and was_closed:
+    if steps_landed and was_closed and (not leaves or leaves - _TIER_C):
         reopen(profile)
     if "roles" in leaves:
         proc[FLAG_ROLES_CONFIRMED] = False
@@ -578,10 +585,19 @@ def close_written_conflicts(profile: dict[str, Any], written: Sequence[str]) -> 
 
 
 def apply_changes(
-    profile: Mapping[str, Any] | None, changes: Mapping[str, Any], *, vocab: Vocabulary, at: str
+    profile: Mapping[str, Any] | None,
+    changes: Mapping[str, Any],
+    *,
+    vocab: Vocabulary,
+    at: str,
+    quote: str | None = None,
 ) -> ChangeResult:
-    """Apply the expert's changes (EXTRACT output, already whitelisted) in the order of §3.4."""
-    return _apply_batch(profile, changes, vocab=vocab, meta=make_meta(SOURCE_EXPERT, "confirmed", at), specialist=False)
+    """Apply the expert's changes (EXTRACT output, already whitelisted) in the order of §3.4.
+
+    `quote` is the evidence of a value the expert accepted from the agent's question (spec 14 §3.20 O6).
+    """
+    meta = make_meta(SOURCE_EXPERT, "confirmed", at, quote=quote)
+    return _apply_batch(profile, changes, vocab=vocab, meta=meta, specialist=False)
 
 
 # --- Settling the walk ----------------------------------------------------------------------------

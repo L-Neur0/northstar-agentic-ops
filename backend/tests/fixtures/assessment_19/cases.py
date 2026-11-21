@@ -85,20 +85,31 @@ STEPS_REPLY: dict[str, Any] = {
     "steps": [
         {"step": 1, "fit": "assist", "reason": "Site files arrive late and in different layouts.",
          "evidence": "sites send late and in different layouts", "route": "fix-first",
-         "route_reason": "The layouts must be agreed before any tool can read them."},
+         "route_reason": "The layouts must be agreed before any tool can read them.",
+         "signals": [{"name": "reads_unstructured", "evidence": "sites send late and in different layouts"}]},
         {"step": 2, "fit": "automate", "reason": "Numbers are copied by hand from site files into Excel.",
          "evidence": "I copy the numbers into the master file by hand", "route": "custom-ai-app",
-         "route_reason": "Reading many layouts reliably needs a build."},
+         "route_reason": "Reading many layouts reliably needs a build.",
+         "signals": [{"name": "reads_unstructured", "evidence": "copy each site's numbers"},
+                     {"name": "must_be_exact", "evidence": "reconcile totals with SAP"}]},
         {"step": 3, "fit": "automate", "reason": "A fixed threshold decides which lines are flagged.",
          "evidence": "the threshold check is done by eye", "route": "low-code-flow",
-         "route_reason": "A fixed rule in a connected workbook."},
+         "route_reason": "A fixed rule in a connected workbook.",
+         "signals": [{"name": "fixed_rules", "evidence": "mark lines over the threshold"}]},
         {"step": 4, "fit": "automate", "reason": "Reminders to site managers follow a fixed rhythm.",
          "evidence": "some site managers answer only after three reminders", "route": "low-code-flow",
-         "route_reason": "Reminders and escalation are a standard flow."},
+         "route_reason": "Reminders and escalation are a standard flow.",
+         "signals": [{"name": "fixed_rules", "evidence": "send reminders"}]},
         {"step": 5, "fit": "assist", "reason": "The commentary is written from scratch each month.",
          "evidence": "I write the commentary from scratch every month", "route": "office-assistant",
-         "route_reason": "Drafting text in office documents with a person deciding."},
-    ]
+         "route_reason": "Drafting text in office documents with a person deciding.",
+         "signals": [{"name": "drafts_text", "evidence": "write the commentary"}]},
+    ],
+    # spec 27 §3.2: the three motivations, each with a quote from the profile
+    "fit_motivation": {"text": "Reading site files and drafting the commentary suit AI.",
+                       "evidence": "I write the commentary from scratch every month"},
+    "assistant_motivation": {"text": "The files come from many sites into SAP.", "evidence": "reconcile totals with SAP"},
+    "worth_motivation": {"text": "It takes days every month.", "evidence": "words nobody said"},
 }  # fmt: skip
 
 

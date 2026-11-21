@@ -6,7 +6,8 @@ of every call (EXTRACT, CLASSIFY, GUIDE) are written for five sample states into
 is exactly what the model would receive. No live model is called.
 What: builds the five states (the start in `context`; `find` with a cluster proposal; the step walk
 with a deferred field and a pending document proposal; `find` with three candidates and the first
-steering question; `find` with the recommendation, spec 14 §3.15), runs one turn on each, and compares the
+steering question; `find` with the recommendation, spec 14 §3.15; the steps listed in one answer and
+the first grouped step question, §3.19), runs one turn on each, and compares the
 captured messages with the files. Set `UPDATE_PROMPT_SAMPLES=1` to rewrite the files after a prompt
 change. Must not: hold assertions about wording; that is the review's job.
 """
@@ -52,6 +53,7 @@ STATES = {
     3: "steps: mid-walk, with a deferred field and a pending document proposal",
     4: "find: three candidates named, the first steering question",
     5: "find: the last steering answer, the recommendation",
+    6: "step count: the steps listed in one answer, then the first grouped step question (short step walk)",
 }
 CANDIDATES = ("the monthly cost review", "chasing site managers", "booking travel")
 STEERED = {
@@ -110,7 +112,7 @@ def state_2(ctx):
 
 
 def state_3(ctx):
-    keys = [k for k in MEASURE if k != "process.target_metric"]
+    keys = [k for k in MEASURE if k != "process.baseline_metric"]
     profile = profile_with(ctx, *BOUNDARIES, *keys, steps=4)
     profile = apply_changes(
         profile,
@@ -129,6 +131,7 @@ def state_3(ctx):
                     "approvals",
                     "exceptions",
                     "handover",
+                    "decision_type",
                 ),
             ),
         },
@@ -148,7 +151,7 @@ def state_3(ctx):
         ctx,
         "steps",
         profile,
-        counters={"field_asks": {"process.target_metric": 3}, "cell_asks": {step_cell_key(2, "activities"): 1}},
+        counters={"field_asks": {"process.baseline_metric": 3}, "cell_asks": {step_cell_key(2, "activities"): 1}},
         last_question={"focus": [step_cell_key(2, "activities")]},
         documents=[
             {
@@ -266,15 +269,30 @@ def render(call: RecordedCall, title: str) -> str:
     return "\n".join(out)
 
 
+def state_6(ctx):
+    """Spec 14 §3.19: the steps question answered with a list; the next question is Tier A of step 1."""
+    session = session_at(
+        ctx,
+        "step_count",
+        profile_with(ctx, *BOUNDARIES, *MEASURE),
+        last_question={"focus": ["process.substep_count"]},
+        messages=[{"role": "agent", "text": "List the main steps in order, 2 to 6.", "at": AT}],
+    )
+    names = ("Collect the cost data", "Consolidate", "Review variances", "Report")
+    extract = {"process.substep_count": 4, **{step_cell_key(i, "name"): n for i, n in enumerate(names, start=1)}}
+    return session, "Collect the cost data, consolidate, review variances, report", extract
+
+
 async def samples(ctx) -> dict[str, str]:
     files: dict[str, str] = {}
-    builders = {1: state_1, 2: state_2, 3: state_3, 4: state_4, 5: state_5}
+    builders = {1: state_1, 2: state_2, 3: state_3, 4: state_4, 5: state_5, 6: state_6}
     names = {
         1: "1_context_start",
         2: "2_find_cluster_proposal",
         3: "3_steps_deferred_and_proposal",
         4: "4_find_steering_question",
         5: "5_find_recommendation",
+        6: "6_steps_listed_then_tier_a",
     }
     for n, build in builders.items():
         built = build(ctx)
@@ -303,7 +321,7 @@ async def samples(ctx) -> dict[str, str]:
 async def test_prompt_samples_are_current(ctx):
     """The review samples match what the prompts render today (rewrite with UPDATE_PROMPT_SAMPLES=1)."""
     files = await samples(ctx)
-    assert len(files) == 13
+    assert len(files) == 15
     if os.environ.get("UPDATE_PROMPT_SAMPLES") == "1":
         SAMPLES.mkdir(parents=True, exist_ok=True)
         for name, text in files.items():

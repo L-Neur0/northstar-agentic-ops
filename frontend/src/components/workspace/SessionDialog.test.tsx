@@ -18,15 +18,15 @@ import { ApiError, type DiscoveryApi } from '../../services/api'
 import * as download from '../../utils/downloadFile'
 import type { ReviewRow } from '../../types/workspace'
 
-// The opportunity list can be made to throw while rendering, to prove its boundary (AC-23.130).
+// The questions table can be made to throw while rendering, to prove its boundary (AC-23.130).
 const boom = vi.hoisted(() => ({ on: false }))
 vi.mock('../report/ReportParts', async (load) => {
   const real = await load<typeof import('../report/ReportParts')>()
   return {
     ...real,
-    OpportunityList: (props: Parameters<typeof real.OpportunityList>[0]) => {
+    QuestionsTable: (props: Parameters<typeof real.QuestionsTable>[0]) => {
       if (boom.on) throw new TypeError('bad part')
-      return createElement(real.OpportunityList, props)
+      return createElement(real.QuestionsTable, props)
     },
   }
 })
@@ -122,13 +122,18 @@ describe('session tab (AC-23.124, AC-23.128, AC-23.129)', () => {
     expect(docs).not.toHaveTextContent(/18432|18,432|KB/)
   })
 
-  it('renders the step assessment, route, opportunities and map with h3 part headings', async () => {
+  it('renders the v2 summary, the steps with levels, the three questions and the map with h3 headings (AC-23.129, AC-23.157)', async () => {
     open()
     await screen.findByRole('tab', { name: 'Session' })
-    expect(screen.getByRole('heading', { level: 3, name: 'Step-by-step AI assessment' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 3, name: 'Recommended route' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 3, name: 'Process map' })).toBeInTheDocument()
-    expect(screen.getByRole('region', { name: 'Step-by-step assessment' })).toBeInTheDocument()
+    const headings = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
+    const order = ['Summary', 'Step-by-step AI assessment', 'The three questions', 'Process map']
+    expect(headings.filter((h) => order.includes(h ?? ''))).toEqual(order)
+    expect(screen.getByText(/^We mapped Monthly cost review/)).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Step-by-step assessment' })).toHaveTextContent('Strong fit')
+    expect(screen.getByRole('table', { name: 'The three questions' })).toHaveTextContent('Either can work')
+    for (const gone of ['Recommended route', 'Transformation assessment', 'Opportunities']) {
+      expect(screen.queryByRole('heading', { name: gone })).toBeNull()
+    }
     expect(await screen.findByRole('img', { name: /^Process map:/ })).toBeInTheDocument()
     expect(screen.queryAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['Monthly cost review'])
   })
@@ -156,7 +161,7 @@ describe('report blocks that fail (AC-23.130)', () => {
     await screen.findByRole('tab', { name: 'Session' })
     expect(document.querySelector('[data-note-kind="failed"]')).not.toBeNull()
     expect(screen.getByText('This part could not be shown.')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 3, name: 'Recommended route' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 3, name: 'Step-by-step AI assessment' })).toBeInTheDocument()
   })
 })
 

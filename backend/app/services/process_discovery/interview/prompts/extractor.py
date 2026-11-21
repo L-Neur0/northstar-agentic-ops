@@ -15,7 +15,11 @@ What: `extractor_system`, `extractor_user`, and `extract_view` (the profile as r
 without `__meta`, `__skipped`, flags, roll-ups or the parked count).
 Must not: let the model write the cluster, a confirmation or a flag; invite it to infer, rephrase or
 translate; or put the expert's text outside a fence. Spec 14 §3.9, §3.15 item 12; AC-14.3, AC-14.58,
-AC-14.60, AC-14.66.
+AC-14.60, AC-14.66. Amendment §3.19 (short step walk): the steps a grouped question covered, the
+steps list, the S13 shape and the bare-yes rule for sensitive data (AC-14.116). Amendment §3.20 (owner
+test, 2026-11-21): the values the previous question offered are shown, fenced, with the rule for "the
+ones you listed" (AC-14.123). Amendment §3.21 (p05 evaluation, 2026-11-21): facts for other
+keys, one item per thing, pronouns, and the S14 shape (AC-14.134).
 """
 
 from __future__ import annotations
@@ -36,8 +40,8 @@ from ...domain.field_spec import (
     object_list_shape_hints,
 )
 from ...profile.constants import CONFIRMATION_FLAGS, FLAG_SUBSTEP_COUNT_REJECTED
-from ...profile.shapes import as_list, as_mapping, normalized_profile, process_of
-from ...profile.verdicts import current_step_index, expected_steps
+from ...profile.shapes import as_list, as_mapping, normalized_profile, parse_step_key, process_of
+from ...profile.verdicts import P16_KEY, current_step_index, expected_steps
 from ..steering import STEER_PREFIX
 
 ROW_EXAMPLE = (
@@ -76,7 +80,10 @@ def extractor_system(
 ) -> str:
     """The EXTRACT system prompt for this turn; `candidates` are the names already heard in `find`."""
     declared = expected_steps(profile, vocab=vocab)
-    index = current_step_index(profile, vocab=vocab)
+    asked_steps = {p[0] for p in (parse_step_key(k) for k in _str_list(last_question.get("focus"))) if p is not None}
+    # §3.19: the step the last question was about (effort stays open until the end, so the first
+    # incomplete row is not the step under discussion); else the first incomplete row.
+    index = next(iter(asked_steps)) if len(asked_steps) == 1 else current_step_index(profile, vocab=vocab)
     keys = "\n".join(f'- "{key}"' for key in extract_keys())
     shapes = "\n".join(object_list_shape_hints())
     if declared:
@@ -96,6 +103,17 @@ def extractor_system(
         for k in (*_str_list(last_question.get("focus")), *_str_list(last_question.get("proposals")))
         if not k.startswith(STEER_PREFIX)
     ]
+    covered = sorted({p[0] for p in (parse_step_key(k) for k in about) if p is not None})
+    if declared and len(covered) > 1:
+        bound += (
+            f" The question covered steps {', '.join(str(i) for i in covered)}: put each answer under its own step "
+            "(the expert may answer by number or by name)."
+        )
+    if P16_KEY in about or (about and all(k.endswith(".name") for k in about)):
+        bound += (
+            " The question asked for the list of main steps: emit `process.substeps[i].name` for every step named, "
+            f"in order (at most {MAX_STEPS}), and `process.substep_count` with how many the expert listed."
+        )
     context = ""
     if asked:
         context = (
@@ -107,6 +125,20 @@ def extractor_system(
             + (f"It was about these keys: {', '.join(about)}.\n" if about else "")
             + "Use it only to decide which key the words belong under. It tells you what was asked; it never tells "
             "you what was answered.\n\n"
+        )
+    offered = as_mapping(last_question.get("offered")) or {}
+    if offered:
+        context += (
+            "The previous question OFFERED these values for the expert to accept (from the assistant, not yet "
+            "the expert's answer). "
+            + fence_instruction("OFFERED", "The offered values")
+            + "\n"
+            + fence_untrusted(json.dumps(offered, ensure_ascii=False), "OFFERED")
+            + '\nIf the expert refers to them ("the ones you listed", "the first two", "all but GDPR"), emit '
+            "the values they picked under that key, copied from the offered values. A plain acceptance of all of "
+            "them may emit nothing for those keys: code writes them. A correction in their own words wins. For "
+            "`process.name`: when the expert names their own work in their own words, emit their words, even if an "
+            "offered name is similar; emit an offered name only when they pick it.\n\n"
         )
     ideas = ""
     if phase == "find":
@@ -161,7 +193,26 @@ def extractor_system(
         '[{"none": true}] for `process.sensitive_data`, `process.substeps[i].roles`, `process.substeps[i].approvals` '
         'or `process.substeps[i].exceptions`, and `{"none_identified": true}` for `process.process_owner` when nobody '
         "owns it. Use the previous question to decide which one key they are saying no to, and emit it for that key "
-        "only.\n\n"
+        "only; a plain no to the optional step question (sign-off, what goes wrong, passing it on) is a no to "
+        "both approvals and exceptions of that step.\n\n"
+        "Facts for other keys: if the message also states, explicitly, a value for another key in the list (a "
+        "duration, a count, a role, a system), emit it under that key as well, copied. Never move a value the "
+        "expert gave for one step to another step.\n\n"
+        'One item per thing: in lists, one row or item per system, role, input or output. Names joined by "/", '
+        '"and" or "+" are separate items ("Excel/SharePoint" is "Excel" and "SharePoint"), unless the slash is '
+        'part of a product name, such as "SAP S/4HANA".\n\n'
+        'Pronouns: when the expert says "they", "he" or "she" for a role that the previous question or the same '
+        "message names, write the role, not the pronoun.\n\n"
+        "Decision criteria: `process.substeps[i].decision_criteria` is "
+        '`{"basis": "<what the decision is based on>", "set_by": "<role>", "written": "yes" | "partly" | "no", '
+        '"varies": "<what changes from case to case or person to person>"}`, each in the expert\'s words; emit '
+        "only the parts they said.\n\n"
+        "Rules or judgement: `process.substeps[i].decision_type` is "
+        '`{"kind": "rules" | "judgement" | "mix", "evidence": "<the expert\'s words, copied>"}`: rules when the '
+        "step follows fixed rules, judgement when the expert decides case by case, mix for both. Emit it only "
+        "when the expert said so.\n\n"
+        "Sensitive data: a bare yes to the sensitive data question, without saying which data or regulation, is "
+        "not an item: emit nothing for `process.sensitive_data` (the next question asks which).\n\n"
         "Not yours to write: never write the cluster, a confirmation or a flag. A yes or no to a proposal or to a list "
         "is read by code, so emit nothing for it.\n\n"
         + ideas

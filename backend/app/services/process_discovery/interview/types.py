@@ -68,7 +68,7 @@ class InterviewContext:
     vocab: Vocabulary
     lexicon: Lexicon
     settings: InterviewSettings = field(default_factory=InterviewSettings)
-    product_name: str = "Discovery Agent"
+    product_name: str = "AI Use Case Discovery Agent"
     #: Steering toward value and ready data (§3.15); `None` turns it off.
     steering: SteeringConfig | None = None
 

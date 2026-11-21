@@ -12,6 +12,8 @@ export interface TabItem {
   id: string
   label: ReactNode
   title?: string
+  /** The accessible name when the visible label is cut (spec 23 §3.6 rule 11). */
+  ariaLabel?: string
 }
 
 export function Tabs({
@@ -64,6 +66,7 @@ export function Tabs({
             aria-controls={`${idPrefix}-panel`}
             tabIndex={isSelected ? 0 : -1}
             title={item.title}
+            aria-label={item.ariaLabel}
             onClick={() => onSelect(i)}
             className={`-mb-px shrink-0 whitespace-nowrap border-b-2 px-2.5 py-1.5 text-xs font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${
               isSelected ? 'border-primary text-link' : 'border-transparent text-muted hover:text-fg'

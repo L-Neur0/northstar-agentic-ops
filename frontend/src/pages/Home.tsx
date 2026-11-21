@@ -20,6 +20,7 @@ import { Pill, type PillTone } from '../components/ui/Pill'
 import { Spinner } from '../components/ui/Spinner'
 import { IdeasList } from '../components/process-discovery/IdeasList'
 import { useApi } from '../services/apiContext'
+import { PRODUCT_TAGLINE } from '../config/product'
 import { DISPLAY_NAME_MAX, displayNameForCreate, readDisplayName, writeDisplayName } from '../access/displayName'
 import { isStorageAvailable, peekAccessNotice, resumeLink, takeAccessNotice } from '../access/visitorKey'
 import { completenessPct, formatRelativeTime, sessionStatusText } from '../utils/discoveryFormat'
@@ -211,6 +212,7 @@ export function Home() {
       )}
 
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-6">
+        <p className="text-sm text-muted">{PRODUCT_TAGLINE}</p>
         <section>
           <h2 className="mb-3 text-xl font-semibold text-fg">My processes</h2>
           <div className="flex flex-wrap items-center gap-3">

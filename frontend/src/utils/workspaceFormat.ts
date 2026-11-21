@@ -24,7 +24,12 @@ export const STATUS_TONES: Record<SessionStatus, PillTone> = { active: 'info', f
 
 export const statusWord = (status: SessionStatus | string): string => STATUS_WORDS[status as SessionStatus] ?? status
 
-const SOURCE_WORDS: Record<string, string> = { expert: 'expert', document: 'from a document', specialist: 'specialist' }
+const SOURCE_WORDS: Record<string, string> = {
+  expert: 'expert',
+  document: 'from a document',
+  specialist: 'specialist',
+  agent: 'suggested from the answers',
+}
 
 export const sourceWord = (source: string | null): string => (source ? (SOURCE_WORDS[source] ?? source) : '')
 

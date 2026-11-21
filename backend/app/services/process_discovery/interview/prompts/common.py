@@ -41,17 +41,16 @@ NAME_MAX = 120
 
 
 def welcome_text(display_name: str | None, *, product_name: str, first_question: str) -> str:
-    """The fixed first message (F-01.5): what happens, how long, documents, privacy, then the P01 question."""
+    """The fixed first message (F-01.5; wording amended 2026-11-21, spec 14 §3.20 O1, AC-14.117)."""
     name = single_line(display_name or "", 40)
     greeting = f"Hi {name}!" if name else "Hi!"
     return (
-        f"{greeting} I'm the {single_line(product_name, 60)}. Together we'll find a piece of recurring work in "
-        "your week that is worth mapping, and map it step by step; it takes about 15–20 minutes. You don't "
-        "need a process in mind, we'll find one by talking through your week. You can add a document "
-        "(a procedure, a process map, an example report) at any time; I'll read it and you confirm what "
-        "I found. The tool maps processes, not people: it never reports anyone's individual time. "
-        "The transformation team may read this conversation to improve the tool. "
-        f"To start: {first_question}"
+        f"{greeting} I'm the {single_line(product_name, 60)}. Together we'll find a recurring workflow in your "
+        "daily work that is worth transforming with AI. We'll map it step by step (it takes about 20 minutes), "
+        "then assess where and how AI can help and how much transformation potential it has. You can add a "
+        "document (a procedure, a process map, an example) at any time; I'll read it and you confirm what I "
+        "found. Your answers describe the work, not you, and the transformation team may read this "
+        f"conversation to improve the tool. To start: {first_question}"
     )
 
 

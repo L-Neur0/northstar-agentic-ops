@@ -1,16 +1,17 @@
 /**
  * Tests for the "Your process" panel and its *Finish* block (spec 23 §3.8.1, §3.8.12, §11.1,
- * §11.8; AC-23.38, AC-23.39, AC-23.66, AC-23.79).
+ * §11.8; AC-23.38, AC-23.39, AC-23.66, AC-23.79, AC-23.148, AC-23.149).
  * Why: the *Finish* button state comes only from the server's `finish.ready`; `looksLikeTask` is
  * advice and never blocks; a blocked button explains why, linked by `aria-describedby`.
- * Rules: an unknown blocked-reason code is shown as is, never hidden.
+ * Rules: an unknown blocked-reason code is shown as is, never hidden. Amended 2026-11-21: no Roles and
+ * systems section; the only blocked sentences are below the gate and steps not described.
  */
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ProcessProfilePanel } from './ProcessProfilePanel'
 import { defaultSections } from './sectionState'
 import { renderWithProviders } from '../../test/render'
-import { buildSession, readySession, withProposals } from '../../test/fixtures/sessions'
+import { buildSession, emptyProfile, emptyStep, processViews, readySession, stepViews, withProposals } from '../../test/fixtures/sessions'
 import { initialDiscoveryState } from '../../hooks/discoveryReducer'
 import type { SessionOut } from '../../types/process-discovery'
 
@@ -40,7 +41,8 @@ describe('ProcessProfilePanel (AC-23.38)', () => {
   it('is an aside labelled Your process with the sections in order', () => {
     panel(buildSession())
     const aside = screen.getByRole('complementary', { name: 'Your process' })
-    expect(aside).toHaveTextContent(/About you.*The process.*Boundaries.*Measures.*Number of steps.*Steps.*Roles and systems/s)
+    expect(aside).toHaveTextContent(/About you.*The process.*Boundaries.*Measures.*Number of steps.*Steps/s)
+    expect(aside).not.toHaveTextContent('Roles and systems')
   })
 
   it('enables Finish when ready and active, with the closing sentence', async () => {
@@ -78,8 +80,7 @@ describe('blocked reasons (AC-23.39)', () => {
   it.each([
     ['below_gate', 'Your map is 65 % complete. It needs 80 % to finish.'],
     ['substeps_incomplete', 'Some steps are not fully described yet.'],
-    ['roles_not_confirmed', 'Please confirm the list of roles.'],
-    ['tools_not_confirmed', 'Please confirm the list of systems.'],
+    ['roles_not_confirmed', 'roles_not_confirmed'],
     ['something_new', 'something_new'],
   ])('%s → "%s", linked by aria-describedby', (code, sentence) => {
     panel(buildSession({ score: { value: 0.65, filledPoints: 40, totalPoints: 62 }, finish: { ready: false, blockedBy: code, looksLikeTask: false } }))
@@ -118,7 +119,7 @@ describe('part 2 additions (AC-23.66, AC-23.79)', () => {
     expect(finishButton()).toBeDisabled()
   })
 
-  it('places the Documents section between Roles and systems and Finish', () => {
+  it('places the Documents section between Steps and Finish', () => {
     panel(withProposals(), {
       documentPanel: {
         editable: true,
@@ -136,9 +137,35 @@ describe('part 2 additions (AC-23.66, AC-23.79)', () => {
       },
     })
     const toggles = screen.getAllByRole('button', { expanded: true }).map((b) => b.textContent ?? '')
-    const roles = toggles.findIndex((t) => t.startsWith('Roles and systems'))
+    const steps = toggles.findIndex((t) => t.startsWith('Steps'))
     const docs = toggles.findIndex((t) => t.startsWith('Documents'))
-    expect(docs).toBe(roles + 1)
+    expect(steps).toBeGreaterThanOrEqual(0)
+    expect(docs).toBe(steps + 1)
+    expect(docs).toBe(toggles.length - 1)
     expect(screen.getByRole('button', { name: /^Documents/ })).toHaveTextContent('2/5')
+  })
+})
+
+describe('no Roles and systems section (AC-23.148)', () => {
+  it('renders no Roles and systems section and no Confirm roles / systems button', () => {
+    panel(readySession({ profile: { ...readySession().profile, process: { ...readySession().profile.process, roles_confirmed: false, tools_confirmed: false } } }))
+    expect(screen.queryByText('Roles and systems')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Confirm roles/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Confirm systems/ })).not.toBeInTheDocument()
+    expect(finishButton()).toBeEnabled()
+  })
+})
+
+describe('step names in the tabs (AC-23.149)', () => {
+  it('a profile with three step names and P16 = 3 shows the three names in the step tabs', () => {
+    const profile = emptyProfile()
+    profile.process.name = 'Monthly cost review'
+    profile.process.substep_count = 3
+    profile.process.substeps = [emptyStep('Export actuals'), emptyStep('Compare with budget'), emptyStep('Sign off')]
+    panel(buildSession({ phase: 'steps', profile, fieldViews: [...processViews(), ...stepViews(1, 1), ...stepViews(2, 1), ...stepViews(3, 1)] }))
+    const tabs = screen.getAllByRole('tab')
+    expect(tabs).toHaveLength(3)
+    expect(tabs.map((t) => t.getAttribute('title'))).toEqual(['Export actuals', 'Compare with budget', 'Sign off'])
+    expect(screen.getByText('Step 1 · Export actuals')).toBeInTheDocument()
   })
 })

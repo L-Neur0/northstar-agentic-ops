@@ -33,7 +33,7 @@ def test_collecting_phases_never_move_backwards(ctx):
             advance_phase(empty_profile(), phase, NO_COUNTERS, vocab=ctx.vocab)
         ) >= PHASE_ORDER.index(phase)
     assert advance_phase(empty_profile(), "context", NO_COUNTERS, vocab=ctx.vocab) == "context"
-    assert advance_phase(cost_review_profile(ctx.vocab, steps=2), "context", NO_COUNTERS, vocab=ctx.vocab) == "confirm"
+    assert advance_phase(cost_review_profile(ctx.vocab, steps=2), "context", NO_COUNTERS, vocab=ctx.vocab) == "review"
 
 
 def test_terminals_never_change(ctx):
@@ -48,7 +48,7 @@ def test_the_tail_steps_back_but_never_into_a_collecting_phase(ctx):
     confirmed = confirm_rollup(confirm_rollup(closed, "roles", vocab=ctx.vocab), "systems", vocab=ctx.vocab)
     assert advance_phase(confirmed, "review", NO_COUNTERS, vocab=ctx.vocab) == "review"
     dropped = apply_changes(confirmed, {step_cell_key(1, "roles"): ["Auditor"]}, vocab=ctx.vocab, at=AT).profile
-    assert advance_phase(dropped, "review", NO_COUNTERS, vocab=ctx.vocab) == "confirm"
+    assert advance_phase(dropped, "review", NO_COUNTERS, vocab=ctx.vocab) == "review"  # no confirm (§3.20 O10)
     reopened = dict(confirmed)
     reopened["process"] = {**confirmed["process"], "substeps_complete": False}
     assert advance_phase(reopened, "review", NO_COUNTERS, vocab=ctx.vocab) == "steps"

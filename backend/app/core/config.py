@@ -140,6 +140,8 @@ class Application(Strict):
     name: str
     aliases: tuple[str, ...] = ()
     export_or_api: bool
+    #: A general office tool (spreadsheet, e-mail, chat) that needs no connector (spec 27 §3.3 Q2).
+    general_tool: bool = False
 
 
 class ReadinessConfig(Strict):
@@ -276,6 +278,12 @@ class LanguageWords(Strict):
     no: tuple[str, ...]
     roles_cues: tuple[str, ...]
     systems_cues: tuple[str, ...]
+    #: Phrases that accept the values the last question offered (spec 14 §3.20 O6, amended 2026-11-21).
+    accept: tuple[str, ...] = ()
+    #: P14 "the same everywhere" and its opposites; picking one offered candidate (spec 14 §3.20 O2, O11).
+    same: tuple[str, ...] = ()
+    not_same: tuple[str, ...] = ()
+    pick: tuple[str, ...] = ()
 
     @field_validator("yes")
     @classmethod
