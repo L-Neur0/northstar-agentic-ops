@@ -75,8 +75,11 @@ def test_ac_26_5_first_entry_per_step_wins() -> None:
 
 
 def test_ac_26_6_quote_checks() -> None:
-    """AC-26.6: invented quote or a quote from another step → dropped (`quote`); a P09 quote is accepted."""
+    """AC-26.6: invented quote or a quote from another step → dropped (`quote`); a P09 quote is accepted.
+    No signals here: a verified signal quote would rescue the rating (spec 27, tested in test_steps_signals)."""
     reply = _reply()
+    for entry in reply["steps"]:
+        entry["signals"] = []
     reply["steps"][0]["evidence"] = "the system crashes every day"
     reply["steps"][2]["evidence"] = "some site managers answer only after three reminders"  # step 4's words
     reply["steps"][3]["evidence"] = "Every site sends its own spreadsheet"  # P09
@@ -101,6 +104,8 @@ def test_ac_26_6_rules_or_judgement_words_are_accepted() -> None:
         "evidence": "I decide when to chase again",
     }
     reply = _reply()
+    for entry in reply["steps"]:
+        entry["signals"] = []  # no rescue by a signal quote (spec 27)
     reply["steps"][3]["evidence"] = "I decide when to chase again"  # step 4's own S13 words
     reply["steps"][4]["evidence"] = "I decide when to chase again"  # step 5 quoting step 4
     ratings, dropped = ground_step_ratings(reply, profile, CAT)

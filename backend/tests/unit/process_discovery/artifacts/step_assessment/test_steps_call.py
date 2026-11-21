@@ -89,13 +89,14 @@ async def test_ac_26_18_one_log_line_counts_only(caplog: pytest.LogCaptureFixtur
     reply["steps"][0]["reason"] += SENTINEL
     reply["steps"][2]["route"] = "acme-copilot"
     reply["steps"][3]["evidence"] = f"invented {SENTINEL} words"
+    reply["steps"][3]["signals"] = []  # no rescue by a signal quote (spec 27)
     with caplog.at_level(logging.DEBUG):
         await _run(reply, profile=profile)
     lines = [r for r in caplog.records if r.getMessage() == "assessment_call"]
     assert len(lines) == 1
     record = lines[0].__dict__
     assert (record["call"], record["outcome"], record["kept"]) == ("ASSESS_STEPS", "generated", 4)
-    assert record["dropped"] == {"step": 0, "quote": 1, "invalid": 0, "cap": 0, "route": 1, "signal": 0}
+    assert record["dropped"] == {"step": 0, "quote": 1, "invalid": 0, "cap": 0, "route": 1, "signal": 0, "rescued": 0}
     assert record["placeholder_catalogue"] is True
     assert isinstance(record["duration_ms"], int)
     for r in caplog.records:

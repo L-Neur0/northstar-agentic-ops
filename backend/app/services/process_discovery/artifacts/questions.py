@@ -36,6 +36,7 @@ from .readiness import match_application
 
 LANGUAGE_SIGNALS = ("reads_unstructured", "compares_to_criteria", "finds_patterns", "drafts_text")
 SIGNALS = (*LANGUAGE_SIGNALS, "must_be_exact", "fixed_rules")
+SINGULAR = {"read": "reads", "compare": "compares", "look": "looks", "write": "writes"}
 SIGNAL_PHRASES = {
     "reads_unstructured": "read documents or text that vary in layout or wording",
     "compares_to_criteria": "compare them with criteria",
@@ -65,6 +66,16 @@ def _steps_phrase(steps: Sequence[int]) -> str:
     if len(steps) == 1:
         return f"Step {steps[0]}"
     return f"Steps {', '.join(str(s) for s in steps[:-1])} and {steps[-1]}"
+
+
+def _singular(phrase: str) -> str:
+    first, _, rest = phrase.partition(" ")
+    return f"{SINGULAR.get(first, first)} {rest}".strip()
+
+
+def _and(items: Sequence[str]) -> str:
+    """ "a", "a and b", "a, b and c"."""
+    return items[0] if len(items) == 1 else f"{', '.join(items[:-1])} and {items[-1]}"
 
 
 def _hours(x: float) -> str:
@@ -117,7 +128,10 @@ def _q1(fits: Sequence[StepFit], value: ValueResult) -> QuestionAnswer:
         where = _steps_phrase(nums)
         if total:
             where += f" ({_hours(sum(hours.get(n, 0.0) for n in nums))} of {_hours(total)} hours a year)"
-        reasons.append(f"{where} {' and '.join(because)}.")
+        text = " and ".join(because)
+        if len(nums) == 1:  # "Step 2 reads …", "Steps 2 and 3 read …"
+            text = " and ".join(_singular(b) for b in because)
+        reasons.append(f"{where} {text}.")
     if partial:
         reasons.append(f"{_steps_phrase([f.step for f in partial])}: AI can assist, a person decides.")
     if weak:
@@ -155,7 +169,7 @@ def _q2(
     systems = list(dict.fromkeys(systems))
     if systems:
         facts += 1
-        reasons.append(f"The AI would need to reach the {', '.join(systems)} through a connector.")
+        reasons.append(f"The AI would need a connector to reach {_and(systems)}.")
     runs = value.runs_per_year
     criteria = [
         str((as_mapping(rows[n - 1].get("decision_criteria")) or {}).get("basis") or "").strip()

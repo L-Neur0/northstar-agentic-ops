@@ -59,6 +59,8 @@ Each step entry keeps `fit`, `reason`, `evidence`, `route` and `route_reason` (s
 | `must_be_exact` | The result must be exactly right every time (an amount, a legal or safety decision), with no room for a reviewed draft | not the right tool alone |
 | `fixed_rules` | The same written rule gives the same answer every time; a script or a rules engine could do it | not needed: a script is enough |
 
+*As built (live run, 2026-11-21):* when a step's own `evidence` fails the quote check but at least one of its signals has a verified quote from that step, the rating is kept with that signal quote as its evidence (counted as `rescued`), so a slightly paraphrased main quote no longer drops the most important step. With no verified quote at all the rating is dropped as before (rule 6 holds).
+
 The reply also gains three process-level texts, each 1–2 sentences, each with evidence copied from the profile: `fit_motivation` (Q1), `assistant_motivation` (Q2) and `worth_motivation` (Q3). They are motivations only; levels come from code. A text whose evidence fails the check is replaced by the code reason.
 
 The prompt gets a short **guideline block**, from the 2026-11-21 research. AI (LLMs) is strong at reading varied documents, comparing text with criteria, finding patterns in language, and summarising and drafting. It is weak where the same input must always give the same output, at strict maths or rule logic, and where an unchecked mistake is costly. In those cases rules or a script come first, and a hybrid (rules check, AI reads and drafts, a person approves) is common.

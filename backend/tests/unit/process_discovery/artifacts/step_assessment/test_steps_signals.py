@@ -46,3 +46,19 @@ def test_ac_27_10_prompt_and_schema():
     assert "GUIDELINES (what AI is good at)" in text and "Never answer yes or no" in text
     assert {"signals"} <= set(StepRatingOut.model_fields)
     assert {"fit_motivation", "assistant_motivation", "worth_motivation"} <= set(AssessStepsOut.model_fields)
+
+
+def test_spec_27_a_failed_step_quote_is_rescued_by_a_verified_signal_quote():
+    """Spec 27 §3.2 (as built, live run 2026-11-21): the step quote fails, a signal quote from that step holds:
+    the rating is kept with the signal's words as its evidence (rule 6 still holds); no verified quote at all:
+    dropped as before."""
+    reply = copy.deepcopy(STEPS_REPLY)
+    reply["steps"][1]["evidence"] = "a paraphrase the expert never said"
+    reply["steps"][1]["signals"] = [{"name": "reads_unstructured", "evidence": "copy each site's numbers"}]
+    ratings, dropped = ground_step_ratings(reply, load_profile("eu"), example_catalogue())
+    assert ratings[1].fit == "automate" and ratings[1].evidence == "copy each site's numbers"
+    assert ratings[1].signals == {"reads_unstructured": True}
+    assert dropped["quote"] == 0 and dropped["rescued"] == 1
+    reply["steps"][1]["signals"] = [{"name": "reads_unstructured", "evidence": "not said either"}]
+    ratings, dropped = ground_step_ratings(reply, load_profile("eu"), example_catalogue())
+    assert ratings[1].fit is None and dropped["quote"] == 1

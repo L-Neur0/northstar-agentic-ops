@@ -34,7 +34,7 @@ SIGNAL_NAMES = frozenset(
     ("reads_unstructured", "compares_to_criteria", "finds_patterns", "drafts_text", "must_be_exact", "fixed_rules")
 )
 MOTIVATION_KEYS = {"q1": "fit_motivation", "q2": "assistant_motivation", "q3": "worth_motivation"}
-DROP_REASONS: tuple[str, ...] = ("step", "quote", "invalid", "cap", "route", "signal")
+DROP_REASONS: tuple[str, ...] = ("step", "quote", "invalid", "cap", "route", "signal", "rescued")
 _ELLIPSIS = "…"
 
 
@@ -76,7 +76,22 @@ def ground_step_ratings(
         if fit not in FITS or not reason:
             dropped["invalid"] += 1
             continue
+        signals: dict[str, bool] = {}
+        signal_evidence: dict[str, str] = {}
+        signal_hits: list[Any] = []
+        for raw_signal in as_list(entry.get("signals")) or []:  # spec 27 §3.2: only that step's words
+            sig = as_mapping(raw_signal) or {}
+            name = sig.get("name")
+            quote = find_evidence(sig.get("evidence"), restrict_to_step(values, step))
+            if name not in SIGNAL_NAMES or quote is None:
+                dropped["signal"] += 1
+                continue
+            signals[str(name)], signal_evidence[str(name)] = True, quote.quote
+            signal_hits.append(quote)
         hit = find_evidence(entry.get("evidence"), restrict_to_step_or_process(values, step))
+        if hit is None and signal_hits:  # spec 27 (as built): a verified signal quote stands in; rule 6 holds
+            hit = signal_hits[0]
+            dropped["rescued"] += 1
         if hit is None:
             dropped["quote"] += 1
             continue
@@ -86,16 +101,6 @@ def ground_step_ratings(
         if route_id and (solution is None or fit not in solution.fits):
             dropped["route"] += 1
             solution = None
-        signals: dict[str, bool] = {}
-        signal_evidence: dict[str, str] = {}
-        for raw_signal in as_list(entry.get("signals")) or []:  # spec 27 §3.2: only that step's words
-            sig = as_mapping(raw_signal) or {}
-            name = sig.get("name")
-            quote = find_evidence(sig.get("evidence"), restrict_to_step(values, step))
-            if name not in SIGNAL_NAMES or quote is None:
-                dropped["signal"] += 1
-                continue
-            signals[str(name)], signal_evidence[str(name)] = True, quote.quote
         kept[step] = StepRating(
             step=step,
             name=names[step - 1],

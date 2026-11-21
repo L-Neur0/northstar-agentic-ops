@@ -6,7 +6,7 @@
 
 ## 1. Context
 
-NIG: 50,000 people, 9 clusters × 4 regions = **36 teams**, each with its own systems. It wants AI across its operations; past programmes stalled on fragmented data and processes. Every AI build starts with one step: **find the right process, map it, measure it, check it is ready.** That is the workflow we chose: IT's own work, serving all nine clusters.
+NIG: 50,000 people, 9 clusters × 4 regions = **36 teams**, each with its own systems. It wants AI across its operations; past programmes stalled on fragmented data and processes. Every AI build starts with **AI use case discovery**: find, map, assess and select the workflows worth transforming. That is the workflow we chose: IT's own work, serving all nine clusters.
 
 ## 2. Problem
 
