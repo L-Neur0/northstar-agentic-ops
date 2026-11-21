@@ -1,30 +1,65 @@
-# NorthStar Agentic Ops · AI Use Case Discovery Agent
+# AI Use Case Discovery Agent
 
 *Find a workflow worth transforming, map it step by step, and see where AI can help.*
 
-AI prototype for **NorthStar Infrastructure Group (NIG)**, a fictional 50,000-person engineering, construction and operations company that wants to become an agentic enterprise.
+Large companies want to use AI in their daily operations, but the first question is always the same: **which processes should AI take over first?** Today the answer comes from workshops and interviews run by a small AI team, one process at a time. This project turns that into a tool every employee can use on their own.
 
-The **AI Use Case Discovery Agent** *(renamed 2026-11-21 from "Discovery Agent")* answers the programme's first question: **which processes should AI take over first?** Any employee finds a process in their own work in a 20–30 minute guided interview, maps it step by step, and gets a **discovery report**: a summary, three questions (*good AI use case? own tool or Copilot? worth it?*), the mapped process, how AI helps each step, and feasibility (what to prepare first). Documents the expert already has can be uploaded; the AI reads them and the expert confirms. Specialists review instead of interviewing (about 1 hour per process). Next release: specialist validation, one overview of all processes, and a hand-over brief to the AI engineers. The tool guides; it never says go or no-go.
+The **AI Use Case Discovery Agent** runs a 20–30 minute guided interview. The employee who knows a process describes it step by step: what starts it, who is involved, which systems, how long it takes, what hurts. They can upload documents they already have; the AI reads them and the employee confirms. At the end they get a **discovery report**:
 
-**It is not a chatbot.** It is a guided interview with a fixed form behind it. Code decides what counts as answered, when the map is complete, and every number; the model reads answers and phrases questions.
+| Part | What it says |
+|---|---|
+| Summary | What was mapped, how well AI fits, where to start, hours a year |
+| The process, volume and map | The mapped process as a BPMN diagram and a step table |
+| Step-by-step AI assessment | Per step: how AI can help, which tool, why (with the employee's own words) |
+| AI readiness and feasibility | Three questions: *is this a good AI use case? a dedicated tool or a general assistant? is it worth it?* plus a readiness checklist and what to prepare first |
 
-> Status: the first working version is live on Azure and passed six simulated interviews end to end. Next release: overview, hand-over brief, specialist validation.
+Specialists then review the reports in a workspace instead of running every interview themselves.
+
+The case is built for **NorthStar Infrastructure Group (NIG)**, a **fictional** 50,000-person engineering and infrastructure company. All company data is simulated.
+
+## How it works
+
+**It is not a chatbot.** Behind the conversation is a fixed form (16 process fields, up to 14 fields per step). Three rules keep it trustworthy:
+
+1. **Code decides, the model writes.** Code decides what counts as answered, which question comes next and when the map is complete. The language model only reads answers and phrases questions.
+2. **Code makes every number.** Hours, levels and the order of steps come from code, never from the model.
+3. **No quote, no claim.** Every AI assessment must carry the employee's exact words; code checks the quote exists before it is shown.
+
+The tool guides; it never says go or no-go.
+
+## Tech stack
+
+Python 3.12 · FastAPI · Pydantic v2 · Azure OpenAI · Cosmos DB · React + TypeScript + Tailwind · Azure Container Apps (Bicep, `azd`) · GitHub Actions
+
+## Run it locally
+
+You need Python 3.12 with [uv](https://docs.astral.sh/uv/), Node 22, and `make`.
+
+```bash
+make setup                                 # install backend and frontend dependencies
+cp backend/.env.example backend/.env       # then set AZURE_OPENAI_ENDPOINT to your own resource
+make dev                                   # backend on :8000, frontend on :5173
+make test                                  # backend, evaluation and frontend tests
+```
+
+No Azure account? `cd frontend && npm run dev:fake` runs the screens against a built-in fake API.
 
 ## Repository map
 
 | Folder | What's inside |
 |---|---|
-| [`docs/01-use-case/`](docs/01-use-case/use-case.md) | ★ **The use case:** problem, users, value, assumptions |
-| [`specs/`](specs/README.md) | [Product specification](specs/01-product.md), [architecture](specs/02-architecture.md), one spec per component |
-| [`docs/05-how-we-worked/`](docs/05-how-we-worked/pipeline.md) | How we build (spec → test → code), and the framework used to choose the use case |
-| `docs/02-processes/` | As-is and to-be processes, user journey *(to come)* |
-| [`docs/03-technical-design/`](docs/03-technical-design/technical-design.md) | Technical design document and production readiness |
-| [`docs/04-executive-summary/`](docs/04-executive-summary/executive-summary.md) | Executive summary (the one-pager) and deck |
-| `backend/` · `frontend/` · `config/` · `eval/` · `infra/` | The app, company configuration, evaluation set, Azure infrastructure |
+| [`docs/`](docs/README.md) | The use case, technical design, executive summary, how we worked |
+| [`specs/`](specs/README.md) | Product spec, architecture and one spec per component (the source of truth for the code) |
+| [`backend/`](backend/README.md) | The API and the interview engine |
+| [`frontend/`](frontend/README.md) | The interview, report and workspace screens |
+| [`config/`](config/README.md) | Everything company-specific (NIG): taxonomy, tools, readiness rules |
+| [`eval/`](eval/README.md) | Simulated employees that play the interview and score the result |
+| [`infra/`](infra/README.md) | Azure infrastructure as code |
 
-## Deliverables
+## How it was built
 
-- [x] Working prototype (hosted on Azure)
-- [ ] Demo video (5–10 min)
-- [x] Technical design document → `docs/03-technical-design/`
-- [x] Executive summary → `docs/04-executive-summary/`
+Every change went spec → tests → code: a short spec with acceptance criteria, failing tests that cite them, then the smallest code to make them pass. See [`docs/05-how-we-worked/`](docs/05-how-we-worked/pipeline.md).
+
+## Licence
+
+[MIT](LICENSE)
