@@ -9,14 +9,16 @@
 
 ## In short
 
+*(updated 2026-11-21 (estimated effort: ~1.5 h per process, an assumption to confirm in the pilot))*
+
 | | |
 |---|---|
 | **The problem** | NIG wants to become an **agentic enterprise**: work that AI agents can do should be done by them. But it doesn't know **which processes to start with**, which ones make sense to automate, and which are not ready. That knowledge sits with the 50,000 employees who do the work, not with the central team that must decide |
 | **Workflow** | Finding AI automation candidates in NIG's daily work, mapping them, and assessing their **transformation potential**. The brief names it as NIG's first need: "rapidly identify and validate high-value operational use cases". Cluster: **IT · IT and Security** |
 | **Users** | **The employee** who owns or knows a process (the process expert) is the main user: the tool helps them discover which processes in their routine are worth mapping, map one, and see its transformation potential and how to realise it. IT and transformation specialists review the reports and see all of them in one overview. AI engineers and AI DevOps receive an implementation brief for the opportunities chosen for a build |
 | **Pain today** | Discovery runs through central workshops: about **24 person-hours and 2–3 weeks per process**, booked weeks ahead, profiles that can't be compared. The programme reaches about 150–200 processes a year, chosen by who is nearest, not by value. Employees who see a good candidate in their own work have no easy way to raise it |
-| **With the tool** | A 15–20 minute guided conversation helps the employee spot candidate processes in their week, map one step by step (starting from documents they already have, if they want), and get a **discovery report**: the mapped process plus an AI transformation assessment: hours a year, where automation or AI fits and how, what to prepare first. Code checks every answer and makes every number; the tool guides, it never gives a go / no-go. About **5 person-hours per process**. IT gets one overview of every mapped process; chosen opportunities leave with an implementation brief |
-| **Value** (base case, 400 processes a year) | **€0.46M a year conservative, €0.69M expected**, for about €0.1M to build and €35k a year to run. **Payback in about 3 months.** That is only the first return, the AI team's own saving. The second, larger one is not counted: a fast funnel lets NIG pick and automate more, better-chosen processes, and each build returns its own value in the business. Also not counted: AI builds on unready workflows avoided, worth €150–250k each |
+| **With the tool** | A 20–30 minute guided conversation helps the employee spot candidate processes in their week, map one step by step (starting from documents they already have, if they want), and get a **discovery report**: the mapped process plus an AI transformation assessment: hours a year, where automation or AI fits and how, what to prepare first. Code checks every answer and makes every number; the tool guides, it never gives a go / no-go. About **1.5 person-hours per process**: the employee's 20–30 minutes and about 1 hour for a specialist to review the finished report. IT gets one overview of every mapped process; chosen opportunities leave with an implementation brief |
+| **Value** (base case, 400 processes a year) | **€0.45M a year conservative, €0.68M expected**, for about €0.1M to build and €35k a year to run. **Payback in about 3 months.** That is only the first return, the AI team's own saving. The second, larger one is not counted: a fast funnel lets NIG pick and automate more, better-chosen processes, and each build returns its own value in the business. Also not counted: AI builds on unready workflows avoided, worth €150–250k each |
 | **Why not buy** | Process mining needs clean system logs that NIG's fragmented systems don't have. Task mining needs agents on every desktop. Questionnaires and chat assistants don't produce comparable, checked profiles. We buy the commodity parts and build only the interview core (section 2.1.3) |
 | **Why people would trust it** | The employee sees the profile fill up live and confirms it; anything the AI reads from a document counts only after they confirm it. Every field shows its source and the employee's own words. Code, not the model, decides what counts as answered and when the map is complete (section 2.3.6) |
 
@@ -255,12 +257,14 @@ Yes, on purpose. The simulated employees include people who are vague, describe 
 Yes. The employee confirms every value read from a document, and the roles and systems, before the map is complete. The specialist reviews every field and every opportunity, and can correct them. The programme's steering group decides what is funded, outside the tool. The AI engineer accepts the implementation brief or sends it back. The AI never decides that a field is answered, that a profile is ready, or that a workflow is ready for AI.
 
 **Q7. Is there clear value and a realistic path to production?**
-Yes. About €0.46M a year conservative at the base case, with payback in about 3 months (section 2.1.6). A further value, builds on unready workflows avoided, is not counted. The path is one cluster in one region first, then all clusters. No integration work is needed per region.
+Yes. About €0.45M a year conservative at the base case, with payback in about 3 months (section 2.1.6). *(updated 2026-11-21 (estimated effort: ~1.5 h per process, an assumption to confirm in the pilot))* A further value, builds on unready workflows avoided, is not counted. The path is one cluster in one region first, then all clusters. No integration work is needed per region.
 
 **Q8. Can we measure it, and stop it if it fails?**
 Yes. We measure the minutes per interview, the share of interviews that reach a complete map, the share of reports the specialist validates without major edits, the share of implementation briefs the engineers accept, and the field accuracy against simulated ground truth. The kill test is part of the next deliverable.
 
 #### 2.1.5 Who uses the tool, and how much
+
+*(updated 2026-11-21 (estimated effort: ~1.5 h per process, an assumption to confirm in the pilot))*
 
 The unit we count is the **profiled process**: one process, discovered, mapped and assessed once. We don't know NIG's real counts, so this section uses three scenarios: **Low**, **Mid** (the base case) and **High**. All counts are *assumptions*.
 
@@ -282,8 +286,8 @@ The unit we count is the **profiled process**: one process, discovered, mapped a
 
 | Role | Active use | When |
 |---|---|---|
-| Employee | 15–20 minutes, once per process; a glance at the status later | On their own initiative, or when a cluster lead runs a campaign |
-| Transformation specialist | About 4 hours per profile (review, clarification, adjusting opportunities, implementation brief) | Continuously |
+| Employee | 20–30 minutes, once per process (the evaluation estimates 16–25 minutes per interview); a glance at the status later | On their own initiative, or when a cluster lead runs a campaign |
+| Transformation specialist | About 1 hour per profile: reviewing the finished report in the workspace and adjusting the opportunities. No workshop, no write-up | Continuously |
 | Cluster lead | About 1 hour a month | Before each portfolio review |
 | Portfolio lead | About 1 day a month | Before each steering-group meeting |
 | Steering group | 30 minutes a month | Steering-group meeting |
@@ -296,7 +300,7 @@ The unit we count is the **profiled process**: one process, discovered, mapped a
 | Processes profiled a year | 200 | 400 | 800 |
 | Person-hours a year if done by hand (24 h each; gate: 5,000) | about 4,800 | about 9,600 | about 19,200 |
 | Specialist full-time equivalents needed by hand (16 h each, 1,600 h a year) | about 2 | about 4 | about 8 |
-| Specialist full-time equivalents needed with the tool (4 h each) | about 0.5 | about 1 | about 2 |
+| Specialist full-time equivalents needed with the tool (1 h each) | about 0.1 | about 0.25 | about 0.5 |
 | Workflows built a year (funded by the programme) | about 15 | about 25 | about 40 |
 
 **Why 400 is the base case:** 36 cluster-region teams × about 11 candidates each. A multi-year programme across 9 clusters needs a pipeline of this size to choose its top 20–30 use cases a year. Done by hand, 400 profiles a year needs about 4 specialists doing nothing else.
@@ -309,11 +313,13 @@ The unit we count is the **profiled process**: one process, discovered, mapped a
 
 #### 2.1.6 Value and ROI
 
+*(updated 2026-11-21 (estimated effort: ~1.5 h per process, an assumption to confirm in the pilot))*
+
 **The tool pays back twice.**
 
 | Return | Who gains | What it is | In the ROI? |
 |---|---|---|---|
-| **1. The AI team works faster** | IT's AI transformation and engineering teams | Each process costs about 5 hours instead of 24, and each build starts from a brief (20 engineering hours instead of 60) | **Yes:** €0.39–0.58M a year, payback in about 3.5 months (below) |
+| **1. The AI team works faster** | IT's AI transformation and engineering teams | Each process costs about 1.5 hours instead of 24, and each build starts from a brief (20 engineering hours instead of 60) | **Yes:** €0.45–0.68M a year, payback in about 3 months (below) |
 | **2. NIG automates more, and the right things** | The whole company | A fast funnel. By hand, the programme reaches 150–200 processes a year, picked by who is nearest. With the tool, the same team reaches 400 or more, every one measured the same way, so leadership picks the highest-value, ready processes. More and better candidates mean more and better AI builds, and **each build has its own return** in the business: hours freed, errors avoided, faster service | **No:** the bigger prize, but it depends on what each build delivers, so we do not put a number on it |
 
 Return 1 alone pays for the tool. Return 2 is why the tool matters: it is the front door to every AI build NIG will make, and each of those builds starts from a measured "before" number, so its benefit can be proven.
@@ -322,7 +328,7 @@ In detail, the tool creates value in four ways. We count only the first two in t
 
 | # | Value | Counted? | Why |
 |---|---|---|---|
-| 1 | **Baseline capacity:** specialist and employee hours per profile fall from about 24 to about 5 | **Yes** | Measurable in the pilot |
+| 1 | **Baseline capacity:** specialist and employee hours per profile fall from about 24 to about 1.5 | **Yes** | Measurable in the pilot |
 | 2 | **Faster handoff to engineering:** the implementation brief cuts the AI engineers' requirements work from about 60 to about 20 hours per build | **Yes** | Measurable on the first builds |
 | 3 | **Reach, speed and better choices (return 2):** profiles from teams no specialist would visit, in days instead of weeks; a larger pool to choose from, so the best use cases are built, and built earlier. Each build then returns its own value in the business | No | Real and likely the largest value, but it depends on each build; tracked after the pilot |
 | 4 | **Builds that don't fail on an undefined workflow:** the readiness checklist shows what to prepare before engineers start, and the baseline gives every build a "before" number to prove its benefit | No, shown separately | Cannot be proven before the programme has a track record |
@@ -330,22 +336,22 @@ In detail, the tool creates value in four ways. We count only the first two in t
 **Basis** (all *assumptions*):
 
 - By hand: about **16 specialist hours + 8 employee hours = 24 hours** per profiled process: one 4-hour workshop with 2 specialists and 2 employees, plus about a day of write-up (section 2.2.4).
-- With the tool: about **4 specialist hours + 1 employee hour = 5 hours**. The saving is about **19 hours per process**.
+- With the tool: about **1 specialist hour + 0.5 employee hour = 1.5 hours**: the employee spends 20–30 minutes (the evaluation estimates 16–25 minutes per interview) and a specialist spends about 1 hour reviewing the finished report in the workspace, with no workshop and no write-up. The saving is about **22.5 hours per process**.
 - Handoff: about **60 engineering hours** of requirements work per build by hand, about **20** with the implementation brief. The saving is about **40 hours per build**, on about 25 builds a year at Mid (section 2.1.5).
 - **Conservative** adoption: 50% of the possible saving is realised. **Expected**: 75%. This is higher than the framework's default (30% / 50%) for one reason: the users of this workflow are IT's own teams. IT decides that discovery runs through the tool and that builds start from an implementation brief. Some processes will still need a workshop, which the 50% allows for.
 - Time is valued at **€90 an hour** (the framework default).
 
-**How hours become money.** Here the freed time has a clear destination, in both streams. The programme needs about 400 profiles a year. By hand, that needs about 4 specialists full time. With the tool, about 1. The difference is **specialists or consultants NIG does not have to hire or buy**: cost avoided, not only time freed. If NIG already pays consultants for discovery, part of it is direct cash. On the engineering side, 40 hours saved per build is about one more workflow built a year for every 6–7 builds, with the same team.
+**How hours become money.** Here the freed time has a clear destination, in both streams. The programme needs about 400 profiles a year. By hand, that needs about 4 specialists full time. With the tool, about a quarter of one. The difference is **specialists or consultants NIG does not have to hire or buy**: cost avoided, not only time freed. If NIG already pays consultants for discovery, part of it is direct cash. On the engineering side, 40 hours saved per build is about one more workflow built a year for every 6–7 builds, with the same team.
 
 **ROI by scenario:**
 
 | Scenario | Baseline: hours saved, conservative | Handoff: hours saved, conservative | Value, conservative | Value, expected | ROI score (conservative) |
 |---|---|---|---|---|---|
-| Low (200 profiles, 15 builds) | about 1,900 h (200 × 19 h × 50%) | about 300 h (15 × 40 h × 50%) | about €198k | about €297k | 2 |
-| **Mid (400 profiles, 25 builds)** | **about 3,800 h** (400 × 19 h × 50%) | **about 500 h** (25 × 40 h × 50%) | **about €387k** | **about €581k** | **2** (3 at expected) |
-| High (800 profiles, 40 builds) | about 7,600 h (800 × 19 h × 50%) | about 800 h (40 × 40 h × 50%) | about €756k | about €1.13M | **3** |
+| Low (200 profiles, 15 builds) | about 2,250 h (200 × 22.5 h × 50%) | about 300 h (15 × 40 h × 50%) | about €230k | about €344k | 2 |
+| **Mid (400 profiles, 25 builds)** | **about 4,500 h** (400 × 22.5 h × 50%) | **about 500 h** (25 × 40 h × 50%) | **about €450k** | **about €675k** | **2** (3 at expected) |
+| High (800 profiles, 40 builds) | about 9,000 h (800 × 22.5 h × 50%) | about 800 h (40 × 40 h × 50%) | about €882k | about €1.32M | **3** |
 
-The framework sets the ROI score bands as: below €100k = 1, €100k–500k = 2, €500k–2M = 3.
+The framework sets the ROI score bands as: below €100k = 1, €100k–500k = 2, €500k–2M = 3. The lower effort with the tool moves no scenario into another band.
 
 **Costs** (all *assumptions*, to firm up in the technical design):
 
@@ -362,16 +368,18 @@ The framework sets the ROI score bands as: below €100k = 1, €100k–500k = 2
 
 | | Conservative | Expected |
 |---|---|---|
-| Value a year | €387k | €581k |
+| Value a year | €450k | €675k |
 | Run cost a year | −€35k | −€35k |
-| **Net a year** | **about €352k** | **about €546k** |
-| **Payback on the €100k build** | **about 3 months** | **about 2 months** |
+| **Net a year** | **about €415k** | **about €640k** |
+| **Payback on the €100k build** | **about 3 months** (€100k ÷ €415k × 12 = 2.9) | **about 2 months** (€100k ÷ €640k × 12 = 1.9) |
 
-**Break-even:** the tool pays for its run cost at about 40 profiles a year, and for its build within the first year at about 160 profiles.
+**Break-even:** each profile saves about €1,010 at conservative adoption (22.5 h × 50% × €90), so the tool pays for its run cost at about 35 profiles a year, and for its build within the first year at about 135 profiles.
 
 **Not counted: builds on unready workflows avoided.** A build that starts on a workflow nobody has defined, and stops after a quarter, costs real money *(assumption: about €150–250k: one quarter of a small team plus run cost)*. If the readiness checklist makes **one** such workflow get prepared first instead of going straight to the engineers each year, that alone is worth €150–250k a year. We show it **separately** and never add it to the ROI, because we cannot prove it before the programme has a track record. It is the first thing to track after the pilot (section 2.1.9, A8).
 
 #### 2.1.7 Framework score
+
+*(updated 2026-11-21 (estimated effort: ~1.5 h per process, an assumption to confirm in the pilot))*
 
 The selection framework (`docs/05-how-we-worked/`) has six gates and six scores. The base case is **Mid** (400 processes a year).
 
@@ -390,9 +398,9 @@ The selection framework (`docs/05-how-we-worked/`) has six gates and six scores.
 
 | Score | Base case (Mid) | Reason |
 |---|---|---|
-| ROI | **3** at expected, 2 at conservative | €546k net a year expected, €352k conservative (section 2.1.6). Avoided failed builds not counted |
+| ROI | **3** at expected, 2 at conservative | €640k net a year expected, €415k conservative (section 2.1.6). Avoided failed builds not counted |
 | Scalability | 5 | Any cluster or region by configuration. No integration per region. The main cost per region is testing the interview in its language |
-| Adoption | 4 | IT owns the workflow at both ends: its specialists run it and its engineers use the output. Employees give 15–20 minutes instead of a half-day workshop, and are not asked the same questions again by the engineers. Not yet tested with NIG staff |
+| Adoption | 4 | IT owns the workflow at both ends: its specialists run it and its engineers use the output. Employees give 20–30 minutes instead of a half-day workshop, and are not asked the same questions again by the engineers. Not yet tested with NIG staff |
 | Feasibility | 5 | No source system. Input is a conversation. Plain, well-known building blocks |
 | Build and run cost | 4 | About €100k and one quarter to production, about €35k a year to run |
 | Risk | 4 | A wrong profile costs specialist time and is caught in review. Nothing is written to a system of record |
@@ -403,11 +411,13 @@ The selection framework (`docs/05-how-we-worked/`) has six gates and six scores.
 - **Ease** = (Feasibility + Build and run + Risk) ÷ 3 = (5 + 4 + 4) ÷ 3 = **4.3**
 - **Verdict: GO.**
 
-**Under the strictest reading** (conservative adoption, ROI 2), value is (4 + 5 + 4) ÷ 4 = 3.25, just below the GO line: MAYBE. At €387k it sits in the middle of the €100k–500k band. Any one of these turns it into GO: 800 processes a year (ROI 3 even at conservative adoption), avoiding one failed build a year, or replacing paid consultant days.
+**Under the strictest reading** (conservative adoption, ROI 2), value is (4 + 5 + 4) ÷ 4 = 3.25, just below the GO line: MAYBE. At €450k it sits near the top of the €100k–500k band, €50k short of ROI 3; the lower effort with the tool does not change the score or the verdict. Any one of these turns it into GO: 800 processes a year (ROI 3 even at conservative adoption), avoiding one failed build a year, or replacing paid consultant days.
 
 **Conclusion:** cheap to build, nothing to integrate, every cluster served, engineers start from a checked brief, and payback in a few months. The pilot must confirm three numbers before the executive summary claims them: the hours per profile (A3, A4), the share of employees who finish the interview (A5), and the engineering hours saved per build (A13).
 
 #### 2.1.8 Weak points found in our review
+
+*(updated 2026-11-21 (estimated effort: ~1.5 h per process, an assumption to confirm in the pilot))*
 
 | # | Attack | Our answer | Status |
 |---|---|---|---|
@@ -415,14 +425,14 @@ The selection framework (`docs/05-how-we-worked/`) has six gates and six scores.
 | 1b | NIG could buy an idea-intake tool (for example UiPath Automation Hub). | It is the closest alternative. Its static questionnaire has no follow-up and no check on answers, and it leans towards one vendor's automation. If NIG owns one, our profiles feed it. | Holds; check what NIG owns |
 | 2 | This is a meta-tool. It doesn't automate an operational workflow. | It automates IT's own operational workflow, process mapping and handoff, which the brief names first ("identify and validate use cases"). The demo shows it profiling a real FIN workflow end to end, through to an implementation brief. | Holds; must be shown in the demo |
 | 3 | Employees don't know their own numbers. | Often true. The tool accepts a range or "not sure", marks the field partial, and the specialist sees it. After three tries it stops asking. Documents the employee uploads can fill numbers they do not remember, once confirmed. | Holds; to test |
-| 4 | Employees won't start an interview on their own. | Possible. It takes 15–20 minutes, gives them something back at once (the discovery report) and a status they can follow. Cluster leads can also run campaigns. We measure how many start on their own and how many finish. | To test (kill metric) |
+| 4 | Employees won't start an interview on their own. | Possible. It takes 20–30 minutes, gives them something back at once (the discovery report) and a status they can follow. Cluster leads can also run campaigns. We measure how many start on their own and how many finish. | To test (kill metric) |
 | 5 | Process-mining tools already do discovery. | Only from clean event logs in a few systems. NIG's data is fragmented, and most of the work is in email and Excel. Process mining can come later for the processes that pass. | Holds |
 | 6 | People describe the ideal process, not the real one. | True for any interview, also for today's workshops. Uploaded documents and the specialist review reduce it. We do not claim to remove it. | Accepted |
 | 7 | The AI will invent facts in the profile. | The extractor may only write to allowed fields. Opportunities and labels need the employee's words, checked by code. Document values count only after the employee confirms them, and the employee confirms the roles and systems. | Holds; to test with the evaluation set |
 | 8 | Different languages and cultures across four regions. | The model works in many languages. The profile keeps the employee's own words in their language. Prompts must be tested per language; translated reports are a production item. | Open |
 | 9 | Interviews about "what takes your time" feel like performance monitoring. Works councils in Europe may object. | The tool profiles processes, not people. No individual's time is reported. This must be agreed with HR and works councils before rollout. | Open; a production-readiness item |
 | 10 | There is no baseline for today's discovery effort. | True. We time the next five manual profiles before the pilot. | Open |
-| 11 | The 24 hours by hand may be too high. | Possible. If it is 18 hours, the conservative value at Mid falls to about €279k a year, and payback is still about 5 months. The case holds at ROI score 2. | To measure (A3) |
+| 11 | The 24 hours by hand may be too high. | Possible. If it is 18 hours, the saving is 16.5 hours per process, the conservative value at Mid falls to about €342k a year, and payback is still about 4 months. The case holds at ROI score 2. | To measure (A3) |
 | 12 | A readiness rating from an interview can be wrong. The employee may not know what data the step really uses. | True. The checklist is a guide, not a verdict. The specialist can correct the profile and add notes, and the AI engineer can send the brief back. We track how many briefs engineers return. | To test (A14) |
 | 13 | Engineers will redo the requirements anyway. | Some will, for the parts the brief can't hold (API details, access rights). The brief is written in the format the engineering team chose, and its acceptance rate is a pilot metric. | To test (A13) |
 
@@ -430,12 +440,14 @@ The selection framework (`docs/05-how-we-worked/`) has six gates and six scores.
 
 #### 2.1.9 Assumptions to check with NIG
 
+*(updated 2026-11-21 (estimated effort: ~1.5 h per process, an assumption to confirm in the pilot))*
+
 | # | Assumption | Value used | How we check it |
 |---|---|---|---|
 | A1 | Programme specialists | 4–8 | Ask the AI transformation team |
 | A2 | Processes profiled a year (Low / Mid / High) | 200 / 400 / 800 | Count the candidate list with each cluster lead |
 | A3 | Hours per manual profile | 16 specialist + 8 employee (one 4-hour workshop with 2 + 2 people, plus a day of write-up) | Time the next five manual profiles |
-| A4 | Hours per profile with the tool | 4 specialist + 1 employee | Pilot: 20 interviews in one cluster |
+| A4 | Hours per profile with the tool | 1 specialist + 0.5 employee (20–30 minutes) | Pilot: 20 interviews in one cluster; stop if the specialist review takes more than about 3 hours per process |
 | A5 | Adoption (conservative / expected) | 50% / 75% | Pilot: share of invited employees who complete the map, and share of profiles that need no workshop |
 | A6 | Value of an hour | €90 | NIG finance rate |
 | A7 | Reports the specialist validates without major edits | At least 70% | Pilot: specialist validates each report and records whether it needed major edits |
@@ -511,7 +523,7 @@ The FIN cluster lead in Europe suggests "monthly cost review" as a candidate. Tw
 
 ### 2.3 To-be process
 
-**The idea in one line:** any employee opens the tool from a link and, in a 15–20 minute guided conversation, discovers which processes in their routine are worth mapping, maps one step by step (starting from documents they already have, if they want), and gets a **discovery report**: the mapped process and its transformation assessment: hours a year, where automation or AI fits and how, what to prepare first. Code checks every answer and makes every number. The tool guides; it never says go or no-go. IT reviews instead of interviewing, every report lands in one overview, and the opportunities chosen for a build go to the AI engineers as an implementation brief. People decide.
+**The idea in one line:** any employee opens the tool from a link and, in a 20–30 minute guided conversation, discovers which processes in their routine are worth mapping, maps one step by step (starting from documents they already have, if they want), and gets a **discovery report**: the mapped process and its transformation assessment: hours a year, where automation or AI fits and how, what to prepare first. Code checks every answer and makes every number. The tool guides; it never says go or no-go. IT reviews instead of interviewing, every report lands in one overview, and the opportunities chosen for a build go to the AI engineers as an implementation brief. People decide.
 
 **How to read the tables below:**
 
@@ -544,7 +556,7 @@ A **guided interview with a fixed form behind it**, which can also read the empl
 | 1.1 Open the tool from a link (intranet, Teams, e-mail), on their own initiative | Any employee | Yes | Person | 0 | New session |
 | 1.2 Optionally, run a campaign: send the link to one cluster or region | Cluster lead, specialist | Partly. Link sent by e-mail or Teams | Person | — | Invitations sent |
 
-**Step 2 · Discover and map** (the core: 15–20 minutes)
+**Step 2 · Discover and map** (the core: 20–30 minutes)
 
 | Sub-step | Who | Tool used? | Done by | Screen | Output |
 |---|---|---|---|---|---|
@@ -597,7 +609,7 @@ A **guided interview with a fixed form behind it**, which can also read the empl
 ```mermaid
 flowchart TD
     S1["<b>1 · Start</b><br/>employee opens the link: <b>tool</b><br/>or a cluster campaign: <b>partly</b>"]
-    S2["<b>2 · Discover and map</b><br/>15–20 min, employee alone<br/>candidates · documents · map<br/>questions: <b>AI</b> · answered? phase? complete?: <b>code</b>"]
+    S2["<b>2 · Discover and map</b><br/>20–30 min, employee alone<br/>candidates · documents · map<br/>questions: <b>AI</b> · answered? phase? complete?: <b>code</b>"]
     X(["Nothing worth mapping<br/>(task or one-off)"])
     IDEA(["Ideas<br/>kept for later"])
     S3["<b>3 · Discovery report</b><br/>map, opportunities, labels: <b>AI checked by code</b><br/>hours, value, readiness, path: <b>code</b>"]
@@ -622,17 +634,17 @@ flowchart TD
 
 *Green: in the tool. Yellow: part in the tool, part outside. Grey: endings and hand-offs.*
 
-**Time by step** (to measure in the pilot):
+**Time by step** (to measure in the pilot) *(updated 2026-11-21 (estimated effort: ~1.5 h per process, an assumption to confirm in the pilot))*:
 
 | Step | Today | With the tool |
 |---|---|---|
-| Collect, prepare and interview | 9.5 specialist h + 8 employee h, booked weeks ahead | 0 specialist h + 0.5 employee h, any time |
+| Collect, prepare and interview | 9.5 specialist h + 8 employee h, booked weeks ahead | 0 specialist h + 0.5 employee h (20–30 minutes), any time |
 | Write up and map | 2.5 specialist h | 0 h. The map and the report are built from the step table |
 | Validate | 1 specialist h + employee replies + a week of waiting | 0 h. The employee confirmed in the interview |
-| Estimate | 1 specialist h + chasing numbers by email | 0.5 specialist h. Numbers asked for in the interview; code calculates |
-| Assess and hand over | 2 specialist h | 1.5 specialist h. The report holds the assessment; the specialist adjusts and creates the brief |
-| Review and clarify (new) | — | 2 specialist h + 0.5 employee h |
-| **Total per process** | **16 specialist h + 8 employee h** | **4 specialist h + 1 employee h** |
+| Estimate | 1 specialist h + chasing numbers by email | 0 h. Numbers asked for in the interview; code calculates |
+| Assess and hand over | 2 specialist h | Part of the review. The report holds the assessment; code assembles the brief for chosen opportunities |
+| Review the finished report (new) | — | 1 specialist h, in the workspace |
+| **Total per process** | **16 specialist h + 8 employee h** | **1 specialist h + 0.5 employee h** |
 | Requirements before a build | About 60 engineer h, with new employee workshops | About 20 engineer h, starting from the implementation brief |
 
 #### 2.3.4 Outputs
@@ -675,8 +687,8 @@ flowchart TD
 
 | | Today | With the tool |
 |---|---|---|
-| Employee | No easy way to raise an idea. If chosen, a half-day workshop booked weeks ahead, then corrections by e-mail | Discovers and maps a process in 15–20 minutes, when it suits them, reusing documents they have. Gets the report at once, keeps other ideas for later, and follows what happens |
-| Specialist | Interviews, writes up, draws, chases numbers | Reviews and completes. About 4 hours per process instead of 20 |
+| Employee | No easy way to raise an idea. If chosen, a half-day workshop booked weeks ahead, then corrections by e-mail | Discovers and maps a process in 20–30 minutes, when it suits them, reusing documents they have. Gets the report at once, keeps other ideas for later, and follows what happens |
+| Specialist | Interviews, writes up, draws, chases numbers | Reviews the finished report. About 1 hour per process instead of 16 *(updated 2026-11-21 (estimated effort: ~1.5 h per process, an assumption to confirm in the pilot))* |
 | Portfolio lead | Combines spreadsheets in different formats | One overview, same fields and same assessment for every process |
 | Steering group | Ideas from whoever got a workshop | All clusters and regions, comparable, each claim traceable to an employee's words |
 | AI engineer, AI DevOps | A Visio and some notes, then their own workshops with the same employees | An implementation brief in one standard format: data, systems, rules, exceptions, what to prepare, baseline and open questions. Only the open questions need a call |

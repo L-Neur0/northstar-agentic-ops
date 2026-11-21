@@ -2,31 +2,27 @@
 
 > How the prototype works and why it is built this way. Detail lives in the specs (`specs/`), linked at the end of each part. Every number comes from the code, the specs or the latest evaluation run.
 
-**Contents:** 1 Overview (1.1 Product · 1.2 Architecture at a glance) · 2 Technical architecture (2.1 Diagram · 2.2 How it works · 2.3 Components) · 3 Evaluation · 4 How the code was built · 5 Status and production
+**Contents:** 1 Overview · 2 Technical architecture (2.1 Diagram · 2.2 How it works · 2.3 Components) · 3 Models, tooling choices and integrations (3.1 Models · 3.2 Integrations · 3.3 Bought versus built) · 4 Evaluation and how we know it works (4.1 Evaluation strategy · 4.2 Measured results · 4.3 Observed failure cases and what we changed) · 5 How the code was built · 6 What we would change with more time · 7 Status and production
 
 ---
 
 ## 1. Overview
 
-### 1.1 Product
-
-Companies that want to use AI at scale must first know **which workflows are worth transforming**. That knowledge sits with the employees who do the work. Today an AI specialist has to interview people one by one to find, map and validate use cases, so discovery is limited by the **time and size of the AI specialist team**. The AI Use Case Discovery Agent runs that interview with an AI agent instead: every employee can take part at the same time, and the specialists spend their time reviewing the best candidates rather than collecting them. That is how discovery scales from a few workshops to the whole company.
+Companies that want to use AI at scale must first know **which workflows are worth transforming**, and that knowledge sits with the employees who do the work. Today AI specialists interview people one by one, so discovery is limited by the **size of the specialist team**. The AI Use Case Discovery Agent runs that interview instead: every employee can take part at the same time, and the specialists review the best candidates rather than collect them.
 
 An **employee** opens a link and has a **guided interview of about 20 minutes**. Together with the agent they **find** a recurring workflow in their daily work, **map** it in 2 to 6 main steps, and receive an **assessment** of where and how AI can help. At any time they can upload a document (a procedure, a process map, an example output); the agent reads it and proposes values, which count only once the employee confirms them.
 
 Behind the chat there is a **form**: process fields such as trigger, volume and pain, and for each step fields such as activities, systems, data in and out, and whether the work follows fixed rules or needs judgement. Every value is stored with its **source** (employee, document or agent) and its **status** (proposed or confirmed). The design rests on one principle: **code controls the conversation and computes every number; where the model has to judge, it chooses from fixed options and code checks the result.** Code decides what to ask next, whether an answer is complete, what a "yes" means and when the interview may finish. The tool guides; it never gives a go / no-go verdict.
 
-When the employee presses *Finish*, an **analysis** produces the **discovery report**, on screen and as PDF. It opens with a short **summary**, then shows the mapped process with a process map, and for each step how well AI fits, with a route such as Microsoft 365 Copilot, an existing internal AI tool, low-code or a custom build. It closes by answering the three questions a manager asks: *Is this a good AI use case? A dedicated AI solution or a general assistant? Is it worth it?*, followed by a readiness checklist and what to prepare first. The AI transformation / IT team reads every session in an **admin workspace** and uses the reports to decide which use cases to build. *Spec: [01-product](../../specs/01-product.md).*
-
-### 1.2 Architecture at a glance
-
-The product is one web application: a React page for the chat and the admin workspace, and a Python backend that holds two AI stages. The **interview** runs turn by turn: the model reads each answer and words the next question, while code chooses that question. The **analysis** runs once, at *Finish*. Each interview is one JSON document in a database, and everything specific to the company lives in configuration files, not in code.
+When the employee presses *Finish*, an **analysis** produces the **discovery report**, on screen and as PDF. It shows a short summary, the process map, and for each step how well AI fits with a route (Microsoft 365 Copilot, an internal AI tool, low-code or a custom build); it answers the three questions a manager asks (*a good AI use case? a dedicated solution or a general assistant? worth it?*) and ends with a readiness checklist. The AI transformation / IT team reads every session in an **admin workspace** and uses the reports to decide which use cases to build. *Spec: [01-product](../../specs/01-product.md).*
 
 ---
 
 ## 2. Technical architecture
 
 ### 2.1 Diagram
+
+The product is one web application: a React page for the chat and the workspace, and a Python backend with two AI stages, the **interview** (turn by turn) and the **analysis** (once, at *Finish*). Each interview is one JSON document in a database, and everything specific to the company lives in configuration files, not in code.
 
 ```mermaid
 flowchart LR
@@ -56,7 +52,7 @@ The browser calls the backend with plain REST requests. **Each employee message 
 
 ### 2.2 How it works
 
-**The interview path.** The interview moves through fixed **phases**: about you → find a workflow → boundaries (trigger, result, pain) → measures (volume, time, owner) → number of steps → the steps → review. In the *find* phase the agent suggests likely workflows for the employee's role when they have none in mind, and recommends the candidate with the most value and the most ready data; the employee decides. The step walk is short by design. The employee lists the steps in one answer, and each step then gets one open question (activities, people, systems, data, pain, rules or judgement) and at most one follow-up. Sign-off, exceptions, hand-over and, for judgement steps, the decision criteria share one optional question. Effort is asked once for all steps, and the agent suggests each step's goal and owner for the employee to confirm. **Every loop has a limit:** a field is asked at most three times and then set aside for the review, and after 40 employee messages the agent offers *Finish* (and again every 10) without forcing it. *Finish* opens when 80 % of the scored fields are complete.
+**The interview path.** The interview moves through fixed **phases**: about you → find a workflow → boundaries (trigger, result, pain) → measures (volume, time, owner) → number of steps → the steps → review. In *find* the agent suggests likely workflows for the employee's role and recommends the one with the most value and the most ready data; the employee decides. In the short step walk the employee lists the steps, and each step gets one open question and at most one follow-up, plus one optional question (sign-off, exceptions, and for judgement steps the decision criteria). Effort is asked once for all steps, and the agent proposes each step's goal and owner for confirmation. **Every loop has a limit:** a field is asked at most three times and then set aside for the review, and after 40 employee messages the agent offers *Finish* (and again every 10) without forcing it. *Finish* opens when 80 % of the scored fields are complete.
 
 **One turn.** The server keeps nothing in memory between messages. For each answer it loads the session document, runs one turn and saves the document again. The turn is a small, fixed graph built with **LangGraph**, which keeps the order of the work explicit and testable:
 
@@ -76,81 +72,124 @@ EXTRACT turns the answer into proposed values, each with the employee's own word
 
 **Documents.** The employee can upload up to 10 files per session: PDF, Word, Excel or CSV, PowerPoint, e-mail, text, BPMN or an image. Code checks the type by content. BPMN files are parsed by code; everything else is read by one model call that knows where the interview stands, so a file can be read as "an example output of step 3". The agent then asks in the chat whether to fill the proposed values, and when a document disagrees with the employee or with another document it asks which one is right. Files are never stored, only the extracted text and the proposals. *Spec: [17-documents](../../specs/17-documents.md).*
 
-**Analysis and report.** *Finish* runs three model calls in parallel, each with its own fallback, so one failed call never blocks the report:
-
-| Call | Produces |
-|---|---|
-| MAP | The process map, as data for a standard process diagram |
-| LABEL | Impact and feasibility labels, each backed by the employee's words |
-| ASSESS_STEPS | For each step: how well AI fits, the signals behind it (reads varied documents, compares with criteria, drafts text, must be exact, follows fixed rules), and a route from the solution catalogue |
-
-Code then checks every quote and step number, keeps routes only from the solution catalogue (an assumed set of tools, marked as such), and computes the hours a year, the readiness levels and the answers to the three guiding questions. The report is assembled by code in six parts (summary, process, measures, map and steps, step-by-step AI assessment, AI readiness and feasibility), and the PDF is generated on request. The report states the potential in **hours a year**; a euro value is a planned next step. *Specs: [19](../../specs/19-value-and-readiness.md), [20](../../specs/20-report.md), [26](../../specs/26-step-assessment.md), [27](../../specs/27-report-v2.md).*
+**Analysis and report.** *Finish* runs three model calls in parallel, each with its own fallback, so one failed call never blocks the report: **MAP** (the process map as data), **LABEL** (impact and feasibility labels, each backed by the employee's words) and **ASSESS_STEPS** (for each step, how well AI fits, the signals behind it and a route from the solution catalogue). Code then checks every quote and step number, keeps routes only from the catalogue (an assumed set of tools, marked as such), and computes the hours a year, the readiness levels and the answers to the three questions. Code assembles the report in six parts, and the PDF is generated on request. The report states the potential in **hours a year**; a euro value is a planned next step. *Specs: [19](../../specs/19-value-and-readiness.md), [20](../../specs/20-report.md), [26](../../specs/26-step-assessment.md), [27](../../specs/27-report-v2.md).*
 
 **Admin workspace.** The team lists all sessions and opens a read-only view of each: summary, steps (as now and as first told), assessment, map, the full conversation and the report PDF. Opening a conversation, downloading and deleting each write an audit log line. *Spec: [21-admin](../../specs/21-admin.md).*
 
 ### 2.3 Components
 
-**Frontend.** A single-page React app in TypeScript, built with Vite and styled with Tailwind, with a light and a dark theme. Its pages are My processes, the interview (chat on the left, a live "Your process" panel on the right), the report and the workspace. The frontend decides nothing: it shows what the server sends, including the progress bar, and reacts to the server's error codes. *Spec: [23-frontend](../../specs/23-frontend.md).*
+**Frontend.** A single-page React app in TypeScript, built with Vite and styled with Tailwind, with a light and a dark theme. Its pages are My processes, the interview (chat beside a live "Your process" panel), the report and the workspace. The frontend decides nothing: it shows what the server sends, including the progress bar, and reacts to the server's error codes. *Spec: [23-frontend](../../specs/23-frontend.md).*
 
-**Backend.** FastAPI provides a thin web layer (routes, access checks, settings, storage) around one engine package that holds the interview, documents, analysis and report. Lower layers of the engine never depend on higher ones, and a test fails the build if that rule breaks. **Pydantic** models check data at every boundary: the stored session, the requests and responses, the configuration files and every structured model output.
+**Backend.** FastAPI provides a thin web layer (routes, access checks, settings, storage) around one engine package that holds the interview, documents, analysis and report. Lower layers of the engine never depend on higher ones, and a test fails the build if that rule breaks. **Pydantic** models check data at every boundary: the stored session, the requests and responses, the configuration files and every structured model output. The main routes cover the interview (create, list, send a message, *Finish*), documents (upload, confirm or reject proposals), the report (screen and PDF) and the workspace (login, sessions, conversation). *Spec: [15-api-and-store](../../specs/15-api-and-store.md).*
 
-
-| Area            | Main endpoints (under`/api`)                                                                              |
-| --------------- | --------------------------------------------------------------------------------------------------------- |
-| Interview       | `POST /sessions`, `GET /sessions`, `GET /sessions/{id}`, `POST /sessions/{id}/messages`, `POST …/finish` |
-| Documents       | `POST …/documents`, `POST …/proposals/confirm`, `POST …/proposals/reject`                              |
-| Report          | `GET …/report`, `GET …/report.pdf`                                                                      |
-| Admin workspace | `POST /workspace/login`, `GET /review/sessions`, `GET /review/sessions/{id}`, `GET …/conversation`       |
-
-*Spec: [15-api-and-store](../../specs/15-api-and-store.md).*
-
-**Language model.** All calls go through one client to the chat deployment (`app-chat`, in Sweden Central). Each call has a 60-second timeout, up to three retries on temporary errors, and a strict JSON schema taken from a Pydantic model, with one more try if the output does not fit. An empty or cut-off reply counts as an error. Text from employees and documents is wrapped in markers so the model treats it as text, never as instructions, and a whole turn has a 150-second guard. *Spec: [11-llm-client](../../specs/11-llm-client.md).*
+**Language model client.** All calls go through one client (the models are in §3.1). Each call has a 60-second timeout, up to three retries on temporary errors, and a strict JSON schema taken from a Pydantic model, with one more try if the output does not fit. An empty or cut-off reply counts as an error. Text from employees and documents is wrapped in markers so the model treats it as text, never as instructions, and a whole turn has a 150-second guard. *Spec: [11-llm-client](../../specs/11-llm-client.md).*
 
 **Database.** Azure Cosmos DB (serverless) holds one JSON document per session: messages, form values with source and status, counters, document metadata and analysis results. A save succeeds only if nobody else saved the same session in between, so two browser tabs cannot overwrite each other. Unfinished sessions expire after 90 days; finished ones are kept. Tests use an in-memory store that passes the same tests. *Spec: [15-api-and-store](../../specs/15-api-and-store.md).*
 
-**Security and data.** Employees need no sign-in: the browser creates a random visitor key, and the server stores only its hash, so nobody can open another person's sessions. The admin workspace needs an access code, or only a typed name in the open demo mode, where deleting is switched off. Requests are rate-limited (30 a minute per employee, 120 per network address), and a daily token budget protects the open link from cost abuse. Answers are screened for prompt injection, and logs never contain message or document text. The conversation is kept and readable by the team, as the employee is told at the start; uploaded files are not kept. *Spec: [16-access](../../specs/16-access.md).*
+**Security and data.** Employees need no sign-in: the browser creates a random visitor key and the server stores only its hash, so nobody can open another person's sessions. The workspace needs an access code (or a typed name in the open demo, where deleting is off). Rate limits and a daily token budget protect the open link from abuse; answers are screened for prompt injection; logs never contain message or document text. The team can read the conversation, as the employee is told at the start; uploaded files are not kept. *Spec: [16-access](../../specs/16-access.md).*
 
 ---
 
-## 3. Evaluation
+## 3. Models, tooling choices and integrations
 
-A prompt change can improve one interview and break another, so the agent is measured, not judged by feel. The evaluation plays **six simulated employees** through the real API from the first message to *Finish*. Each has a hidden true workflow and a behaviour (cooperative, vague, starts with a task, uploads an out-of-date procedure, CV screening example, work-order priority), and a second, smaller model plays the employee using only that sheet.
+### 3.1 Models
 
-Scoring is **code first**: numbers, lists, step counts, the AI fit and the route are compared with the hidden truth by code. Only free-text fields go to a judge, the same chat model asked one narrow question ("do these two values mean the same?"), which agrees with hand-labelled pairs 97 % of the time (37 of 38); below 90 % the run fails. The headline targets are what matters to the employee and the analysis: **estimated employee time** ≤ 20 minutes, **detail burden** (questions on low-value details) ≤ 15 %, **quality of the core fields** ≥ 85 %, and **AI fit and route** right in ≥ 70 % of steps.
+| Deployment | Model | Used for | Why |
+|---|---|---|---|
+| `app-chat` | gpt-5.6-sol (version 2026-07-09), **EU Data Zone** deployment in Sweden Central | Every product call: EXTRACT, CLASSIFY, GUIDE, document reading (including images), MAP, LABEL, ASSESS_STEPS; also the evaluation judge | Reliable **structured outputs** against a strict JSON schema; data processed inside the EU; reached with a **managed identity**, so no keys; about **€0.34–0.50 per interview** at assumed list prices |
+| `eval-expert` | gpt-5.4-mini | **Only** the simulated employees of the evaluation; it never sees real data | A cheaper model is enough to play a persona sheet, and a different model from the product keeps the test honest |
 
-Every run writes a scorecard, and each prompt or code change is compared with the previous one (`make eval`), so the interview is tuned with numbers rather than by feel. *Spec: [24-evaluation](../../specs/24-evaluation.md).*
+One product model means one version to pin and one set of prompts to evaluate. The plan assumed a small model; a stronger one was chosen because the interview depends on following the field rules and quoting exactly, and at under €0.50 an interview its cost is small next to the hours saved. A smaller model for EXTRACT or GUIDE is a cost lever, taken only if the evaluation shows no loss.
+
+### 3.2 Integrations
+
+Today the prototype connects to **Azure OpenAI**, **Cosmos DB** and **Application Insights**, all with a managed identity. It takes **documents in** (PDF, Word, Excel or CSV, PowerPoint, e-mail, text, BPMN, images, uploaded by the employee) and gives the **report out** on screen and as PDF. There is **no connection to NIG's own systems yet**, on purpose: the prototype needs no access rights to start. The first production integration is Microsoft 365 (sign-in with Entra ID, then Teams transcripts and SharePoint documents with consent); export to a BPM tool and briefs into the engineering backlog follow (see [production-readiness](production-readiness.md)).
+
+### 3.3 Bought versus built (tooling choices)
+
+The rule: **buy the commodity, build what makes the product.** Every buy below is a dependency the platform team will live with, so each one names it.
+
+| Component | Choice | Why | Dependency it creates |
+|---|---|---|---|
+| Language model | **Bought:** Azure OpenAI | Training our own model adds nothing; EU Data Zone, managed identity, structured outputs | Model versions retire and behave differently: the version must be pinned and every upgrade must pass the evaluation; quota and price set by the vendor |
+| Database | **Bought:** Cosmos DB serverless | One JSON document per session, pay per request, built-in expiry and safe concurrent saves | Azure-specific; a small store interface (with an in-memory twin used in tests) keeps it replaceable |
+| Hosting | **Bought:** Azure Container Apps | One container, replicas on demand, managed identity, no cluster to run | Azure platform; the container itself runs anywhere |
+| Monitoring | **Bought:** Application Insights | Standard logs, traces and alerts | Cost grows with log volume |
+| Turn orchestration | **Open source:** LangGraph | Keeps the fixed order of a turn explicit and testable | Small: a handful of nodes that could become plain functions |
+| Web, data checks, screens | **Open source:** FastAPI, Pydantic, React, Vite, Tailwind, document readers (pypdf, python-docx, openpyxl, python-pptx) | Standard, well known, no licence cost | Ordinary upkeep: versions pinned, security updates |
+| PDF and process map | **Open source:** reportlab, Mermaid | The report is built by code, so it looks the same every time | Same as above |
+| Interview engine and field registry | **Built** | This is the product: a fixed form, completeness rules, limits on every loop, the next question chosen by code. A general assistant gives 400 different documents for 400 chats | Owned code, covered by the tests in §5 |
+| Quote checks | **Built** | Every value and rating must trace back to the employee's own words, or it is dropped | Owned code |
+| Scoring, hours a year, readiness, the three questions | **Built** | Numbers must be reproducible and explainable, so code computes them, never the model | Owned code; rates and thresholds in configuration |
+| Evaluation runner | **Built** | Generic evaluation tools score single answers; we need whole interviews played through the real API and scored against a hidden truth, field by field | Owned code; personas and truth files to maintain |
 
 ---
 
-## 4. How the code was built
+## 4. Evaluation and how we know it works
 
-The code was built **spec first** and then **test first**, so that every line of code answers a written, reviewed requirement.
+### 4.1 Evaluation strategy
 
-**1. Spec first.** Work flows down one chain: use case → product spec → architecture → component spec → tests → code. A change starts at the highest level it affects, so a lower document never contradicts a higher one. Each component spec (16 in total) describes the behaviour, the interfaces and the rules, and ends with numbered **acceptance criteria**: short, testable statements in the form *given / when / then*. A person reviews and approves every spec before any code is written.
+A prompt change can improve one interview and break another, so the agent is measured, not judged by feel. The evaluation plays **six simulated employees** through the real API from the first message to *Finish*. Each has a hidden true workflow and a behaviour (cooperative, vague, starts with a task, uploads an out-of-date procedure, CV screening, work-order priority), and the smaller model plays the employee using only that sheet, in answers of 15 to 45 words as a busy person would give.
 
-**2. Tests first (test-driven development).** Each acceptance criterion becomes at least one automated test that cites its ID, and the test is run **before** the code exists, so it must fail. For example, spec 14 states *AC-14.122c: the reply "…, yes it is the same everywhere" completes the "same way everywhere?" field and moves on to the next question*. The test `test_ac_14_122c_same_everywhere_in_a_longer_reply_completes_the_variation` plays exactly that exchange with a scripted model and fails until the behaviour exists.
+Scoring is **code first**: numbers, lists, step counts, the AI fit and the route are compared with the hidden truth by code. Only free-text fields go to a judge, the product model asked one narrow question ("do these two values mean the same?"), which agrees with hand-labelled pairs 97 % of the time (37 of 38); below 90 % the run fails. Every run writes a scorecard, and each change is compared with the previous run (`make eval`). *Spec: [24-evaluation](../../specs/24-evaluation.md).*
 
-**3. Minimum code.** Only then is the **smallest amount of code that makes the failing test pass** written. Once all tests pass, the code is tidied up while the tests stay green. Nothing is built that no criterion asks for, and every behaviour can be traced from its test back to the spec that requires it.
+### 4.2 Measured results
 
-**4. Verify.** Every change runs the full suite (about 3,300 automated tests across backend, frontend and evaluation) together with linting and strict type checks, plus a test that fails if a module breaks the layer rules. Where a change touches the model's behaviour, it is also run live against Azure OpenAI and re-measured with the evaluation.
+We know the system works from three sources. **About 3,300 automated tests** check every acceptance criterion (§5). **Live runs** against Azure OpenAI and Cosmos DB, including end-to-end tests by the product owner, check the real behaviour. The **evaluation scorecard** measures quality against targets. The latest full run (six personas, 21 November 2026) gave:
 
-AI coding agents did most of the writing, in parallel and each in its own folders, but under the same rules: inspect the existing specs and code first, write the tests first, write the minimum code, and report what was built and any difference from the spec. *See [pipeline](../05-how-we-worked/pipeline.md).*
+| Measure | Result | Target |
+|---|---|---|
+| Sessions that reached *Finish* | 6 of 6, in 26–32 messages; no loops, no repeated questions | All |
+| Quality of the core fields | 54–94 % per persona (75 % pooled) | ≥ 85 % |
+| AI fit and route right | 17 of 19 steps | ≥ 70 % |
+| Detail burden (questions on low-value details) | 6–12 % | ≤ 15 % |
+| Estimated employee time | 19.6–24.4 minutes (22.5 mean) | ≤ 20 minutes |
+| Time per turn (median) | 3.9–4.6 s | < 10 s |
+| *Finish* (analysis and report) | 34–48 s | < 30 s |
+| Model cost per interview | €0.34–0.50 | < €0.50 |
+
+The cooperative employee scores well on every quality target; the harder personas, time and *Finish* speed are where the next tuning goes (§6). One run per persona varies with the model, so a small change needs two or three runs before it is read.
+
+### 4.3 Observed failure cases and what we changed
+
+Each case below was seen in an evaluation run or a live test and traced in the turn log; each fix came with a new acceptance criterion and test, and what is not yet fixed is listed as next work.
+
+| Observed | Root cause | What we changed |
+|---|---|---|
+| Interviews were too long: the first evaluation runs hit the 60-message cap before *Finish* | One question per step field, about 11 per step | **Short step walk:** the employee lists the steps, then one open question per step plus one follow-up, one optional question, effort once for all steps |
+| A "yes" to values the agent itself proposed (step names, kinds of sensitive data) was not understood; the question came back until the field was skipped | The values lived only in the agent's question | The agent now returns the values it offers; code records them and reads the "yes", "those are right" or a pick such as "the second one" |
+| Step ratings were dropped and steps showed "not assessed" | The model quoted the employee's rules-or-judgement answer, which the quote check did not search | That answer is now part of the evidence the check searches |
+| The report showed no hours a year | Frequencies such as "once per role, about 6 times a month" were not parsed | The parser reads them part by part; when the volume is known, the agent asks only for duration and assumes once per run, which the employee can correct; the latest run still left one step without hours, the next item to tune |
+| For judgement steps, nobody asked what the decision is based on | No field held it | A decision-criteria question joins the existing optional step question, with no extra turn; one persona still did not get it in the latest run |
+| The model occasionally filled a value for a vague employee who gave none | A non-answer ("it depends") was stored as a step's effort | Every value carries a quote and counts only once confirmed; treating "it depends" as no number is next |
+| An out-of-date procedure did not always trigger a question about which source is right | Not yet traced | Out-of-date values were never kept, because the employee's answers win; making the conflict question fire reliably is next |
+| The evaluation itself misled at first (long simulated answers, steps matched by name only) | Test harness, not product | Answers capped at busy-person length, steps matched by content, judge recalibrated on real wording |
 
 ---
 
-## 5. Status and production
+## 5. How the code was built
 
-**Built:** the guided interview, document reading, the analysis, the report and PDF, the admin workspace, the evaluation and the deployment setup (container, Bicep templates, CI pipeline for Azure Container Apps). The prototype runs against Azure OpenAI and Azure Cosmos DB. **Next steps:** specialist review and validation in the workspace, an overview across all sessions, implementation briefs for AI engineers, a euro value next to the hours, and export of the process map to BPM tools.
+The code was built **spec first, then test first**. Work flows down one chain (use case → product spec → architecture → 16 component specs → tests → code), and a person approves every spec before code is written. Each spec ends with numbered acceptance criteria (*given / when / then*); each criterion becomes at least one test that cites its ID and must fail before the code exists, for example *AC-14.122c: the reply "…, yes it is the same everywhere" completes the "same way everywhere?" field*. Then only the smallest code that makes the test pass is written. Every change runs the full suite (about 3,300 tests) with linting, strict type checks and a test of the layer rules; a change to the model's behaviour is also run live and re-measured with the evaluation. AI coding agents did most of the writing, under the same rules. *See [pipeline](../05-how-we-worked/pipeline.md).*
 
+---
 
-| Area            | Prototype                                | Production                                                                                 |
-| --------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------ |
-| Identity        | Visitor key; workspace code or open demo | Entra ID sign-in and roles                                                                 |
-| Network         | Public endpoint                          | Private endpoints, firewall                                                                |
-| Data protection | One region, no files stored              | Impact assessment, works-council agreement, retention per country                          |
-| Reliability     | One replica;*Finish* in one long request | Two or more replicas;*Finish* as a background job the page polls                           |
-| AI quality      | Evaluation set, daily budget             | Pinned model versions; evaluation gate before every change, fine tuning of interview<br /> |
-| Languages       | English                                  | Tested interviews and reports per company language                                         |
-| Data sources    | The interview and uploaded documents     | Connection to the Microsoft 365 environment (Microsoft Graph, Work IQ), with consent: Teams meeting transcripts, process documents and files on SharePoint, to pre-fill the map and validate it |
+## 6. What we would change with more time
 
-*Detail: [production-readiness](production-readiness.md).*
+| Change | Why |
+|---|---|
+| *Finish* as a background job the page polls, and a faster analysis | *Finish* takes 34–48 s today, above the 30 s target and close to request limits |
+| Prompt tuning on pilot data: fewer, better-grouped questions, more values proposed for the employee to confirm | Employee time is above the 20-minute target in five of six personas, driven by the number of questions |
+| A larger evaluation set built from real, anonymised pilot sessions, with the specialist's corrections as truth | Six personas cannot cover NIG's variety; each persona run two or three times |
+| Specialist edits and validation in the workspace | Today the workspace is read-only |
+| An overview across all sessions, and implementation briefs for engineers | The selection decision and the hand-over to builds |
+| A euro value next to the hours, and export of the process map to BPM tools (BPMN) | What managers and process owners ask for next |
+| More languages, each tested with the evaluation | The prototype is tested in English only |
+
+---
+
+## 7. Status and production
+
+**Built and live:** the guided interview, document reading, the analysis, the report and PDF, the read-only admin workspace, the evaluation and the deployment setup (container, Bicep templates, CI pipeline). The prototype runs on Azure Container Apps against Azure OpenAI and Cosmos DB.
+
+What changes for production (Entra ID sign-in, private network, data-protection agreements, two replicas and *Finish* as a background job, a pinned model version with an evaluation gate, tested languages, Microsoft 365 evidence with consent), and what it costs and takes, is in [production-readiness](production-readiness.md).
+
