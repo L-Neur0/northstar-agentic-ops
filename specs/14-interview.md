@@ -1106,7 +1106,7 @@ LLM calls use `FakeLLM` (spec 11) with scripted replies per call type. Profiles 
 
 | ID | Given / when / then |
 |---|---|
-| AC-14.117 | `welcome("Lorenzo", ctx)` says "Hi Lorenzo!", names the product, "recurring workflow", "transforming with AI", "about 20 minutes", "document", "describe the work, not you", "transformation team may read", and ends with the P01 question |
+| AC-14.117 | `welcome("Alex", ctx)` says "Hi Alex!", names the product, "recurring workflow", "transforming with AI", "about 20 minutes", "document", "describe the work, not you", "transformation team may read", and ends with the P01 question |
 | AC-14.118 | In `find` with P01 "HR", P02 "talent scouting", no P04, no candidate and fewer than 4 find questions, the GUIDE prompt has a SUGGEST block telling the model to propose 2–3 candidates under `process.name` in `offered`; with a candidate heard, at the cap, or outside `find` it has none. Offered candidate names (capped at 3) store nothing; a bare "yes" to several writes nothing; "yes the first one" with EXTRACT's pick writes that name |
 | AC-14.119 | A first-pass `task` verdict with `recurring` true arms no widening question; with `recurring` false it does |
 | AC-14.120 | `progress` at the end of `measure` (P01–P15 settled, no P16) is between 0.30 and 0.40; it uses 4 expected steps before P16 and the real count after; after a walk with every asked cell settled it is 1.0; `finish_check` is unchanged by it |
