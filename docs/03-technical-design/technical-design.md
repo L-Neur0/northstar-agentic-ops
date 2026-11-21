@@ -2,7 +2,7 @@
 
 > How the prototype works and why it is built this way. Detail lives in the specs (`specs/`), linked at the end of each part. Every number comes from the code, the specs or the latest evaluation run; cost and employee time are estimates from assumed prices and reading speeds.
 
-**Contents:** 1 Overview · 2 Technical architecture (2.1 Diagram · 2.2 How it works · 2.3 Components) · 3 Models, tooling choices and integrations (3.1 Models · 3.2 Integrations · 3.3 Bought versus built) · 4 Evaluation and how we know it works (4.1 Evaluation strategy · 4.2 Measured results · 4.3 Observed failure cases and what we changed) · 5 How the code was built · 6 What we would change with more time
+**Contents:** 1 Overview · 2 Technical architecture (2.1 Diagram · 2.2 How it works · 2.3 Components) · 3 Models, tooling choices and integrations (3.1 Models · 3.2 Integrations · 3.3 Bought versus built) · 4 Evaluation and how we know it works (4.1 Evaluation strategy · 4.2 Measured results · 4.3 Observed failure cases and what we changed) · 5 How the code was built · 6 Security and the path to production · 7 What we would change with more time
 
 ---
 
@@ -151,7 +151,7 @@ We know the system works from three sources. **About 3,400 automated tests** che
 | *Finish* (analysis and report) | 34–48 s | < 30 s |
 | Model cost per interview | €0.34–0.50 | < €0.50 |
 
-The targets are deliberately strict and were set before tuning. The latest run reaches them for detail burden, completion, loops, cost and AI fit; core-field quality (75 % against 85 %), employee time and *Finish* speed are the next tuning targets (§4.3, §6). Simulated employees are a development gate, not proof of real quality: the pilot's first check uses real employees. One run per persona varies with the model, so a small change needs two or three runs before it is read.
+The targets are deliberately strict and were set before tuning. The latest run reaches them for detail burden, completion, loops, cost and AI fit; core-field quality (75 % against 85 %), employee time and *Finish* speed are the next tuning targets (§4.3, §7). Simulated employees are a development gate, not proof of real quality: the pilot's first check uses real employees. One run per persona varies with the model, so a small change needs two or three runs before it is read.
 
 ### 4.3 Observed failure cases and what we changed
 
@@ -176,7 +176,31 @@ Each case below was seen in an evaluation run or a live test and traced in the t
 
 ---
 
-## 6. What we would change with more time
+## 6. Security and the path to production
+
+**Security today.** The prototype is open by design, so reviewers can try it, but it is built on the same controls that production needs:
+
+| Area | How it is handled |
+|---|---|
+| Access | Employees need no sign-in: a random visitor key in the browser, only its hash on the server, so nobody can open another person's sessions. The admin workspace needs an access code (in the open demo only a name, with deleting switched off) |
+| Secrets | None in code or configuration: the app reaches Azure OpenAI and Cosmos DB with a **managed identity**, and key-based access is switched off on both |
+| Data | Processing stays in the EU (EU Data Zone, Sweden Central). Uploaded files are never stored, only the extracted text and the proposals; unfinished sessions expire after 90 days; an employee can delete their data |
+| AI safety | Employee and document text is wrapped as data, never treated as instructions; answers are screened for prompt injection; every value and AI claim needs a quote that code finds in the employee's words; nothing from a document counts until the employee confirms it |
+| Abuse and cost | Rate limits per visitor and per network address, and a daily token budget for the open link |
+| Audit | Every admin view of a conversation, download and deletion writes an audit line; logs never contain message or document text |
+
+**What production adds.** The work is about four months in calendar time and about two months of one engineer (≈ €20k), detailed in [production-readiness](production-readiness.md):
+
+| Area | Production |
+|---|---|
+| Identity | **Entra ID sign-in**, roles for specialists and engineers, every action attributed to a named person |
+| Network | Private endpoints, a private network and a web application firewall in front of the app |
+| Data protection | Data-protection sign-off before the pilot; works-council agreement before rollout; retention per country |
+| Reliability | Two replicas, shared rate limits, *Finish* as a background job, alerts and a runbook |
+| AI quality | Model version pinned (already the case); the evaluation runs as a gate before every prompt or model change |
+| Languages and data | One more language tested per region; later, Microsoft 365 evidence (Teams transcripts, SharePoint files) with consent |
+
+## 7. What we would change with more time
 
 | Change | Why |
 |---|---|
