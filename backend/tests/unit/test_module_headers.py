@@ -1,4 +1,4 @@
-"""Every Python file starts with a header docstring (spec 10, AC-10.20; CLAUDE.md coding rules).
+"""Every Python file starts with a header docstring (spec 10, AC-10.20; project coding rules).
 
 Why: a reader (or an agent) must learn why a file exists, what it does and which spec it
 implements before reading its code. The rule is only real if a test enforces it.

@@ -39,3 +39,6 @@ build/
 # Evaluation runs and the evaluation's model cache (spec 24 §3.1)
 eval/runs/
 eval/.cache/
+
+# Local assistant instructions (never published)
+CLAUDE.md

@@ -16,7 +16,7 @@ Behind the chat there is a **form**: process fields such as trigger, volume and 
 
 When the employee presses *Finish*, an **analysis** produces the **discovery report**, on screen and as PDF. It shows a short summary, the process map, and for each step how well AI fits with a route (Microsoft 365 Copilot, an internal AI tool, low-code or a custom build); it answers the three questions a manager asks (*a good AI use case? a dedicated solution or a general assistant? worth it?*) and ends with a readiness checklist. The AI transformation / IT team reads every session in an **admin workspace** and uses the reports to decide which use cases to build. *Spec: [01-product](../../specs/01-product.md).*
 
-**Built and live** on [Azure](https://link-on-request.invalid/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx): the guided interview, document reading, the analysis, the report and PDF, the read-only admin workspace, the evaluation and the deployment setup (container, Bicep templates, CI pipeline). What changes for production is in [production-readiness](production-readiness.md): about two months of one engineer's work (€20k) over about four months, and about €6k a year to run (Azure hosting about €5.5k, the AI about €240) *(assumptions, updated 2026-11-21 (bottom-up cost))*.
+**Built and live** on Azure (link on request): the guided interview, document reading, the analysis, the report and PDF, the read-only admin workspace, the evaluation and the deployment setup (container, Bicep templates, CI pipeline). What changes for production is in [production-readiness](production-readiness.md): about two months of one engineer's work (€20k) over about four months, and about €6k a year to run (Azure hosting about €5.5k, the AI about €240) *(assumptions, updated 2026-11-21 (bottom-up cost))*.
 
 ---
 
@@ -96,10 +96,11 @@ EXTRACT turns the answer into proposed values, each with the employee's own word
 
 ### 3.1 Models
 
-| Deployment | Model | Used for | Why |
-|---|---|---|---|
-| `app-chat` | gpt-5.6-sol (version 2026-07-09), **EU Data Zone** deployment (processing stays in the EU) in Sweden Central | Every product call: EXTRACT, CLASSIFY, GUIDE, document reading (including images), MAP, LABEL, ASSESS_STEPS; also the evaluation judge | Reliable **structured outputs** against a strict JSON schema; data processed inside the EU; reached with a **managed identity**, so no keys; about **€0.34–0.50 per interview** at assumed list prices |
-| `eval-expert` | gpt-5.4-mini | **Only** the simulated employees of the evaluation; it never sees real data | A cheaper model is enough to play a persona sheet, and a different model from the product keeps the test honest |
+
+| Deployment    | Model                                                                                                       | Used for                                                                                                                               | Why                                                                                                                                                                                                       |
+| ------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app-chat`    | gpt-5.6-sol (version 2026-07-09),**EU Data Zone** deployment (processing stays in the EU) in Sweden Central | Every product call: EXTRACT, CLASSIFY, GUIDE, document reading (including images), MAP, LABEL, ASSESS_STEPS; also the evaluation judge | Reliable **structured outputs** against a strict JSON schema; data processed inside the EU; reached with a **managed identity**, so no keys; about **€0.34–0.50 per interview** at assumed list prices |
+| `eval-expert` | gpt-5.4-mini                                                                                                | **Only** the simulated employees of the evaluation; it never sees real data                                                            | A cheaper model is enough to play a persona sheet, and a different model from the product keeps the test honest                                                                                           |
 
 One product model means one version to pin and one set of prompts to evaluate. The plan assumed a small model; a stronger one was chosen because the interview depends on following the field rules and quoting exactly, and at under €0.50 an interview its cost is small next to the hours saved. Swapping to a smaller model (for EXTRACT or GUIDE, or overall) is one setting, taken only if the evaluation shows no loss. The model deployments were created once by hand; the Bicep template grants the app access.
 
@@ -111,19 +112,20 @@ Today the prototype connects to **Azure OpenAI**, **Cosmos DB** and **Applicatio
 
 The rule: **buy the commodity, build what makes the product.** Every buy below is a dependency the platform team will live with, so each one names it.
 
-| Component | Choice | Why | Dependency it creates |
-|---|---|---|---|
-| Language model | **Bought:** Azure OpenAI | Training our own model adds nothing; EU Data Zone, managed identity, structured outputs | Model versions retire and behave differently: the version must be pinned and every upgrade must pass the evaluation; quota and price set by the vendor |
-| Database | **Bought:** Cosmos DB serverless | One JSON document per session, pay per request, built-in expiry and safe concurrent saves | Azure-specific; a small store interface (with an in-memory twin used in tests) keeps it replaceable |
-| Hosting | **Bought:** Azure Container Apps | One container, one replica today and more by configuration, managed identity, no cluster to run | Azure platform; the container itself runs anywhere |
-| Monitoring | **Bought:** Application Insights | Standard logs, traces and alerts | Cost grows with log volume |
-| Turn orchestration | **Open source:** LangGraph | Keeps the fixed order of a turn explicit and testable | Small: a handful of nodes that could become plain functions |
-| Web, data checks, screens | **Open source:** FastAPI, Pydantic, React, Vite, Tailwind, document readers (pypdf, python-docx, openpyxl, python-pptx) | Standard, well known, no licence cost | Ordinary upkeep: versions pinned, security updates |
-| PDF and process map | **Open source:** reportlab, Mermaid | The report is built by code, so it looks the same every time | Same as above |
-| Interview engine and field registry | **Built** | This is the product: a fixed form, completeness rules, limits on every loop, the next question chosen by code. A general assistant gives 400 different documents for 400 chats | Owned code, covered by the tests in §5 |
-| Quote checks | **Built** | Every value and rating must trace back to the employee's own words, or it is dropped | Owned code |
-| Scoring, hours a year, readiness, the three questions | **Built** | Numbers must be reproducible and explainable, so code computes them, never the model | Owned code; rates and thresholds in configuration |
-| Evaluation runner | **Built** | Generic evaluation tools score single answers; we need whole interviews played through the real API and scored against a hidden truth, field by field | Owned code; personas and truth files to maintain |
+
+| Component                                             | Choice                                                                                                                  | Why                                                                                                                                                                            | Dependency it creates                                                                                                                                  |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Language model                                        | **Bought:** Azure OpenAI                                                                                                | Training our own model adds nothing; EU Data Zone, managed identity, structured outputs                                                                                        | Model versions retire and behave differently: the version must be pinned and every upgrade must pass the evaluation; quota and price set by the vendor |
+| Database                                              | **Bought:** Cosmos DB serverless                                                                                        | One JSON document per session, pay per request, built-in expiry and safe concurrent saves                                                                                      | Azure-specific; a small store interface (with an in-memory twin used in tests) keeps it replaceable                                                    |
+| Hosting                                               | **Bought:** Azure Container Apps                                                                                        | One container, one replica today and more by configuration, managed identity, no cluster to run                                                                                | Azure platform; the container itself runs anywhere                                                                                                     |
+| Monitoring                                            | **Bought:** Application Insights                                                                                        | Standard logs, traces and alerts                                                                                                                                               | Cost grows with log volume                                                                                                                             |
+| Turn orchestration                                    | **Open source:** LangGraph                                                                                              | Keeps the fixed order of a turn explicit and testable                                                                                                                          | Small: a handful of nodes that could become plain functions                                                                                            |
+| Web, data checks, screens                             | **Open source:** FastAPI, Pydantic, React, Vite, Tailwind, document readers (pypdf, python-docx, openpyxl, python-pptx) | Standard, well known, no licence cost                                                                                                                                          | Ordinary upkeep: versions pinned, security updates                                                                                                     |
+| PDF and process map                                   | **Open source:** reportlab, Mermaid                                                                                     | The report is built by code, so it looks the same every time                                                                                                                   | Same as above                                                                                                                                          |
+| Interview engine and field registry                   | **Built**                                                                                                               | This is the product: a fixed form, completeness rules, limits on every loop, the next question chosen by code. A general assistant gives 400 different documents for 400 chats | Owned code, covered by the tests in §5                                                                                                                |
+| Quote checks                                          | **Built**                                                                                                               | Every value and rating must trace back to the employee's own words, or it is dropped                                                                                           | Owned code                                                                                                                                             |
+| Scoring, hours a year, readiness, the three questions | **Built**                                                                                                               | Numbers must be reproducible and explainable, so code computes them, never the model                                                                                           | Owned code; rates and thresholds in configuration                                                                                                      |
+| Evaluation runner                                     | **Built**                                                                                                               | Generic evaluation tools score single answers; we need whole interviews played through the real API and scored against a hidden truth, field by field                          | Owned code; personas and truth files to maintain                                                                                                       |
 
 ---
 
@@ -139,17 +141,18 @@ Scoring is **code first**: numbers, lists, step counts, the AI fit and the route
 
 We know the system works from three sources. **About 3,400 automated tests** check every acceptance criterion (§5). **Live runs** against Azure OpenAI and Cosmos DB, including end-to-end tests by the product owner, check the real behaviour. The **evaluation scorecard** measures quality against targets. The latest full run (six personas, 21 November 2026) gave:
 
-| Measure | Result | Target |
-|---|---|---|
-| Sessions that reached *Finish* | 6 of 6, in 26–32 messages; no loops, no repeated questions | All |
-| Quality of the core fields | 54–94 % per persona (75 % pooled) | ≥ 85 % |
-| AI fit and route right | 17 of 19 steps | ≥ 70 % |
-| Invented values | 4, all in the vague persona | 0 |
-| Detail burden (questions on low-value details) | 6–12 % | ≤ 15 % |
-| Estimated employee time | 19.6–24.4 minutes (22.5 mean) | ≤ 20 minutes |
-| Time per turn (median) | 3.9–4.6 s | < 10 s |
-| *Finish* (analysis and report) | 34–48 s | < 30 s |
-| Model cost per interview | €0.34–0.50 | < €0.50 |
+
+| Measure                                        | Result                                                      | Target        |
+| ---------------------------------------------- | ----------------------------------------------------------- | ------------- |
+| Sessions that reached*Finish*                  | 6 of 6, in 26–32 messages; no loops, no repeated questions | All           |
+| Quality of the core fields                     | 54–94 % per persona (75 % pooled)                          | ≥ 85 %       |
+| AI fit and route right                         | 17 of 19 steps                                              | ≥ 70 %       |
+| Invented values                                | 4, all in the vague persona                                 | 0             |
+| Detail burden (questions on low-value details) | 6–12 %                                                     | ≤ 15 %       |
+| Estimated employee time                        | 19.6–24.4 minutes (22.5 mean)                              | ≤ 20 minutes |
+| Time per turn (median)                         | 3.9–4.6 s                                                  | < 10 s        |
+| *Finish* (analysis and report)                 | 34–48 s                                                    | < 30 s        |
+| Model cost per interview                       | €0.34–0.50                                                | < €0.50      |
 
 The targets are deliberately strict and were set before tuning. The latest run reaches them for detail burden, completion, loops, cost and AI fit; core-field quality (75 % against 85 %), employee time and *Finish* speed are the next tuning targets (§4.3, §7). Simulated employees are a development gate, not proof of real quality: the pilot's first check uses real employees. One run per persona varies with the model, so a small change needs two or three runs before it is read.
 
@@ -157,16 +160,17 @@ The targets are deliberately strict and were set before tuning. The latest run r
 
 Each case below was seen in an evaluation run or a live test and traced in the turn log; each fix came with a new acceptance criterion and test, and what is not yet fixed is listed as next work.
 
-| Observed | Root cause | What we changed |
-|---|---|---|
-| Interviews were too long: the first evaluation runs hit the 60-message cap before *Finish* | One question per step field, about 11 per step | **Short step walk:** the employee lists the steps, then one open question per step plus one follow-up, one optional question, effort once for all steps |
-| A "yes" to values the agent itself proposed (step names, kinds of sensitive data) was not understood; the question came back until the field was skipped | The values lived only in the agent's question | The agent now returns the values it offers; code records them and reads the "yes", "those are right" or a pick such as "the second one" |
-| Step ratings were dropped and steps showed "not assessed" | The model quoted the employee's rules-or-judgement answer, which the quote check did not search | That answer is now part of the evidence the check searches |
-| The report showed no hours a year | Frequencies such as "once per role, about 6 times a month" were not parsed | The parser reads them part by part; when the volume is known, the agent asks only for duration and assumes once per run, which the employee can correct; the latest run still left one step without hours, the next item to tune |
-| For judgement steps, nobody asked what the decision is based on | No field held it | A decision-criteria question joins the existing optional step question, with no extra turn; one persona still did not get it in the latest run |
-| The model occasionally filled a value for a vague employee who gave none | A non-answer ("it depends") was stored as a step's effort | Every value carries a quote and counts only once confirmed; treating "it depends" as no number is next |
-| An out-of-date procedure did not always trigger a question about which source is right | Not yet traced | Out-of-date values were never kept, because the employee's answers win; making the conflict question fire reliably is next |
-| The evaluation itself misled at first (long simulated answers, steps matched by name only) | Test harness, not product | Answers capped at busy-person length, steps matched by content, judge recalibrated on real wording |
+
+| Observed                                                                                                                                                 | Root cause                                                                                      | What we changed                                                                                                                                                                                                                  |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Interviews were too long: the first evaluation runs hit the 60-message cap before*Finish*                                                                | One question per step field, about 11 per step                                                  | **Short step walk:** the employee lists the steps, then one open question per step plus one follow-up, one optional question, effort once for all steps                                                                          |
+| A "yes" to values the agent itself proposed (step names, kinds of sensitive data) was not understood; the question came back until the field was skipped | The values lived only in the agent's question                                                   | The agent now returns the values it offers; code records them and reads the "yes", "those are right" or a pick such as "the second one"                                                                                          |
+| Step ratings were dropped and steps showed "not assessed"                                                                                                | The model quoted the employee's rules-or-judgement answer, which the quote check did not search | That answer is now part of the evidence the check searches                                                                                                                                                                       |
+| The report showed no hours a year                                                                                                                        | Frequencies such as "once per role, about 6 times a month" were not parsed                      | The parser reads them part by part; when the volume is known, the agent asks only for duration and assumes once per run, which the employee can correct; the latest run still left one step without hours, the next item to tune |
+| For judgement steps, nobody asked what the decision is based on                                                                                          | No field held it                                                                                | A decision-criteria question joins the existing optional step question, with no extra turn; one persona still did not get it in the latest run                                                                                   |
+| The model occasionally filled a value for a vague employee who gave none                                                                                 | A non-answer ("it depends") was stored as a step's effort                                       | Every value carries a quote and counts only once confirmed; treating "it depends" as no number is next                                                                                                                           |
+| An out-of-date procedure did not always trigger a question about which source is right                                                                   | Not yet traced                                                                                  | Out-of-date values were never kept, because the employee's answers win; making the conflict question fire reliably is next                                                                                                       |
+| The evaluation itself misled at first (long simulated answers, steps matched by name only)                                                               | Test harness, not product                                                                       | Answers capped at busy-person length, steps matched by content, judge recalibrated on real wording                                                                                                                               |
 
 ---
 
@@ -180,36 +184,38 @@ Each case below was seen in an evaluation run or a live test and traced in the t
 
 **Security today.** The prototype is open by design, so reviewers can try it, but it is built on the same controls that production needs:
 
-| Area | How it is handled |
-|---|---|
-| Access | Employees need no sign-in: a random visitor key in the browser, only its hash on the server, so nobody can open another person's sessions. The admin workspace needs an access code (in the open demo only a name, with deleting switched off) |
-| Secrets | None in code or configuration: the app reaches Azure OpenAI and Cosmos DB with a **managed identity**, and key-based access is switched off on both |
-| Data | Processing stays in the EU (EU Data Zone, Sweden Central). Uploaded files are never stored, only the extracted text and the proposals; unfinished sessions expire after 90 days; an employee can delete their data |
-| AI safety | Employee and document text is wrapped as data, never treated as instructions; answers are screened for prompt injection; every value and AI claim needs a quote that code finds in the employee's words; nothing from a document counts until the employee confirms it |
-| Abuse and cost | Rate limits per visitor and per network address, and a daily token budget for the open link |
-| Audit | Every admin view of a conversation, download and deletion writes an audit line; logs never contain message or document text |
+
+| Area           | How it is handled                                                                                                                                                                                                                                                      |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Access         | Employees need no sign-in: a random visitor key in the browser, only its hash on the server, so nobody can open another person's sessions. The admin workspace needs an access code (in the open demo only a name, with deleting switched off)                         |
+| Secrets        | None in code or configuration: the app reaches Azure OpenAI and Cosmos DB with a**managed identity**, and key-based access is switched off on both                                                                                                                     |
+| Data           | Processing stays in the EU (EU Data Zone, Sweden Central). Uploaded files are never stored, only the extracted text and the proposals; unfinished sessions expire after 90 days; an employee can delete their data                                                     |
+| AI safety      | Employee and document text is wrapped as data, never treated as instructions; answers are screened for prompt injection; every value and AI claim needs a quote that code finds in the employee's words; nothing from a document counts until the employee confirms it |
+| Abuse and cost | Rate limits per visitor and per network address, and a daily token budget for the open link                                                                                                                                                                            |
+| Audit          | Every admin view of a conversation, download and deletion writes an audit line; logs never contain message or document text                                                                                                                                            |
 
 **What production adds.** The work is about four months in calendar time and about two months of one engineer (≈ €20k), detailed in [production-readiness](production-readiness.md):
 
-| Area | Production |
-|---|---|
-| Identity | **Entra ID sign-in**, roles for specialists and engineers, every action attributed to a named person |
-| Network | Private endpoints, a private network and a web application firewall in front of the app |
-| Data protection | Data-protection sign-off before the pilot; works-council agreement before rollout; retention per country |
-| Reliability | Two replicas, shared rate limits, *Finish* as a background job, alerts and a runbook |
-| AI quality | Model version pinned (already the case); the evaluation runs as a gate before every prompt or model change |
+
+| Area               | Production                                                                                                            |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| Identity           | **Entra ID sign-in**, roles for specialists and engineers, every action attributed to a named person                  |
+| Network            | Private endpoints, a private network and a web application firewall in front of the app                               |
+| Data protection    | Data-protection sign-off before the pilot; works-council agreement before rollout; retention per country              |
+| Reliability        | Two replicas, shared rate limits,*Finish* as a background job, alerts and a runbook                                   |
+| AI quality         | Model version pinned (already the case); the evaluation runs as a gate before every prompt or model change            |
 | Languages and data | One more language tested per region; later, Microsoft 365 evidence (Teams transcripts, SharePoint files) with consent |
 
 ## 7. What we would change with more time
 
-| Change | Why |
-|---|---|
-| *Finish* as a background job the page polls, and a faster analysis | *Finish* takes 34–48 s today, above the 30 s target and close to request limits |
-| Close the quality gap (75 % → 85 % of core fields): the conflict question, "it depends" answers, hours for every step | The gap the latest run shows, traced in §4.3 |
-| Prompt tuning on pilot data: fewer, better-grouped questions, more values proposed for the employee to confirm | Employee time is above the 20-minute target in five of six personas, driven by the number of questions |
-| A larger evaluation set built from real, anonymised pilot sessions, with the specialist's corrections as truth | Six personas cannot cover NIG's variety; each persona run two or three times |
-| Specialist edits and validation in the workspace | Today the workspace is read-only |
-| An overview across all sessions, and implementation briefs for engineers | The selection decision and the hand-over to builds |
-| A euro value next to the hours, and export of the process map to BPM tools (BPMN) | What managers and process owners ask for next |
-| More languages, each tested with the evaluation | The prototype is tested in English only |
 
+| Change                                                                                                                 | Why                                                                                                    |
+| ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| *Finish* as a background job the page polls, and a faster analysis                                                     | *Finish* takes 34–48 s today, above the 30 s target and close to request limits                       |
+| Close the quality gap (75 % → 85 % of core fields): the conflict question, "it depends" answers, hours for every step | The gap the latest run shows, traced in §4.3                                                          |
+| Prompt tuning on pilot data: fewer, better-grouped questions, more values proposed for the employee to confirm         | Employee time is above the 20-minute target in five of six personas, driven by the number of questions |
+| A larger evaluation set built from real, anonymised pilot sessions, with the specialist's corrections as truth         | Six personas cannot cover NIG's variety; each persona run two or three times                           |
+| Specialist edits and validation in the workspace                                                                       | Today the workspace is read-only                                                                       |
+| An overview across all sessions, and implementation briefs for engineers                                               | The selection decision and the hand-over to builds                                                     |
+| A euro value next to the hours, and export of the process map to BPM tools (BPMN)                                      | What managers and process owners ask for next                                                          |
+| More languages, each tested with the evaluation                                                                        | The prototype is tested in English only                                                                |

@@ -1,7 +1,7 @@
 """Disk cache of model replies for local development and evaluation runs (spec 11 §3.7).
 
 Why: the same prompt is sent many times while a developer iterates or the evaluation re-runs its
-personas, and each send costs Azure credit and seconds (`CLAUDE.md`: cache AI calls in local runs).
+personas, and each send costs Azure credit and seconds (project rule: cache AI calls in local runs).
 The cache holds replies that may quote expert text, so it is used only in stage `local` (the client
 decides that) and the folder is git-ignored.
 What: `LLMCache.key` hashes everything that shapes a reply (deployment, call type, messages,

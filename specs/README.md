@@ -42,7 +42,7 @@
 
 ## How every piece of work runs
 
-1. **Inspect.** Read `CLAUDE.md`, the product spec, the architecture, the specs this one depends on, and the code that exists today. Note what the new work touches and what it must not break.
+1. **Inspect.** Read the product spec, the architecture, the specs this one depends on, and the code that exists today. Note what the new work touches and what it must not break.
 2. **Specify.** Write or update the component spec from [`_template.md`](_template.md): behaviour, interfaces, implications, acceptance criteria. Clear, concrete, short. **Review before any code.**
 3. **Test first.** Turn each acceptance criterion into at least one failing test whose name or docstring cites its ID (for example `AC-13.4`).
 4. **Implement.** Write the smallest code that makes the tests pass; refactor with the tests green.

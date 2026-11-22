@@ -2,7 +2,7 @@
 
 > NIG (fictional) · **IT & Security** · November 2026 · *Figures are assumptions, to confirm in a pilot.* Detail: [use case](../01-use-case/use-case.md) · [deck](deck.pdf)
 
-**In one line:** a 20–30 minute guided interview shows NIG **which processes AI should transform first, without weeks of meetings.**
+**In one line:** we propose an AI tool that **automates and speeds up AI use case discovery**. Today this is slow, manual work for the AI team in IT & Security. With the tool, an employee spends **20–30 minutes in a guided interview**. The AI helps them find the processes in their routine worth transforming, map one, and assess its AI potential and readiness. A specialist then reviews the report in about an hour. Discovery becomes **fast and scalable**: it is no longer capped by the size of the AI team and can reach the whole company.
 
 ## 1. Context
 
@@ -10,15 +10,15 @@ NIG has 50,000 people; 9 clusters × 4 regions = 36 teams, each with its own sys
 
 ## 2. Problem
 
-Today two AI specialists map each process by hand: a half-day workshop with two employees, then notes typed up in Visio and Excel and missing numbers chased by e-mail. That costs **24 person-hours and 2–3 weeks per process**, and because specialists must be in every conversation, discovery is capped by the size of the AI team.
+Today the AI specialists do AI use case discovery one colleague at a time. They sit with the people who do the work every day, in finance, HR or operations, because they know their process best. Together they map it, then the specialists assess it. Each process takes **around 24 person-hours in total and 2–3 weeks** *(assumption)*. Because specialists must be in every conversation, discovery is capped by the size of the AI team.
 
 
-| What happens today                          | Why it hurts                                |
-| ------------------------------------------- | ------------------------------------------- |
+| What happens today                          | Why it hurts                                    |
+| ------------------------------------------- | ----------------------------------------------- |
 | Specialists interview people one by one     | At most 150–200 processes a year, for 36 teams |
-| Each specialist asks and writes differently | Reports cannot be compared                  |
-| Nobody checks whether a workflow is ready   | AI builds stall after weeks                 |
-| Detail is lost at hand-over                 | Engineers re-ask people:**~60 h per build** |
+| Each specialist asks and writes differently | Reports cannot be compared                      |
+| Nobody checks whether a workflow is ready   | AI builds stall after weeks                     |
+| Detail is lost at hand-over                 | Engineers re-ask people:**~60 h per build**     |
 
 ## 3. Solution
 
@@ -31,12 +31,12 @@ flowchart LR
   I --> R["Discovery report"]
   R --> S["Specialist review<br/>~1 h"]
   S --> O["Overview of<br/>all processes"]
-  O --> B["Brief to engineers"]
+  O --> B["Fast build<br/>by DevOps"]
   classDef next stroke-dasharray:5 5
   class O,B next
 ```
 
-*Solid: built. Dashed: next release.* The report answers three questions (*good AI use case? own tool or Copilot? worth it?*), then shows per step how AI helps and what to prepare.
+*Solid: built. Dashed: next release.* The report answers three questions (*good AI use case(Data, Feasibility, etc.)? own tool or Copilot? worth it (Business value)?*), then shows per step how AI helps and what to prepare.
 
 ## 4. Business value and ROI (base case: 400 processes a year)
 
@@ -63,4 +63,4 @@ At 18 h by hand, not 24, it still holds (€342k). Open: works council, language
 
 ## 6. Status, rollout and the ask
 
-The first working version is **[live on Azure](https://link-on-request.invalid/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx)** and passed six simulated interviews end to end. **The ask:** an **8-week pilot in one cluster and region (~20 processes)** with volunteers, data-protection sign-off and company sign-in, stopped at any §5 limit; then **about two months** of hardening while the works-council agreement is prepared; then **cluster by cluster**: **about four months** to the first cluster live.
+The first working version is **live on Azure** (link on request) and passed six simulated interviews end to end. **The ask:** an **8-week pilot in one cluster and region (~20 processes)** with volunteers, data-protection sign-off and company sign-in, stopped at any §5 limit; then **about two months** of hardening while the works-council agreement is prepared; then **cluster by cluster**: **about four months** to the first cluster live.

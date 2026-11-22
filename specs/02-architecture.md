@@ -70,7 +70,7 @@ The product has **two sides**: the **guided interview** (the expert and the agen
 
 ```
 northstar-agentic-ops/
-├── README.md · CLAUDE.md · Makefile · Dockerfile · azure.yaml
+├── README.md · Makefile · Dockerfile · azure.yaml
 ├── .github/workflows/ci.yml          lint, types, tests; build and deploy on main
 ├── docs/                             use case, processes, technical design, executive summary, how we worked
 ├── specs/                            01 product · 02 architecture · 1x–5x component specs · _template

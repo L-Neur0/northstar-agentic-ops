@@ -144,7 +144,7 @@ class MapOut(BaseModel):
 
 ### 3.7 Request cache (`llm_cache.py`)
 
-The cache saves Azure credit in local development and in evaluation runs (`CLAUDE.md`: "cache AI calls in local and eval runs").
+The cache saves Azure credit in local development and in evaluation runs (project rule: cache AI calls in local and eval runs).
 
 1. **On only when** `LLM_CACHE_ENABLED` is true **and** the stage is `local`. In stage `demo` a true setting is ignored and logged once as a warning (`llm_cache_ignored`). The evaluation runner runs its server in stage `local` (spec 24).
 2. **Key:** SHA-256 of the canonical JSON (sorted keys, no spaces) of `{"v": 1, "deployment", "call_type", "messages", "response_format"}`. `response_format` is the full strict schema for structured calls, `"json_object"` or `"text"` otherwise. Changing a prompt, a schema, the deployment or the call type is a miss. `v` is bumped when the format changes.
@@ -420,7 +420,7 @@ All tests use a stub SDK client (`chat.completions.create` as an `AsyncMock` ret
 
 | # | Question | Default until decided |
 |---|---|---|
-| Q1 | *(resolved)* Module path | `llm.py` at the engine root; architecture and `CLAUDE.md` now agree |
+| Q1 | *(resolved)* Module path | `llm.py` at the engine root; architecture and project rules now agree |
 | Q2 | *(decided)* Model budgets | Cost is not a constraint; generous defaults in §3.2 that also suit a reasoning model |
 | Q3 | Does strict mode on the chosen API version reject keywords Pydantic emits (`default`, `format`, `minLength`)? | Keep them; the live smoke test tells. If rejected, `strict_json_schema` strips them and AC-11.18 grows one line |
 | Q4 | Does the evaluation runner call the deployed `demo` app or a local server? The cache only works in `local` | A local server against the real Azure deployment, so the cache works; one final run against `demo` without cache |

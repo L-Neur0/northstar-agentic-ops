@@ -26,7 +26,7 @@ Three **contracts** are written and frozen before any parallel work. Every works
 | **C3 · HTTP API** | Every route, request and response (camelCase), error codes | Wave 0 | `app/models/*` wire models, `frontend/src/types/*`, spec 15 |
 
 Rules for every workstream:
-1. Inspect first: CLAUDE.md, product, architecture, its spec, the existing code. Follow the coding rules in CLAUDE.md (tests first, minimum code, a header docstring on every file).
+1. Inspect first: product, architecture, its spec, the existing code. Follow the coding rules (tests first, minimum code, a header docstring on every file).
 2. Its component spec is written and reviewed by the user before any code.
 3. Touch only its own folders (listed below). A needed change to a contract goes back to the lead, never edited in place.
 4. Tests first; `make lint test` green before hand-back.
