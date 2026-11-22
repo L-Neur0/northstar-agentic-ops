@@ -1,7 +1,7 @@
 # 12 · Field registry, Verdicts, taxonomy, rubric and models
 
 > **Status:** built · **owner test amendment (amended 2026-11-21 (owner test)): groups, `offered`, `progress`, `accept`** · **§3.4 short step walk amendment: approved 2026-11-20** · **§3.6 amendment (conflicts, a source per item): approved and built 2026-11-20** (`MetaPart`, `ConflictRecord`; `fromImage`, `parts` and an empty `__conflicts` are left out of the dump) · **Implements:** F-05 (product); the vocabulary behind F-04, F-06, F-07, F-08, F-09, F-10, F-11, F-22; architecture §3.2, §5 · **Depends on:** spec 10
-> **Contract:** C1 of the [implementation plan](03-implementation-plan.md). Every other workstream codes against this spec. A change here goes through the lead.
+> **Contract:** the shared model that every other component is built against. A change here is reviewed first, because every other spec depends on it.
 > **Code:** `backend/app/services/process_discovery/domain/{field_spec,taxonomy,scope,node_order}.py`, `backend/app/models/process_discovery_schemas.py`, `config/nig/taxonomy.yaml`
 > **Tests:** `backend/tests/unit/process_discovery/domain/`, `backend/tests/unit/models/`
 
