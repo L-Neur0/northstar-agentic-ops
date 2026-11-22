@@ -577,7 +577,7 @@ All decided at the lead review; kept here for the record.
 
 # Part 2: documents in the interview, and the discovery report
 
-> **Status:** draft · **Implements:** the screens of F-04 (start from your documents), F-05.6 (proposed values, ✓ / ✎), F-16 (discovery report on screen, PDF download), F-26 (step-by-step AI assessment and recommended route, as shown in the report) (product). Hours only: no euro figure anywhere (*parked, R5*) · **Depends on:** part 1 of this spec (shell, reducer, errors, fake/real API, theme), spec 13 §3.6 (confirm and reject proposals), spec 15 (routes), spec 17 §3.2, §3.12, §3.13 (limits, sentences, removal), spec 18 (map model), spec 20 v3 §3.3, §3.5 (report model, routes), spec 26 (ratings, route, catalogue note)
+> **Status:** built · **Implements:** the screens of F-04 (start from your documents), F-05.6 (proposed values, ✓ / ✎), F-16 (discovery report on screen, PDF download), F-26 (step-by-step AI assessment and recommended route, as shown in the report) (product). Hours only: no euro figure anywhere (*parked, R5*) · **Depends on:** part 1 of this spec (shell, reducer, errors, fake/real API, theme), spec 13 §3.6 (confirm and reject proposals), spec 15 (routes), spec 17 §3.2, §3.12, §3.13 (limits, sentences, removal), spec 18 (map model), spec 20 v3 §3.3, §3.5 (report model, routes), spec 26 (ratings, route, catalogue note)
 > **Code:** `frontend/src/components/process-discovery/{DocumentPanel,FileDrop,DocumentHint,ProposalActions}.tsx`, `frontend/src/components/report/*`, `frontend/src/pages/DiscoveryReport.tsx`, `frontend/src/utils/{processMap,documentLimits,downloadFile}.ts`, `frontend/src/types/report.ts`, additions to `services/{api,fakeApi,fakeData}.ts`, `hooks/{discoveryReducer,useDiscoveryState}.ts`, `utils/discoveryErrors.ts` · **Tests:** next to each file
 > **Part 3** (§18–§25 of this file): the workspace (access-code login, session list, read-only popup, conversation, PDF, delete; spec 21).
 
@@ -1146,7 +1146,7 @@ Fixtures: `src/test/fixtures/sessions.ts` gains `withProposals` (process fields 
 
 # Part 3: the workspace (admin screens)
 
-> **Status:** draft · **Implements:** the screens of F-17.1, F-17.6, F-17.7 (read-only part), F-21.3 (workspace code), F-23.5 (delete a session) (product); architecture §1 (admin side) · **Depends on:** part 1 (shell, `AppHeader`, theme §3.13, `ui/*`, errors, fake/real API), part 2 (report components, `ProcessMap`, `saveBlob`), spec 16 §3.2 (login, token), spec 21 (workspace routes and wire models; **draft**, names marked *to confirm against spec 21*)
+> **Status:** built · **Implements:** the screens of F-17.1, F-17.6, F-17.7 (read-only part), F-21.3 (workspace code), F-23.5 (delete a session) (product); architecture §1 (admin side) · **Depends on:** part 1 (shell, `AppHeader`, theme §3.13, `ui/*`, errors, fake/real API), part 2 (report components, `ProcessMap`, `saveBlob`), spec 16 §3.2 (login, token), spec 21 (workspace routes and wire models; **draft**, names marked *to confirm against spec 21*)
 > **Code:** `frontend/src/pages/Workspace.tsx`, `frontend/src/components/workspace/*`, `frontend/src/access/workspaceToken.ts`, `frontend/src/types/workspace.ts`, `frontend/src/utils/workspaceFormat.ts`, additions to `services/{api,fakeApi,fakeData,loadApi}.ts`, `utils/discoveryErrors.ts`, `App.tsx`, `components/chat/ChatMessageBubble.tsx` · **Tests:** next to each file
 > **Scope in one line:** log in, see every session in one list, open one read-only, read its conversation, download its PDF, delete it. Nothing else.
 

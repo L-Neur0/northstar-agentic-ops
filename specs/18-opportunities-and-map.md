@@ -8,7 +8,7 @@
 
 After *Finish*, two model calls read the finished profile. **OPPORTUNITIES** proposes where automation or AI fits, what each change would look like and what to prepare, and names the steps that should stay with people. **MAP** proposes a BPMN-style process map. The model's shape is fixed by a strict schema; its content is trusted for nothing: code checks every step number, every quote, every lane and every flow, drops what it cannot ground, and replaces an unrepairable map with a simple one drawn by code. No quote, no opportunity. No real step, no task.
 
-> **Amendment 2026-11-19 (draft).** A fourth *Finish* call, **ASSESS_STEPS** (per-step AI fit and route from the solution catalogue), is specified in [spec 26](26-step-assessment.md); OPPORTUNITIES and MAP are unchanged. Saving shares are *parked until the value method is decided (refinement R5)*: O9 still stores the configured default, but nothing reads or shows it.
+> **Amendment 2026-11-19 (built).** A fourth *Finish* call, **ASSESS_STEPS** (per-step AI fit and route from the solution catalogue), is specified in [spec 26](26-step-assessment.md); OPPORTUNITIES and MAP are unchanged. Saving shares are *parked until the value method is decided (refinement R5)*: O9 still stores the configured default, but nothing reads or shows it.
 
 ## 2. Where it sits
 

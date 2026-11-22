@@ -342,7 +342,7 @@ One line per turn, event `interview_turn`, through `log_event` (spec 10), writte
 
 > **Built 2026-11-19, with three refinements found in live runs:** (1) a candidate name matches another when one sits inside the other and only one candidate matches (names shortened by the model); (2) EXTRACT lists the candidate names (fenced) and, with several candidates and none chosen, returns no process name; (3) after steering, a cluster proposal is always put once before the picker can be forced.
 
-> **Status:** draft amendment, 2026-11-19 (product F-03 items 2–3). Sections §3.1–§3.12 are built; the code follows this section later. Where it differs from §3.4 step 6, §3.8 or §3.9, this section wins.
+> **Status:** amendment, 2026-11-19 (product F-03 items 2–3), approved and built. Where it differs from §3.4 step 6, §3.8 or §3.9, this section wins.
 
 **Why.** When the expert names several candidate processes, the agent should not just list them back. It asks a few quick questions about each, **code** ranks them by business value signals and data readiness, and the agent **recommends** the best one with a one-line why. The expert decides and may pick another. The model never ranks. The find phase must stay short.
 
@@ -1123,7 +1123,7 @@ LLM calls use `FakeLLM` (spec 11) with scripted replies per call type. Profiles 
 
 **As built (§3.20, 2026-11-21).** Code: welcome `prompts/common.welcome_text`; O2 `phases.suggest_now` (`SUGGEST_MAX_TURNS` 4) and `prompts/guide.suggest_block`; O3 `gates.apply_scope_verdict`; O4 `phases.progress` (sent by `service.view` as `score.progress`); O5 `nodes.parse_guide_reply` / `kept_offers` and `prompts/guide.output_block` (GUIDE stays a text call that returns the JSON object: the 113 scripted text replies in the tests and plain-text model replies keep working as "nothing offered"); O6 `replies.Lexicon.accepts`, `read_offer_reply`, EXTRACT step 5b `nodes._accepted_offer`, `mutate.apply_changes(quote=…)`; step 5c (a plain no to the optional question writes the none row for approvals and exceptions, in code); O7 `prompts/extractor` OFFERED block; O8 registry groups and `phases._optional_worth_asking` (the predicate a later optional field such as S14 joins); O9 `profile/inferred.py`; O10 `phases.phase_from_state`, `next_ask`, `scoring.finish_check`, `PHASE_ORDER` without `confirm`. Kept for old sessions and not removed (dead on the new path): the roll-up reply reader, the `rollups` fallback and prompt text, `confirm_rollup` and the `/confirm` roles/tools route. Tests: `tests/unit/process_discovery/interview/test_owner_test.py` (AC-14.117 to AC-14.127), `domain/test_owner_test_registry.py` (AC-12.53 to AC-12.55, AC-13.62, AC-13.63), `tests/api/test_interview_flow.py` (AC-14.124, progress on the wire).
 
-### 3.21 Amendment (draft 2026-11-21, for review): lessons from the p05 evaluation run
+### 3.21 Amendment (2026-11-21): lessons from the p05 evaluation run
 
 > **Status:** approved 2026-11-21 (product owner: "ok fine for the fixes, go on") · **built 2026-11-21** (AC-14.128 to AC-14.136; `make lint test` green; as built below). Source: evaluation run `20261121-084902`, persona `p05-cv-screening` (a talent acquisition specialist screening applications, 3 steps, 30 messages). Product §5.2 (S14, effort); registry spec 12 §3.13; parsing and readiness spec 19 §3.8; step assessment spec 26 §3.9; evaluation spec 24 §12. Where this section differs from §3.19–§3.20, it wins. Every fix is general: none names HR, CVs or the persona.
 

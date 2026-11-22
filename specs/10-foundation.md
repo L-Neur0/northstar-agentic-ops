@@ -1,6 +1,6 @@
 # 10 · Foundation: repo, tooling, settings, company config, app shell
 
-> **Status:** amended 2026-11-20 (open workspace: `WORKSPACE_OPEN`, product owner decision) · built (CI run pending a GitHub repository) · **Implements:** F-22 (product), architecture §2, §3.1, §3.6–3.9, §4.3 · **Depends on:** — (first spec) · **Used by:** every other spec
+> **Status:** amended 2026-11-20 (open workspace: `WORKSPACE_OPEN`, product owner decision) · built (CI on GitHub Actions) · **Implements:** F-22 (product), architecture §2, §3.1, §3.6–3.9, §4.3 · **Depends on:** — (first spec) · **Used by:** every other spec
 > **Code:** `backend/pyproject.toml`, `backend/app/main.py`, `backend/app/core/*`, `config/nig/*`, `frontend/` (scaffold), `Makefile`, `.github/workflows/ci.yml` · **Tests:** `backend/tests/unit/core/`, `backend/tests/unit/process_discovery/test_architecture.py`, `backend/tests/test_smoke.py`
 
 ## 1. Purpose

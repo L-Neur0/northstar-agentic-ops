@@ -15,7 +15,7 @@
 |---|---|---|
 | Weeks 1–2 | Entra ID sign-in, consent text, data-protection sign-off for a volunteer pilot, works-council talks started | 1 engineer; data protection officer, HR |
 | Weeks 3–10 | **8-week pilot**: one cluster in one region, about 20 processes, with volunteers, on the current build plus sign-in. Three kill tests: share of employees who finish (stop below 50 %), share of reports a specialist accepts without major edits (stop below 50 %), specialist review time (stop above 3 h) | Product owner, 1–2 specialists, 1 engineer part-time for fixes and prompt tuning on pilot data |
-| Weeks 11–18 | **Production hardening, about two months** (sections 3–8: private network, reliability, monitoring, one more language), then the first cluster-region goes live in production; the works-council agreement is prepared in parallel | 1 engineer (about 4 weeks of work); NIG's security team reviews |
+| Weeks 11–18 | **Production hardening, about two months** (sections 3–8: private network, reliability, monitoring, one more language), then the first cluster-region goes live in production; the works-council agreement is prepared in parallel | 1 engineer (about 3–4 weeks of work); NIG's security team reviews |
 | After that | **Rollout by configuration**, cluster by cluster and region by region (section 10) | Product owner, champions; no new code per region |
 
 **Build cost, bottom-up** (*assumptions*, updated 2026-11-21; the €20k is the product owner's decision, the lines show what it buys):
@@ -31,7 +31,20 @@
 | Buffer, about 20 % | 1 |
 | **Total** | **6.5 × €3k ≈ €20k** |
 
-Not in the €20k: the security review (by NIG's security team, *assumption*), the data-protection and works-council work (people, not code: data protection officer, HR), and later releases (Microsoft 365 evidence, specialist edits, integrations). The €3k per engineer-week is the use case's rate.
+Not in the €20k: the security review (by NIG's security team, *assumption*), the data-protection and works-council work (people, not code: data protection officer, HR), and later releases (Microsoft 365 evidence, specialist edits, integrations). The €3k per engineer-week is the use case's build rate (about €75 an hour); valued at the €90 an hour used for the savings, the same 6.5 weeks cost about €23k, and the payback stays under a month.
+
+**Full first-year cost, NIG's people included** (*assumptions*, at €90 an hour; these people exist already, so this is time, not new spend):
+
+| Item | Hours | Cost |
+|---|---|---|
+| Build (above) and run for a year (section 9) | | €26k |
+| Security review by NIG's security team | about 40 | about €4k |
+| Data-protection impact assessment and works-council agreement, first region (data protection officer, HR, legal) | about 120 | about €11k |
+| Pilot: product owner, specialists' reviews and training, volunteers' interviews, the cluster champion | about 120 | about €11k |
+| Product owner's configuration and follow-up for the rest of the year (about 0.1 of a role) | about 160 | about €14k |
+| **Total, year one** | | **about €66k** |
+
+Against €450k of conservative value this is a payback of about two months and about €7 back per €1 in year one (€17 with the build and run cost alone).
 
 This is the €20k build and the about €6k a year run (section 9) of the use case: about two months of one engineer's work, spread over about four calendar months (two weeks of set-up, the 8-week pilot, about two months of hardening) because the pilot sets the pace, not the code. The works-council agreement runs in parallel and gates the rollout to further clusters and regions.
 
@@ -139,6 +152,8 @@ The AI is the smallest line: about €240 a year at Mid, under €0.5k even at H
 | Region by region | One region at a time, each with its language tested and its residency and works-council position settled | Same, per region |
 
 Each new cluster or region is **configuration, not code**: process areas, solution catalogue, wording, language words and retention live in the company configuration.
+
+**Rough cost to reach all 36 teams** (*assumption*): after the first cluster-region, the other clusters of that region are configuration and champions' time only. Each further region needs about **1.5 engineer-weeks** (its language tested with translated personas, a regional deployment if residency requires it) and its own works-council and data-protection work (about 120 hours of people time). For the three further regions: about **4.5 engineer-weeks (€14k) and about €33k of people time**, at one region a quarter, so **all 36 teams in about 12–15 months** from the start. The run cost grows by about €5k a year for each extra regional deployment, mostly the WAF.
 
 ## 11. Ownership, support and on-call
 

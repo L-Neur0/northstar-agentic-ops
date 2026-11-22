@@ -268,15 +268,16 @@ svg text{font-family:var(--body)}
 .gate .dia{width:46px;height:46px;transform:rotate(45deg);border:2px solid var(--warn);background:rgba(242,184,75,.12);border-radius:6px}
 .gate span{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--warn);text-align:center;line-height:1.3}
 .ask{display:grid;grid-template-columns:1.3fr 1fr;gap:22px;flex:1;min-height:0;align-items:stretch}
-.askcard{background:linear-gradient(160deg,rgba(91,140,255,.24),rgba(91,140,255,.04));border:1px solid rgba(91,140,255,.5);border-radius:18px;padding:26px 30px;display:flex;flex-direction:column;justify-content:center;gap:12px}
-.askcard .k{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
-.askcard b{font-family:var(--display);font-size:56px;line-height:1.08;letter-spacing:-.02em}
-.askcard p{margin:0;font-size:20px;max-width:620px;color:var(--mute);line-height:1.45}
 .links{display:flex;flex-direction:column;gap:14px;justify-content:center}
 .lk{display:flex;gap:16px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px;color:var(--fg);text-decoration:none}
 .lk .ico{width:38px;height:38px;padding:9px;border-radius:10px;background:var(--panel2);color:var(--accent)}
 .lk b{display:block;font-size:20px}
 .lk span{font-family:var(--mono);font-size:12.5px;color:var(--dim)}
+.ask.one{grid-template-columns:1fr;align-items:center;justify-items:center}
+.lk.big{padding:26px 36px;gap:22px}
+.lk.big .ico{width:52px;height:52px;padding:12px}
+.lk.big b{font-size:28px}
+.lk.big span{font-size:16px}
 
 /* ---------- cover (minimal) ---------- */
 .cover{justify-content:center}
@@ -887,16 +888,8 @@ svg text{font-family:var(--body)}
       <div class="stage-card a" style="--d:.63s"><span class="when">Then</span><b>Scale</b>
         <ul><li><span class="ico" data-i="layers"></span>Cluster by cluster</li><li><span class="ico" data-i="globe"></span>Region by region</li><li><span class="ico" data-i="braces"></span>By configuration only</li></ul></div>
     </div>
-    <div class="ask">
-      <div class="askcard a" style="--d:.8s">
-        <span class="k">The ask</span>
-        <b>Fund an 8-week pilot in one region.</b>
-        <p>Low cost (€20k build, ~€6k a year), nothing to integrate, and a clear stop rule. If the three numbers hold, every later AI build at NIG starts from a measured baseline.</p>
-      </div>
-      <div class="links a" style="--d:.9s">
-        <a class="lk" href="#"><span class="ico" data-i="link"></span><div><b>Try the app</b><span>live on Azure Container Apps · link on request</span></div></a>
-        <a class="lk" href="https://github.com/L-Neur0/northstar-agentic-ops"><span class="ico" data-i="code-xml"></span><div><b>Read the code and design</b><span>github.com/L-Neur0/northstar-agentic-ops</span></div></a>
-      </div>
+    <div class="ask one">
+      <a class="lk big a" style="--d:.8s" href="https://github.com/L-Neur0/northstar-agentic-ops"><span class="ico" data-i="code-xml"></span><div><b>The MVP: code, specs and design</b><span>github.com/L-Neur0/northstar-agentic-ops</span></div></a>
     </div>
   </div>
   <div class="foot"><span>AI Use Case Discovery Agent · Executive summary</span><span>09</span></div>

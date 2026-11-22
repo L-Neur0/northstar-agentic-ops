@@ -139,7 +139,7 @@ Scoring is **code first**: numbers, lists, step counts, the AI fit and the route
 
 ### 4.2 Measured results
 
-We know the system works from three sources. **About 3,400 automated tests** check every acceptance criterion (§5). **Live runs** against Azure OpenAI and Cosmos DB, including end-to-end tests by the product owner, check the real behaviour. The **evaluation scorecard** measures quality against targets. The latest full run (six personas, 21 November 2026) gave:
+We know the system works from three sources. **Over 3,300 automated tests** check every acceptance criterion (§5). **Live runs** against Azure OpenAI and Cosmos DB, including end-to-end tests by the product owner, check the real behaviour. The **evaluation scorecard** measures quality against targets. The latest full run (six personas, 21 November 2026) gave:
 
 
 | Measure                                        | Result                                                      | Target        |
@@ -149,7 +149,7 @@ We know the system works from three sources. **About 3,400 automated tests** che
 | AI fit and route right                         | 17 of 19 steps                                              | ≥ 70 %       |
 | Invented values                                | 4, all in the vague persona                                 | 0             |
 | Detail burden (questions on low-value details) | 6–12 %                                                     | ≤ 15 %       |
-| Estimated employee time                        | 19.6–24.4 minutes (22.5 mean)                              | ≤ 20 minutes |
+| Estimated employee time                        | 19.6–24.4 minutes (22.5 mean)                              | ≤ 20 minutes (stricter than the 20–30 we tell the employee) |
 | Time per turn (median)                         | 3.9–4.6 s                                                  | < 10 s        |
 | *Finish* (analysis and report)                 | 34–48 s                                                    | < 30 s        |
 | Model cost per interview                       | €0.34–0.50                                                | < €0.50      |
@@ -176,7 +176,7 @@ Each case below was seen in an evaluation run or a live test and traced in the t
 
 ## 5. How the code was built
 
-**Spec first, then test first.** Work flows down one chain (use case → product spec → architecture → 17 component specs → tests → code), and a person approves every spec before code is written. Each acceptance criterion becomes a failing test that cites its ID; then only the minimum code that makes it pass is written, and every change is verified with the full suite (about 3,400 tests), linting, strict type checks and, for model behaviour, a live run and the evaluation. AI coding agents did most of the writing, under the same rules. *See [pipeline](../05-how-we-worked/pipeline.md).*
+**Spec first, then test first.** Work flows down one chain (use case → product spec → architecture → 17 component specs → tests → code), and a person approves every spec before code is written. Each acceptance criterion becomes a failing test that cites its ID; then only the minimum code that makes it pass is written, and every change is verified with the full suite (over 3,300 tests), linting, strict type checks and, for model behaviour, a live run and the evaluation. AI coding agents did most of the writing, under the same rules. *See [pipeline](../05-how-we-worked/pipeline.md).*
 
 ---
 

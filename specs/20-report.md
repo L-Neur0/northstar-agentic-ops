@@ -1,7 +1,7 @@
 # 20 · Finish, the discovery report and the PDF
 
 > **Status:** **short step walk (S13 row in the step table), approved 2026-11-20** · approved · **built 2026-11-20** · **Implements:** F-11.4, F-16 (product); §3.3 finish, §3.2 `artifacts/report.py` and `export/{report_pdf,bpmn,substeps,branding}.py`, §6.2 "three in parallel on Finish" (architecture) · **Depends on:** specs 10 (`Organisation`, settings), 11 (LLM errors), 12 (models), 13 (field views, finish state), 15 (finish route, repository), 16 (daily budget), 20, 21
-> **Amendment v3, 2026-11-19 (draft):** a fourth parallel call, ASSESS_STEPS (spec 26); two new report parts, *Step-by-step AI assessment* and *Recommended route* (the report now has eleven parts); **hours only**: cost today, hours freed, euro values and saving shares are *parked until the value method is decided (refinement R5)*, their text kept and struck through.
+> **Amendment v3, 2026-11-19 (built):** a fourth parallel call, ASSESS_STEPS (spec 26); two new report parts, *Step-by-step AI assessment* and *Recommended route* (the report now has eleven parts); **hours only**: cost today, hours freed, euro values and saving shares are *parked until the value method is decided (refinement R5)*, their text kept and struck through.
 > **Code:** `backend/app/services/process_discovery/artifacts/{assess,report}.py`, `export/{report_pdf,bpmn,substeps,branding}.py`; the finish use case in `service.py` (built by WS6 to this spec)
 > **Tests:** `backend/tests/unit/process_discovery/artifacts/test_assess.py`, `test_report_model.py`; `backend/tests/unit/process_discovery/export/`
 

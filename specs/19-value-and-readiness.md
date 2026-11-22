@@ -1,7 +1,7 @@
 # 19 · Value, labels, readiness and the suggested path
 
 > **Status:** approved · **built 2026-11-20** · **Implements:** F-12 (item 4, the path), F-14, F-15 (product); §6.2 LABEL, §6.4 grounding, §5 assessment fields (architecture) · **Depends on:** specs 10 (`Rates`, config loader), 11 (LLM client), 12 (models, `counts`), 13 (profile dicts), 20 (opportunities, evidence check, profile fence, fingerprint)
-> **Amendment 2026-11-19 (draft): hours only.** Cost today, hours that could be freed, euro values and saving shares are **parked until the value method is decided (refinement R5)**. Their text stays below, marked *parked (R5)*, so it can come back; code does not compute or show them while R5 is open. `value_parse.py` moves to `domain/` so the interview's steering (spec 14 §3.15) uses the same grammar.
+> **Amendment 2026-11-19 (built): hours only.** Cost today, hours that could be freed, euro values and saving shares are **parked until the value method is decided (refinement R5)**. Their text stays below, marked *parked (R5)*, so it can come back; code does not compute or show them while R5 is open. `value_parse.py` moves to `domain/` so the interview's steering (spec 14 §3.15) uses the same grammar.
 > **Code:** `backend/app/services/process_discovery/domain/value_parse.py`, `artifacts/{value,readiness,path}.py`, `artifacts/labels/{schemas,prompts,labels}.py`, the `ReadinessConfig` model in `backend/app/core/config.py`
 > **Tests:** `backend/tests/unit/process_discovery/artifacts/`
 

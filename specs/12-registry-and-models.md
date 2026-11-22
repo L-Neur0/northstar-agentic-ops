@@ -635,7 +635,7 @@ One empty step: `{"name": "", "goal": "", "activities": [], "roles": [], "owner"
 
 *In an implementation brief* is derived from `briefs[]`; it is not a report status.
 
-> **Amendment 2026-11-19 (draft, contract changes requested by specs 14 §3.15, 19 and 26):** `Assessment` gains `step_assessment: StepAssessment | None` (spec 26 §4.2) and the outcome key `steps`; `Session` gains `steering: SteeringState` (spec 14 §3.15 item 1); `LastQuestion.confirm` gains `"recommendation"`; `Idea` gains optional `signals`, `hours_per_year`, `people`, `data_score`, `score`, `rank`, `recommended`. `ValueResult.cost_today`, `hours_freed`, `value_conservative`, `value_expected` and `Opportunity.saving_share` stay in the model but are *parked until the value method is decided (refinement R5)*: `None` / not read.
+> **Amendment 2026-11-19 (built; contract changes requested by specs 14 §3.15, 19 and 26):** `Assessment` gains `step_assessment: StepAssessment | None` (spec 26 §4.2) and the outcome key `steps`; `Session` gains `steering: SteeringState` (spec 14 §3.15 item 1); `LastQuestion.confirm` gains `"recommendation"`; `Idea` gains optional `signals`, `hours_per_year`, `people`, `data_score`, `score`, `rank`, `recommended`. `ValueResult.cost_today`, `hours_freed`, `value_conservative`, `value_expected` and `Opportunity.saving_share` stay in the model but are *parked until the value method is decided (refinement R5)*: `None` / not read.
 
 **Idea document** (storage): `id`, `owner_id`, `type: Literal["idea"]`, `name`, `words` (the expert's own words), `from_session_id`, `started_session_id: str | None`, `status: "open" | "started" | "dismissed"` (default `open`), `created_at`, `ttl`.
 

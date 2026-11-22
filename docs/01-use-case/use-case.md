@@ -1,7 +1,7 @@
 # Selected process: finding, mapping and assessing processes for AI
 
 > Interview deliverable. NIG is a fictional company. Every figure marked *assumption* is our estimate, to check with the NIG AI transformation team.
-> Brief: the assignment PDF in the git-ignored `brief/` folder.
+> Brief: the assignment (not included in this repository).
 > The tool: **AI Use Case Discovery Agent** *(renamed 2026-11-21 from "Discovery Agent")*. What it does in detail: [product specification](../../specs/01-product.md). How it is built: [architecture](../../specs/02-architecture.md).
 > This document is the source of truth for **why**: the problem, the users, the value and the assumptions. The worked example is the FIN monthly cost review, an earlier candidate use case.
 
@@ -260,7 +260,7 @@ Yes. The employee confirms every value read from a document, and the roles and s
 Yes. About €0.45M a year conservative at the base case, for a €20k build, with payback in under a month (section 2.1.6) *(updated 2026-11-21 (bottom-up cost))*. *(updated 2026-11-21 (estimated effort: ~1.5 h per process, an assumption to confirm in the pilot))* A further value, builds on unready workflows avoided, is not counted. The path is one cluster in one region first, then all clusters. No integration work is needed per region.
 
 **Q8. Can we measure it, and stop it if it fails?**
-Yes. We measure the minutes per interview, the share of interviews that reach a complete map, the share of reports the specialist validates without major edits, the share of implementation briefs the engineers accept, and the field accuracy against simulated ground truth. The kill test is part of the next deliverable.
+Yes. We measure the minutes per interview, the share of interviews that reach a complete map, the share of reports the specialist validates without major edits, the share of implementation briefs the engineers accept, and the field accuracy against simulated ground truth. The kill test: stop or redesign if, over the 8-week pilot (about 20 processes, one cluster, one region), fewer than 50 % of invited employees complete a map, fewer than 50 % of reports are validated without major edits, or specialist time rises above 3 hours per process (section 2.1.9 and [production readiness](../03-technical-design/production-readiness.md) section 1).
 
 #### 2.1.5 Who uses the tool, and how much
 
@@ -324,7 +324,7 @@ The unit we count is the **profiled process**: one process, discovered, mapped a
 
 Return 1 alone pays for the tool. Return 2 is why the tool matters: it is the front door to every AI build NIG will make, and each of those builds starts from a measured "before" number, so its benefit can be proven.
 
-In detail, the tool creates value in four ways. We count only the first two in the ROI.
+In detail, the tool creates value in four ways. We count only the first two in the ROI. The first is what the prototype does today; the second needs the implementation brief of the next release, so it is shown apart: at Mid, **€405k–608k** of the €450k–675k comes from the first, **€45k–68k** from the second.
 
 | # | Value | Counted? | Why |
 |---|---|---|---|
@@ -372,6 +372,8 @@ The framework sets the ROI score bands as: below €100k = 1, €100k–500k = 2
 | **Net a year** | **about €444k** | **about €669k** |
 | **Payback on the €20k build** | **under 1 month** (€20k ÷ €444k × 12 = 0.5) | **under 1 month** (€20k ÷ €669k × 12 = 0.4) |
 | **Year-one return per €1** (value ÷ (build + run)) | **about €17** (€450k ÷ €26k) | **about €26** (€675k ÷ €26k) |
+
+**Full first-year cost, NIG's people included.** The €20k and €6k are what NIG pays for code and Azure. NIG's own people also spend time: the security review, the data-protection impact assessment and works-council agreement, the pilot, and the product owner's configuration work, about **€40k** at €90 an hour (*assumption*, itemised in [production readiness](../03-technical-design/production-readiness.md) section 1). With it, year one costs about **€66k**: payback in about **two months** and about **€7 back per €1** (conservative). The build rate of €3k per engineer-week is about €75 an hour; at the €90 used for the savings the build would be about €23k, which changes no conclusion.
 
 **Break-even:** each profile saves about €1,010 at conservative adoption (22.5 h × 50% × €90), so the tool pays for its run cost at about 6 profiles a year, and for its build and first year's run at about 26 profiles.
 
@@ -781,9 +783,9 @@ What goes beyond a basic guided interview: **documents as a starting point**, **
 
 ### 3.4 The profile
 
-16 process fields (context, the process and its cluster, boundaries, measures, whether teams do it the same way, sensitive data, the number of main steps) and 12 fields per step (name, goal, activities, roles, owner, systems, data in and out, effort, pain points, approvals, exceptions, hand-over), for 2–6 main steps. Every value keeps its source (employee, document, specialist). Roles and systems are rolled up by code and confirmed by the employee. **Full list with questions and rules:** [product specification §5](../../specs/01-product.md#5-the-profile).
+16 process fields (context, the process and its cluster, boundaries, measures, whether teams do it the same way, sensitive data, the number of main steps) and up to 14 fields per step (name, goal, activities, roles, owner, systems, data in and out, effort, pain points, approvals, exceptions, hand-over, rules or judgement, decision criteria), for 2–6 main steps. Every value keeps its source (employee, document, specialist). Roles and systems are captured per step and rolled up by code. **Full list with questions and rules:** [product specification §5](../../specs/01-product.md#5-the-profile).
 
-**Score:** weighted share of complete, confirmed fields. **Map complete:** score ≥ 80%, all declared steps complete, roles confirmed, systems confirmed.
+**Score:** weighted share of complete, confirmed fields. **Map complete:** score ≥ 80% and all declared steps complete.
 
 ### 3.5 Data
 

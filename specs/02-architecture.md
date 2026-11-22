@@ -1,6 +1,6 @@
 # 02 · Architecture: AI Use Case Discovery Agent
 
-> **Status:** draft v3, 2026-11-19 · **Implements** the [product specification](01-product.md).
+> **Status:** approved and built (v3, 2026-11-19) · **Implements** the [product specification](01-product.md).
 > **Renamed 2026-11-21:** the product is the **AI Use Case Discovery Agent** (was "Discovery Agent"); code packages, routes and identifiers keep `process_discovery`.
 > Component specs (`specs/1x–5x`) detail each part and must not contradict this document; if they need to, this document changes first.
 > **Prototype scope:** no sign-in. Anyone with the link can start a discovery session; the specialist workspace is protected by an access code. What production would add (Entra ID and more) is in [production readiness](../docs/03-technical-design/production-readiness.md).

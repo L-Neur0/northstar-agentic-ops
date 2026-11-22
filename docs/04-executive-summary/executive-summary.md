@@ -18,11 +18,11 @@ Today the AI specialists do AI use case discovery one colleague at a time. They 
 | Specialists interview people one by one     | At most 150–200 processes a year, for 36 teams |
 | Each specialist asks and writes differently | Reports cannot be compared                      |
 | Nobody checks whether a workflow is ready   | AI builds stall after weeks                     |
-| Detail is lost at hand-over                 | Engineers re-ask people:**~60 h per build**     |
+| Detail is lost at hand-over                 | Engineers re-ask people: **~60 h per build**    |
 
 ## 3. Solution
 
-An employee who wants to automate part of their work opens a link and, in a **guided chat** with an AI agent, maps one of their own workflows worth transforming. A fixed form makes results comparable; specialists only review the best.
+An employee who wants to automate part of their work opens a link and, in a **guided chat** with an AI agent, maps one of their own workflows worth transforming. A fixed form makes every result comparable; a specialist reviews each report in about an hour instead of collecting it.
 
 ```mermaid
 flowchart LR
@@ -36,30 +36,29 @@ flowchart LR
   class O,B next
 ```
 
-*Solid: built. Dashed: next release.* The report answers three questions (*good AI use case(Data, Feasibility, etc.)? own tool or Copilot? worth it (Business value)?*), then shows per step how AI helps and what to prepare.
+*Solid: built. Dashed: next release.* The report answers three questions (*good AI use case (data, feasibility)? own tool or Copilot? worth it (business value)?*), then shows per step how AI helps and what to prepare.
 
 ## 4. Business value and ROI (base case: 400 processes a year)
 
 
 |                          | Today | With the tool                               |
 | ------------------------ | ----- | ------------------------------------------- |
-| Person-hours per process | 24    | **~1.5** (estimate)                         |
+| Person-hours per process | 24    | **~1.5** (estimate, built)                  |
 | Engineer hours per build | 60    | **20** (with hand-over brief, next release) |
 
-- **For the AI team (counted): €450k–675k a year**, from 400 processes × 22.5 h plus 25 builds × 40 h saved, at €90/h and 50–75 % adoption.
+- **For the AI team (counted): €450k–675k a year** at €90/h and 50–75 % adoption: **€405k–608k** from discovery (400 processes × 22.5 h saved, built today) plus **€45k–68k** from faster builds (25 builds × 40 h saved, needs the hand-over brief of the next release).
 - **For the whole company (not counted, likely larger):** discovery **scales to every team at once**, so NIG compares 400+ processes, not 150–200, and builds the best, **each paying back again**.
-- **Costs:** **€20k once** to build (one engineer, two months); **~€6k a year** to run (Azure hosting ~€5.5k; AI ~€0.40 per interview, ~€240): **payback under a month; ~€17 back per €1 in year one.**
+- **Costs:** **€20k once** to build (one engineer, two months); **~€6k a year** to run (Azure hosting ~€5.5k; AI ~€0.40 per interview, ~€240): **payback under a month; ~€17 back per €1 in year one.** With NIG's own people time added (security review, data protection and works council, pilot, product owner: ~€40k), year one costs **~€66k**: payback **about 2 months, ~€7 back per €1**.
 
-## 5. Risks: three things must be true
+## 5. Risks: three assumptions and three stop rules
 
+| Must be true | How we check | If false |
+| --- | --- | --- |
+| Employees finish on their own | Pilot: share of invited employees who complete a map | Specialists must sit in: the saving halves |
+| Reports are good enough to use | Specialist marks each report: major edits, yes or no | Back to workshops; the tool is only an intake form |
+| The hours saved are real | Time the next 5 manual mappings, then the pilot | At 18 h by hand, not 24: still €342k a year, payback under a month |
 
-| Must be true                  | Pilot check              | Stop if          |
-| ----------------------------- | ------------------------ | ---------------- |
-| Employees finish on their own | Share who complete       | Below 50 %       |
-| Reports are good enough       | Specialist: major edits? | Below 50 % clean |
-| Specialist review is quick    | Time each review         | Above 3 h        |
-
-At 18 h by hand, not 24, it still holds (€342k). Open: works council, languages, interview quality (75 %, target 85 %).
+**Stop or redesign** if, over the **8-week pilot** (~20 processes, one cluster, one region): interviews completed fall **below 50 %** (target 70 %), reports validated without major edits fall **below 50 %** (target 70 %), or specialist time per process rises **above 3 h** (target 1 h). Still open: works council, languages, and interview accuracy (in testing with simulated employees, 75 % of the core process fields came out right; target 85 %).
 
 ## 6. Status, rollout and the ask
 

@@ -41,5 +41,3 @@ build/
 eval/runs/
 eval/.cache/
 
-# Local assistant instructions (never published)
-CLAUDE.md
